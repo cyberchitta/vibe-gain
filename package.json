@@ -2,11 +2,12 @@
   "name": "vibe-gain",
   "version": "0.0.1",
   "description": "Analyze GitHub commit data for productivity metrics with interactive visualizations",
-  "main": "vibe_gain.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "bun run vibe_gain.js"
+    "start": "bun run src/index.js"
   },
   "dependencies": {
+    "@octokit/graphql": "^8.2.2",
     "@octokit/rest": "^21.1.1",
     "dotenv": "^16.5.0",
     "lodash": "^4.17.21",
