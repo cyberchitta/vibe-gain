@@ -11,13 +11,11 @@ const {
 const { testGitHubAPI } = require("./api/github");
 const { findReposWithCommitsInPeriod } = require("./api/queries");
 const { initDirs, fetchCommits } = require("./data/fetch");
-const { computeMetrics, formatMetricsForExport } = require("./data/metrics");
 const {
-  createHistogramConfigurations,
-} = require("./visualization/charts/histogram");
-const {
-  generateInteractiveHistograms,
-} = require("./visualization/renderers/html");
+  computeAggregateMetrics,
+  computeMetrics,
+  formatMetricsForExport,
+} = require("./data/metrics");
 
 /**
  * Export metrics data as JSON
@@ -48,6 +46,7 @@ async function main() {
     );
     return;
   }
+  const allCommits = [];
   for (const period of PERIODS) {
     console.log(`Processing ${period.name}...`);
     const csvPath = path.join(
@@ -61,17 +60,15 @@ async function main() {
       csvPath,
       findReposWithCommitsInPeriod
     );
+    allCommits.push(...commits);
     const metrics = computeMetrics(commits, CLUSTER_THRESHOLD_MINUTES);
     await exportMetricsJSON(metrics, period.name, OUTPUT_DIR);
-    const histogramConfigs = createHistogramConfigurations(
-      metrics,
-      DEFAULT_BINS
-    );
-/*     await generateInteractiveHistograms(
-      histogramConfigs,
-      period.name,
-      OUTPUT_DIR
-    ); */
+  }
+  if (allCommits.length > 0) {
+    console.log("Computing aggregate metrics across all periods...");
+    const aggregateMetrics = computeAggregateMetrics(allCommits);
+    await exportMetricsJSON(aggregateMetrics, "All_Periods", OUTPUT_DIR);
+    console.log("Aggregate metrics saved to metrics_All_Periods.json");
   }
 }
 

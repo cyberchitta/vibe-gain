@@ -122,6 +122,57 @@ function computeMetrics(commits, clusterThresholdMinutes) {
 }
 
 /**
+ * Compute aggregate metrics across all periods
+ * @param {Array} allCommits - Array of all commit objects from all periods
+ * @returns {Object} - Object containing aggregate metrics
+ */
+function computeAggregateMetrics(allCommits) {
+  const commitsByRepo = {};
+  allCommits.forEach((commit) => {
+    if (!commitsByRepo[commit.repo]) {
+      commitsByRepo[commit.repo] = [];
+    }
+    commitsByRepo[commit.repo].push(commit);
+  });
+  const repoStats = Object.entries(commitsByRepo).map(([repo, commits]) => {
+    const activeDays = new Set(commits.map((c) => c.date)).size;
+    const docCommits = commits.filter((c) => c.isDocOnly).length;
+    return {
+      repository: repo,
+      commit_count: commits.length,
+      active_days: activeDays,
+      doc_only_commits: docCommits,
+      doc_percentage: (docCommits / commits.length) * 100,
+      lines_changed: commits.reduce(
+        (sum, c) => sum + c.additions + c.deletions,
+        0
+      ),
+      is_private: commits[0].private,
+      is_fork: commits[0].isFork,
+    };
+  });
+  repoStats.sort((a, b) => b.commit_count - a.commit_count);
+  const activeDays = new Set(allCommits.map((commit) => commit.date)).size;
+  const docOnlyCommits = allCommits.filter((c) => c.isDocOnly).length;
+  return {
+    total_commits: allCommits.length,
+    total_active_days: activeDays,
+    total_repositories: Object.keys(commitsByRepo).length,
+    commits_per_active_day: allCommits.length / activeDays,
+    doc_only_percentage: (docOnlyCommits / allCommits.length) * 100,
+    period_range: {
+      start: new Date(
+        Math.min(...allCommits.map((c) => new Date(c.timestamp)))
+      ).toISOString(),
+      end: new Date(
+        Math.max(...allCommits.map((c) => new Date(c.timestamp)))
+      ).toISOString(),
+    },
+    repository_stats: repoStats,
+  };
+}
+
+/**
  * Export metrics as JSON
  * @param {Object} metrics - Metrics object from computeMetrics
  * @param {string} periodName - Name of the period
