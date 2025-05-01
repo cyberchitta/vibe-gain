@@ -1,4 +1,3 @@
-// Data processing and metrics computation
 const _ = require("lodash");
 
 /**
@@ -8,39 +7,29 @@ const _ = require("lodash");
  * @returns {Object} - Object containing various metrics
  */
 function computeMetrics(commits, clusterThresholdMinutes) {
+  const docOnlyCommits = commits.filter((c) => c.isDocOnly);
+  const codeCommits = commits.filter((c) => !c.isDocOnly);
   const commitsByDate = _.groupBy(commits, "date");
-
-  // Commits per day
   const commitsPerDay = Object.entries(commitsByDate).map(([date, group]) => ({
     date,
     commits: group.length,
   }));
-
-  // Lines of code per day
   const locPerDay = Object.entries(commitsByDate).map(([date, group]) => {
     const loc = group.reduce((sum, c) => sum + c.additions + c.deletions, 0);
     return { date, loc };
   });
-
-  // Unique repositories per day
   const reposPerDay = Object.entries(commitsByDate).map(([date, group]) => ({
     date,
     repos: _.uniq(group.map((c) => c.repo)).length,
   }));
-
-  // Initialize arrays for time-based metrics
   const hoursPerDay = [];
   const commitsPerHour = [];
   const gapsPerDay = [];
   const timeBetweenCommits = [];
-
-  // Process each day's commits for time-based metrics
   for (const [date, group] of Object.entries(commitsByDate)) {
     const timestamps = group
       .map((c) => new Date(c.timestamp))
       .sort((a, b) => a - b);
-
-    // Estimate hours worked
     let hours;
     if (timestamps.length === 1) {
       hours = 0.1;
@@ -50,18 +39,13 @@ function computeMetrics(commits, clusterThresholdMinutes) {
       hours = Math.min(timeDiff, 8);
     }
     hoursPerDay.push({ date, hours });
-
-    // Calculate commits per hour
     const cph = timestamps.length / Math.max(hours, 0.1);
     commitsPerHour.push({ date, commits_per_hour: cph });
-
-    // Calculate gaps between commit clusters
     if (timestamps.length <= 1) {
       gapsPerDay.push({ date, avg_gap_minutes: 0 });
     } else {
       const clusters = [];
       let currentCluster = [timestamps[0]];
-
       for (let i = 1; i < timestamps.length; i++) {
         const timeDiff = (timestamps[i] - timestamps[i - 1]) / (1000 * 60);
         if (timeDiff <= clusterThresholdMinutes) {
@@ -72,7 +56,6 @@ function computeMetrics(commits, clusterThresholdMinutes) {
         }
       }
       clusters.push(currentCluster);
-
       const avgGap =
         clusters.length <= 1
           ? 0
@@ -83,8 +66,6 @@ function computeMetrics(commits, clusterThresholdMinutes) {
             (clusters.length - 1);
       gapsPerDay.push({ date, avg_gap_minutes: avgGap });
     }
-
-    // Calculate average time between individual commits
     if (timestamps.length <= 1) {
       timeBetweenCommits.push({ date, avg_time_between_commits: 0 });
     } else {
@@ -97,10 +78,7 @@ function computeMetrics(commits, clusterThresholdMinutes) {
       timeBetweenCommits.push({ date, avg_time_between_commits: avgInterval });
     }
   }
-
-  // Return all computed metrics
   return {
-    // Raw data metrics (per day)
     commits: commitsPerDay,
     loc: locPerDay,
     repos: reposPerDay,
@@ -108,8 +86,13 @@ function computeMetrics(commits, clusterThresholdMinutes) {
     gaps: gapsPerDay,
     commits_per_hour: commitsPerHour,
     time_between_commits: timeBetweenCommits,
-
-    // Metadata for export
+    doc_commits: Object.entries(_.groupBy(docOnlyCommits, "date")).map(
+      ([date, group]) => ({
+        date,
+        commits: group.length,
+      })
+    ),
+    doc_percentage: (docOnlyCommits.length / commits.length) * 100,
     metadata: {
       total_commits: commits.length,
       active_days: Object.keys(commitsByDate).length,
@@ -131,6 +114,9 @@ function computeMetrics(commits, clusterThresholdMinutes) {
               ).toISOString()
             : null,
       },
+      total_doc_commits: docOnlyCommits.length,
+      total_code_commits: codeCommits.length,
+      doc_percentage: (docOnlyCommits.length / commits.length) * 100,
     },
   };
 }

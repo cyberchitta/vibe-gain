@@ -16,7 +16,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
   console.log(
     `Fetching commits from ${repos.length} repositories for period ${startDate} to ${endDate}`
   );
-
   const commitData = [];
   const commitSHAs = new Set();
   const startDateTime = new Date(startDate);
@@ -24,7 +23,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
   let totalProcessed = 0;
   let accessDeniedRepos = [];
   let duplicateCommitCount = 0;
-
   for (const repo of repos) {
     console.log(
       `[${++totalProcessed}/${repos.length}] Checking ${
@@ -38,7 +36,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
       let hasMoreCommits = true;
       let repoCommitCount = 0;
       let repoSkippedCount = 0;
-
       while (hasMoreCommits) {
         const { data: pageCommits } = await octokit.repos.listCommits({
           owner: repo.owner.login,
@@ -49,23 +46,24 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
           per_page: 100,
           page: commitsPage,
         });
-
         for (const commit of pageCommits) {
-          // Skip this commit if we've already seen it in another repo
           if (commitSHAs.has(commit.sha)) {
             repoSkippedCount++;
             duplicateCommitCount++;
             continue;
           }
-
           try {
             const { data: detailedCommit } = await octokit.repos.getCommit({
               owner: repo.owner.login,
               repo: repo.name,
               ref: commit.sha,
             });
-
-            // Add this commit to our collection
+            const modifiedFiles = detailedCommit.files.map(
+              (file) => file.filename
+            );
+            const isDocOnly =
+              modifiedFiles.length > 0 &&
+              modifiedFiles.every((file) => isDocumentationFile(file));
             commitData.push({
               repo: repo.full_name,
               sha: commit.sha,
@@ -79,9 +77,8 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
               deletions: detailedCommit.stats.deletions || 0,
               private: repo.private || false,
               isFork: repo.isFork || false,
+              isDocOnly: isDocOnly,
             });
-
-            // Mark this SHA as seen
             commitSHAs.add(commit.sha);
             repoCommitCount++;
           } catch (commitError) {
@@ -91,7 +88,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
             );
           }
         }
-
         hasMoreCommits = pageCommits.length === 100;
         commitsPage++;
         if (hasMoreCommits) {
@@ -100,7 +96,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
           );
         }
       }
-
       if (repoCommitCount > 0 || repoSkippedCount > 0) {
         console.log(
           `Found ${repoCommitCount} unique commits in ${repo.full_name}${
@@ -115,8 +110,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
         `Error fetching commits from ${repo.full_name}:`,
         error.message
       );
-
-      // Check if this was an access denied error
       if (
         error.status === 403 ||
         error.status === 404 ||
@@ -127,8 +120,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
       }
     }
   }
-
-  // Report on inaccessible repositories
   if (accessDeniedRepos.length > 0) {
     console.log(
       `\n⚠️ WARNING: Could not access ${accessDeniedRepos.length} repositories:`
@@ -141,19 +132,14 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
       `To include them, you need the right permissions and a token with the 'repo' scope.`
     );
   }
-
-  // Report on duplicate commits
   if (duplicateCommitCount > 0) {
     console.log(
       `\nFiltered out ${duplicateCommitCount} duplicate commits that appeared in multiple repositories.`
     );
   }
-
   console.log(
     `Total unique commits found for period ${startDate} to ${endDate}: ${commitData.length}`
   );
-
-  // Check if our commit count is significantly less than what GitHub reports
   const expectedTotalCount = await getTotalCommitCount(
     username,
     startDate,
@@ -174,7 +160,6 @@ async function fetchCommitsFromRepos(repos, username, startDate, endDate) {
       `This often happens when commits are in private repositories that your token cannot access`
     );
   }
-
   return commitData;
 }
 
@@ -202,14 +187,11 @@ async function fetchCommitsForPeriod(
   endDate,
   findReposWithCommitsInPeriod
 ) {
-  // Get all repositories with commits in this period
   const periodRepos = await findReposWithCommitsInPeriod(
     username,
     startDate,
     endDate
   );
-
-  // Now fetch all commits from these repositories
   return await fetchCommitsFromRepos(periodRepos, username, startDate, endDate);
 }
 
@@ -234,15 +216,12 @@ async function fetchCommits(
     console.log(`Loading commits from ${csvPath}`);
     const csvData = await fs.readFile(csvPath, "utf8");
     const parsed = Papa.parse(csvData, { header: true, dynamicTyping: true });
-
-    // Check for potential missing data in cached results
     const cachedCommitCount = parsed.data.length;
     const expectedTotalCount = await getTotalCommitCount(
       username,
       startDate,
       endDate
     );
-
     if (expectedTotalCount && cachedCommitCount < expectedTotalCount * 0.9) {
       console.log(
         `\n⚠️ WARNING: Cached data has ${cachedCommitCount} commits, but GitHub reports approximately ${expectedTotalCount}`
@@ -250,8 +229,6 @@ async function fetchCommits(
       console.log(`Consider deleting the cache file to refresh data:
       rm "${csvPath}"\n`);
     }
-
-    // Calculate private repo percentage in cached data
     const privateCommits = parsed.data.filter((row) => row.private).length;
     const privatePercentage = (privateCommits / cachedCommitCount) * 100;
     console.log(
@@ -259,8 +236,6 @@ async function fetchCommits(
         1
       )}% of cached commits are from private repositories`
     );
-
-    // Check for duplicate commits in cache (a sign the data might be old and not filtered)
     const uniqueSHAs = new Set(parsed.data.map((row) => row.sha));
     if (uniqueSHAs.size < parsed.data.length) {
       console.log(
@@ -271,27 +246,22 @@ async function fetchCommits(
       console.log(`Consider deleting the cache file to apply duplicate filtering:
       rm "${csvPath}"\n`);
     }
-
     return parsed.data.map((row) => ({
       ...row,
       date: row.date,
       timestamp: new Date(row.timestamp),
     }));
   } catch (error) {
-    // Use the improved method to find repositories with commits in this period
     const commitData = await fetchCommitsForPeriod(
       username,
       startDate,
       endDate,
       findReposWithCommitsInPeriod
     );
-
     if (commitData.length > 0) {
       const csv = Papa.unparse(commitData);
       await fs.writeFile(csvPath, csv);
       console.log(`Saved ${commitData.length} commits to ${csvPath}`);
-
-      // Calculate private repo percentage
       const privateCommits = commitData.filter(
         (commit) => commit.private
       ).length;
@@ -301,8 +271,6 @@ async function fetchCommits(
           1
         )}% of commits are from private repositories`
       );
-
-      // Calculate fork percentage
       const forkCommits = commitData.filter((commit) => commit.isFork).length;
       const forkPercentage = (forkCommits / commitData.length) * 100;
       console.log(
@@ -313,6 +281,16 @@ async function fetchCommits(
     }
     return commitData;
   }
+}
+
+function isDocumentationFile(filePath) {
+  return (
+    filePath.endsWith(".md") ||
+    filePath.endsWith(".markdown") ||
+    filePath.endsWith(".txt") ||
+    filePath.includes("/docs/") ||
+    filePath.includes("/documentation/")
+  );
 }
 
 module.exports = {
