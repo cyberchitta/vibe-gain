@@ -8,9 +8,8 @@ if (!GITHUB_TOKEN || !GITHUB_USERNAME) {
 }
 
 const PERIODS = [
-  { name: "Pre-AI", start: "2022-09-07", end: "2022-12-06" },
-  { name: "Beginning_AI", start: "2023-02-12", end: "2023-05-11" },
-  { name: "Recent_AI", start: "2025-01-01", end: "2025-03-31" },
+  { name: "Pre-AI", start: "2022-06-01", end: "2022-11-30" },
+  { name: "Recent_AI", start: "2024-11-01", end: "2025-04-30" },
 ];
 
 const OUTPUT_DIR = "output";

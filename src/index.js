@@ -67,11 +67,11 @@ async function main() {
       metrics,
       DEFAULT_BINS
     );
-    await generateInteractiveHistograms(
+/*     await generateInteractiveHistograms(
       histogramConfigs,
       period.name,
       OUTPUT_DIR
-    );
+    ); */
   }
 }
 
