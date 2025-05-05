@@ -37,18 +37,13 @@ async function main() {
   await initDirs(OUTPUT_DIR, DATA_DIR);
   const apiWorking = await testGitHubAPI(GITHUB_USERNAME);
   if (!apiWorking) {
-    console.error(
-      "GitHub API test failed. Please check your token and permissions."
-    );
+    console.error("GitHub API test failed. Please check your token and permissions.");
     return;
   }
-  const allCommits = [];
+  const periodMetrics = {};
   for (const period of PERIODS) {
     console.log(`Processing ${period.name}...`);
-    const csvPath = path.join(
-      DATA_DIR,
-      `commits_${period.name.replace(/ /g, "_")}.csv`
-    );
+    const csvPath = path.join(DATA_DIR, `commits_${period.name.replace(/ /g, "_")}.csv`);
     const commits = await fetchCommits(
       GITHUB_USERNAME,
       period.start,
@@ -56,28 +51,15 @@ async function main() {
       csvPath,
       findReposWithCommitsInPeriod
     );
-    allCommits.push(...commits);
     const metrics = computeMetrics(commits, CLUSTER_THRESHOLD_MINUTES);
+    periodMetrics[period.name] = metrics;
     await exportMetricsJSON(metrics, period.name, OUTPUT_DIR);
     console.log(`  Total commits: ${metrics.summary.total_commits}`);
     console.log(`  Code commits: ${metrics.summary.code_commits}`);
     console.log(`  Doc commits: ${metrics.summary.doc_commits}`);
-    console.log(
-      `  Doc percentage: ${metrics.summary.doc_percentage.toFixed(1)}%`
-    );
+    console.log(`  Doc percentage: ${metrics.summary.doc_percentage.toFixed(1)}%`);
   }
-  if (allCommits.length > 0) {
-    console.log("Computing aggregate metrics across all periods...");
-    const aggregateMetrics = computeAggregateMetrics(allCommits);
-    await exportMetricsJSON(aggregateMetrics, "All_Periods", OUTPUT_DIR);
-    console.log("Aggregate metrics saved to metrics_All_Periods.json");
-    console.log(`  Total commits: ${aggregateMetrics.summary.total_commits}`);
-    console.log(`  Code commits: ${aggregateMetrics.summary.code_commits}`);
-    console.log(`  Doc commits: ${aggregateMetrics.summary.doc_commits}`);
-    console.log(
-      `  Doc percentage: ${aggregateMetrics.summary.doc_percentage.toFixed(1)}%`
-    );
-  }
+  await exportMetricsJSON({ periods: periodMetrics }, "agggregate", OUTPUT_DIR);
 }
 
 main().catch(console.error);
