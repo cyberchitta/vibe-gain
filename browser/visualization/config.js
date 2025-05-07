@@ -1,8 +1,8 @@
 export const CONFIG = {
-  periods: ["Pre-AI", "Recent_AI"],
+  periods: ["Pre-AI", "Recent-AI"],
   colors: {
     "Pre-AI": "#ed8936", // orange-500
-    Recent_AI: "#48bb78", // green-500
+    "Recent-AI": "#48bb78", // green-500
   },
   metricPropertyMap: {
     commits: "commits",
