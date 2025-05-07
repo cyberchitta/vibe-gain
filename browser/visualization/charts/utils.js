@@ -5,7 +5,7 @@
  * @param {Array} fallbackRange - Fallback range to use if data is empty
  * @returns {Array} - [min, max] range with padding
  */
-function getDynamicRange(data, key, fallbackRange) {
+export function getDynamicRange(data, key, fallbackRange) {
   if (!data || data.length === 0) return fallbackRange;
   const values = data.map((d) => d[key]);
   const min = Math.min(...values);
@@ -24,7 +24,7 @@ function getDynamicRange(data, key, fallbackRange) {
  * @param {number} bins - Number of bins to create
  * @returns {Array} - Array of bin objects with count and range
  */
-function createHistogramBins(data, range, bins) {
+export function createHistogramBins(data, range, bins) {
   const [min, max] = range;
   const step = (max - min) / bins;
   const binArray = Array(bins).fill(0);
@@ -46,8 +46,3 @@ function createHistogramBins(data, range, bins) {
     };
   });
 }
-
-module.exports = {
-  getDynamicRange,
-  createHistogramBins,
-};

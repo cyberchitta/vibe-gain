@@ -1,10 +1,23 @@
 {
   "name": "vibe-gain",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Analyze GitHub commit data for productivity metrics with interactive visualizations",
-  "main": "src/index.js",
+  "type": "module",
+  "main": "./lib/index.js",
+  "browser": "./browser/index.js",
+  "exports": {
+    ".": {
+      "node": "./lib/index.js",
+      "browser": "./browser/index.js"
+    },
+    "./browser": "./browser/index.js",
+    "./visualization": "./browser/visualization/index.js",
+    "./visualization/charts/*": "./browser/visualization/charts/*.js",
+    "./visualization/renderers/*": "./browser/visualization/renderers/*.js",
+    "./visualization/themes/*": "./browser/visualization/themes/*.js"
+  },
   "scripts": {
-    "start": "bun run src/index.js"
+    "start": "bun lib/index.js"
   },
   "dependencies": {
     "@octokit/graphql": "^8.2.2",
@@ -12,6 +25,10 @@
     "dotenv": "^16.5.0",
     "lodash": "^4.17.21",
     "papaparse": "^5.5.2"
+  },
+  "peerDependencies": {
+    "vega": "^5.0.0",
+    "vega-lite": "^5.0.0"
   },
   "license": "Apache-2.0"
 }
