@@ -27,8 +27,8 @@
     "papaparse": "^5.5.2"
   },
   "peerDependencies": {
-    "vega": "^5.0.0",
-    "vega-lite": "^5.0.0"
+    "vega": "^6.0.0",
+    "vega-lite": "^6.1.0"
   },
   "license": "Apache-2.0"
 }

@@ -4,7 +4,7 @@
  */
 export function createBaseVegaSpec() {
   return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     background: null,
     autosize: {
       type: 'fit-x',
