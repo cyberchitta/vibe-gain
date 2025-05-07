@@ -1,4 +1,3 @@
-// vibe-gain/browser/visualization/config.js
 export const CONFIG = {
   periods: ["Pre-AI", "Recent_AI"],
   colors: {
