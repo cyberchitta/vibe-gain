@@ -23,8 +23,7 @@
     "@octokit/graphql": "^8.2.2",
     "@octokit/rest": "^21.1.1",
     "dotenv": "^16.5.0",
-    "lodash": "^4.17.21",
-    "papaparse": "^5.5.2"
+    "lodash": "^4.17.21"
   },
   "peerDependencies": {
     "vega": "^6.0.0",
