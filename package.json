@@ -17,7 +17,8 @@
     "./visualization/themes/*": "./browser/visualization/themes/*.js"
   },
   "scripts": {
-    "start": "bun lib/index.js"
+    "start": "bun lib/index.js",
+    "start:custom": "bun lib/index.js ./custom-parameters.json"
   },
   "dependencies": {
     "@octokit/graphql": "^8.2.2",
