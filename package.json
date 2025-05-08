@@ -6,10 +6,7 @@
   "main": "./lib/index.js",
   "browser": "./browser/index.js",
   "exports": {
-    ".": {
-      "node": "./lib/index.js",
-      "browser": "./browser/index.js"
-    },
+    ".": "./lib/index.js",
     "./browser": "./browser/index.js",
     "./visualization": "./browser/visualization/index.js",
     "./visualization/charts/*": "./browser/visualization/charts/*.js",
@@ -27,7 +24,7 @@
     "dotenv": "^16.5.0",
     "lodash": "^4.17.21"
   },
-  "peerDependencies": {
+  "optionalDependencies": {
     "vega": "^6.0.0",
     "vega-lite": "^6.1.0"
   },
