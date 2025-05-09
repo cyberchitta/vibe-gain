@@ -16,7 +16,7 @@
   "scripts": {
     "start": "bun lib/index.js",
     "start:custom": "bun lib/index.js ./custom-parameters.json",
-    "serve": "bunx http-server ./browser --cors -p 3001 --path /browser"
+    "serve": "bunx http-server . --cors -p 3001"
   },
   "dependencies": {
     "@octokit/graphql": "^8.2.2",
