@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strip Plot Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .chart-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 500px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Commit Strip Plot Test</h1>
+        <div id="strip-plot-container" class="chart-container">
+            <div class="loading">Loading strip plot...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { renderStripPlot } from './browser/visualization/renderers/commit-strip-plot.js';
+        import { prepareStripPlotData } from './browser/visualization/data/clustering.js';
+
+        async function loadActualData() {
+            try {
+                const response = await fetch('./output/restlessronin/raw/commits_Pre-AI.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
+                const arrayFormat = await response.json();
+                const { schema, data } = arrayFormat;
+                const commits = data.map(row => {
+                    const commit = {};
+                    row.forEach((value, index) => {
+                        commit[schema[index]] = value;
+                    });
+                    if (commit.timestamp && typeof commit.timestamp === 'string') {
+                        commit.timestamp = new Date(commit.timestamp);
+                    }
+                    return commit;
+                });
+                return commits;
+            } catch (error) {
+                console.error('Error loading commit data:', error);
+                throw error;
+            }
+        }
+
+        async function testStripPlot() {
+            try {
+                const container = document.getElementById('strip-plot-container');
+                container.innerHTML = '<div class="loading">Loading actual commit data...</div>';
+                const commits = await loadActualData();
+                console.log(`Loaded ${commits.length} commits`);
+                const stripPlotData = prepareStripPlotData(commits, 'Pre-AI');
+                console.log('Strip plot data:', stripPlotData);
+                await renderStripPlot(container, stripPlotData, {
+                    width: 1000,
+                    height: 400,
+                    showTooltips: false
+                });
+                console.log('Strip plot rendered successfully!');
+            } catch (error) {
+                console.error('Error rendering strip plot:', error);
+                document.getElementById('strip-plot-container').innerHTML =
+                    `<div class="error">Error: ${error.message}<br>
+             Make sure you've run the data collection first and have data in ./output/restlessronin/raw/</div>`;
+            }
+        }
+        testStripPlot();
+    </script>
+</body>
+
+</html>
