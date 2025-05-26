@@ -22,10 +22,15 @@ export function createStripPlotSpec(data, options = {}) {
   const colors = generateGroupColors(defaultOptions.groupCount);
   const shapes = generateShapeDefinitions();
 
+  // Use period range from data metadata
+  const timeDomain = [
+    { signal: `datetime(${data.metadata.periodRange.start.getFullYear()}, ${data.metadata.periodRange.start.getMonth()}, ${data.metadata.periodRange.start.getDate()})` },
+    { signal: `datetime(${data.metadata.periodRange.end.getFullYear()}, ${data.metadata.periodRange.end.getMonth()}, ${data.metadata.periodRange.end.getDate()})` }
+  ];
+
   return {
     $schema: "https://vega.github.io/schema/vega/v6.json",
-    description:
-      "Commit activity strip plot with clustering and repository encoding",
+    description: "Commit activity strip plot with clustering and repository encoding",
     width: defaultOptions.width,
     height: defaultOptions.height,
     padding: defaultOptions.padding,
@@ -51,10 +56,7 @@ export function createStripPlotSpec(data, options = {}) {
       {
         name: "xScale",
         type: "time",
-        domain: [
-          { signal: "datetime(2022, 5, 1)" }, // June 1, 2022 (month is 0-indexed)
-          { signal: "datetime(2022, 10, 30)" }, // November 30, 2022
-        ],
+        domain: timeDomain,
         range: [0, defaultOptions.width],
         nice: false,
       },
@@ -189,141 +191,6 @@ export function createStripPlotSpec(data, options = {}) {
       },
     ],
   };
-}
-
-/**
- * Create specification for side-by-side comparison
- * @param {Object} preAIData - Pre-AI period data
- * @param {Object} recentAIData - Recent-AI period data
- * @param {Object} options - Visualization options
- * @returns {Object} - Combined Vega specification for comparison
- */
-export function createComparisonSpec(preAIData, recentAIData, options = {}) {
-  const plotOptions = {
-    width: (options.width || 1200) / 2 - 40,
-    height: options.height || 400,
-    ...options,
-  };
-
-  // Create individual specs
-  const preAISpec = createStripPlotSpec(preAIData, plotOptions);
-  const recentAISpec = createStripPlotSpec(recentAIData, plotOptions);
-
-  // Update the date domains with proper Vega datetime signals
-  preAISpec.scales[0].domain = [
-    { signal: "datetime(2022, 5, 1)" }, // June 1, 2022
-    { signal: "datetime(2022, 10, 30)" }, // November 30, 2022
-  ];
-
-  recentAISpec.scales[0].domain = [
-    { signal: "datetime(2024, 10, 1)" }, // November 1, 2024
-    { signal: "datetime(2025, 3, 30)" }, // April 30, 2025
-  ];
-
-  return {
-    $schema: "https://vega.github.io/schema/vega/v6.json",
-    description: "Side-by-side comparison of commit patterns",
-    width: options.width || 1200,
-    height: options.height || 400,
-    padding: 20,
-    autosize: "none",
-
-    layout: {
-      padding: 20,
-      columns: 2,
-      bounds: "full",
-    },
-
-    data: [
-      // Pre-AI data
-      {
-        name: "preAICommits",
-        values: preAIData.commits || [],
-      },
-      {
-        name: "preAIRepositories",
-        values: preAIData.repositories || [],
-      },
-      // Recent-AI data
-      {
-        name: "recentAICommits",
-        values: recentAIData.commits || [],
-      },
-      {
-        name: "recentAIRepositories",
-        values: recentAIData.repositories || [],
-      },
-    ],
-
-    marks: [
-      // Pre-AI period plot
-      {
-        type: "group",
-        title: {
-          text: `Pre-AI Period (${
-            preAIData.metadata?.totalCommits || 0
-          } commits)`,
-          fontSize: 14,
-          fontWeight: "bold",
-          anchor: "start",
-        },
-        encode: {
-          enter: {
-            width: { value: plotOptions.width },
-            height: { value: plotOptions.height },
-          },
-        },
-        marks: adaptMarksForGroup(preAISpec.marks, "preAI"),
-        scales: preAISpec.scales,
-        axes: preAISpec.axes,
-      },
-
-      // Recent-AI period plot
-      {
-        type: "group",
-        title: {
-          text: `Recent-AI Period (${
-            recentAIData.metadata?.totalCommits || 0
-          } commits)`,
-          fontSize: 14,
-          fontWeight: "bold",
-          anchor: "start",
-        },
-        encode: {
-          enter: {
-            width: { value: plotOptions.width },
-            height: { value: plotOptions.height },
-          },
-        },
-        marks: adaptMarksForGroup(recentAISpec.marks, "recentAI"),
-        scales: recentAISpec.scales,
-        axes: recentAISpec.axes,
-      },
-    ],
-  };
-}
-
-/**
- * Adapt marks to use group-specific data sources
- * @param {Array} marks - Original marks array
- * @param {string} prefix - Data prefix for this group
- * @returns {Array} - Adapted marks array
- */
-function adaptMarksForGroup(marks, prefix) {
-  return marks.map((mark) => {
-    if (mark.from && mark.from.data) {
-      return {
-        ...mark,
-        from: {
-          ...mark.from,
-          data: `${prefix}${mark.from.data
-            .charAt(0)
-            .toUpperCase()}${mark.from.data.slice(1)}`,
-        },
-      };
-    }
-    return mark;
-  });
 }
 
 /**

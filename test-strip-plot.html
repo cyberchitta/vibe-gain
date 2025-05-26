@@ -46,9 +46,14 @@
         import { renderStripPlot } from './browser/visualization/renderers/commit-strip-plot.js';
         import { prepareStripPlotData } from './browser/visualization/data/clustering.js';
 
-        async function loadActualData() {
+        async function loadParameters() {
+            const response = await fetch('./parameters.json');
+            const params = await response.json();
+            return params;
+        }
+        async function loadActualData(periodName) {
             try {
-                const response = await fetch('./output/restlessronin/raw/commits_Pre-AI.json');
+                const response = await fetch(`./output/restlessronin/raw/commits_${periodName.replace(/\s+/g, '_')}.json`);
                 if (!response.ok) {
                     throw new Error(`Failed to load data: ${response.status}`);
                 }
@@ -73,11 +78,17 @@
 
         async function testStripPlot() {
             try {
+                const periodName = 'Pre-AI';
                 const container = document.getElementById('strip-plot-container');
-                container.innerHTML = '<div class="loading">Loading actual commit data...</div>';
-                const commits = await loadActualData();
+                container.innerHTML = '<div class="loading">Loading parameters and commit data...</div>';
+                const params = await loadParameters();
+                const period = params.PERIODS.find(p => p.name === periodName);
+                const commits = await loadActualData(periodName);
                 console.log(`Loaded ${commits.length} commits`);
-                const stripPlotData = prepareStripPlotData(commits, 'Pre-AI');
+                const stripPlotData = prepareStripPlotData(commits, periodName, {
+                    periodStart: period.start,
+                    periodEnd: period.end
+                }); 
                 console.log('Strip plot data:', stripPlotData);
                 await renderStripPlot(container, stripPlotData, {
                     width: 1000,

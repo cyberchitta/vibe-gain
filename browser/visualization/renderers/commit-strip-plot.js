@@ -1,7 +1,4 @@
-import {
-  createStripPlotSpec,
-  createComparisonSpec,
-} from "../specs/commit-strip-plot-vega.js";
+import { createStripPlotSpec } from "../specs/commit-strip-plot-vega.js";
 import { applyDaisyUITheme } from "../themes/daisyui.js";
 
 /**

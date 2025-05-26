@@ -129,6 +129,8 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
 export function prepareStripPlotData(commits, period, options = {}) {
   const thresholdMinutes = options.clusterThreshold || 30;
   const groupCount = options.groupCount || 4;
+  const periodStart = options.periodStart; // new
+  const periodEnd = options.periodEnd;     // new
 
   if (!commits || commits.length === 0) {
     return {
@@ -141,6 +143,10 @@ export function prepareStripPlotData(commits, period, options = {}) {
         totalCommits: 0,
         totalRepositories: 0,
         totalClusters: 0,
+        periodRange: periodStart && periodEnd ? {
+          start: new Date(periodStart),
+          end: new Date(periodEnd)
+        } : null,
       },
     };
   }
@@ -193,6 +199,10 @@ export function prepareStripPlotData(commits, period, options = {}) {
       totalCommits: commits.length,
       totalRepositories: uniqueRepos.length,
       totalClusters: clusters.length,
+      periodRange: periodStart && periodEnd ? {
+        start: new Date(periodStart),
+        end: new Date(periodEnd)
+      } : null,
       dateRange: {
         start: new Date(Math.min(...commits.map((c) => new Date(c.timestamp)))),
         end: new Date(Math.max(...commits.map((c) => new Date(c.timestamp)))),

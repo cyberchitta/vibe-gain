@@ -4,8 +4,6 @@ export { createHistogramSpec } from "./visualization/renderers/histogram.js";
 export { applyDaisyUITheme } from "./visualization/themes/daisyui.js";
 
 export {
-  extractStripPlotValues,
-  prepareVisualizationData,
   calculateRepositoryStats,
   normalizeCommitData,
   createTimeRange,
@@ -15,7 +13,6 @@ export {
 
 export {
   createStripPlotSpec,
-  createComparisonSpec,
   getShapeDefinitions,
   getColorScale,
 } from "./visualization/specs/commit-strip-plot-vega.js";
