@@ -12,12 +12,10 @@
             font-family: Arial, sans-serif;
             margin: 20px;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
-
         .chart-container {
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -25,27 +23,49 @@
             margin: 20px 0;
             min-height: 500px;
         }
-
         .loading {
             text-align: center;
             padding: 40px;
             color: #666;
         }
+        .orientation-info {
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Commit Strip Plot Test</h1>
+        <div id="orientation-info" class="orientation-info"></div>
         <div id="strip-plot-container" class="chart-container">
             <div class="loading">Loading strip plot...</div>
         </div>
     </div>
-
     <script type="module">
         import { renderStripPlot } from './browser/visualization/renderers/commit-strip-plot.js';
         import { prepareStripPlotData } from './browser/visualization/data/clustering.js';
-
+        function shouldUsePortraitOrientation() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isNarrowScreen = width < 768;
+            const isPortraitAspect = height > width;
+            return isNarrowScreen || isPortraitAspect;
+        }
+        function updateOrientationInfo(usePortrait) {
+            const info = document.getElementById('orientation-info');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            info.innerHTML = `
+                Viewport: ${width}×${height} | 
+                Orientation: ${usePortrait ? 'Portrait' : 'Landscape'} | 
+                Mode: ${width < 768 ? 'Mobile' : 'Desktop'}
+            `;
+        }
         async function loadParameters() {
             const response = await fetch('./parameters.json');
             const params = await response.json();
@@ -75,7 +95,6 @@
                 throw error;
             }
         }
-
         async function testStripPlot() {
             try {
                 const periodName = 'Pre-AI';
@@ -88,11 +107,25 @@
                 const stripPlotData = prepareStripPlotData(commits, periodName, {
                     periodStart: period.start,
                     periodEnd: period.end
-                }); 
+                });
                 console.log('Strip plot data:', stripPlotData);
+                const usePortrait = shouldUsePortraitOrientation();
+                updateOrientationInfo(usePortrait);
+                console.log(`Using ${usePortrait ? 'portrait' : 'landscape'} orientation`);
+                const containerWidth = container.clientWidth - 40; // Account for padding
+                const dimensions = usePortrait
+                    ? {
+                        width: Math.min(containerWidth, 400),
+                        height: 600
+                    }
+                    : {
+                        width: Math.min(containerWidth, 1000),
+                        height: 400
+                    };
+                console.log(`Rendering with dimensions: ${dimensions.width}×${dimensions.height}`);
                 await renderStripPlot(container, stripPlotData, {
-                    width: 1000,
-                    height: 400,
+                    ...dimensions,
+                    orientation: usePortrait ? 'portrait' : 'landscape',
                     showTooltips: false
                 });
                 console.log('Strip plot rendered successfully!');
@@ -100,11 +133,24 @@
                 console.error('Error rendering strip plot:', error);
                 document.getElementById('strip-plot-container').innerHTML =
                     `<div class="error">Error: ${error.message}<br>
-             Make sure you've run the data collection first and have data in ./output/restlessronin/raw/</div>`;
+                     Make sure you've run the data collection first and have data in ./output/restlessronin/raw/</div>`;
             }
         }
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                console.log('Window resized, re-rendering...');
+                testStripPlot();
+            }, 250);
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                console.log('Orientation changed, re-rendering...');
+                testStripPlot();
+            }, 100);
+        });
         testStripPlot();
     </script>
 </body>
-
 </html>
