@@ -1,45 +1,80 @@
-export function applyDaisyUITheme(spec, options = {}) {
-  const isDark = options.isDark;
+/**
+ * Detect dark mode based on DOM state
+ * @returns {boolean} - Whether dark mode is active
+ */
+export function detectDarkMode() {
+  return (
+    document.documentElement.classList.contains("dark") ||
+    document.documentElement.getAttribute("data-theme") === "dark" ||
+    (window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
+  );
+}
+
+/**
+ * Get theme colors based on current theme state
+ * @param {boolean} isDark - Whether to use dark theme colors
+ * @returns {Object} - Theme color object
+ */
+export function getThemeColors(isDark = null) {
+  if (isDark === null) {
+    isDark = detectDarkMode();
+  }
   const computedStyle = getComputedStyle(document.documentElement);
-  const baseTextColor = isDark 
-    ? computedStyle.getPropertyValue('--tw-prose-body').trim() || "#E5E7EB"
-    : computedStyle.getPropertyValue('--tw-prose-body').trim() || "#333333";
-  const primaryColor = computedStyle.getPropertyValue('--primary').trim() || "#3A86FF";
-  const fontSans = computedStyle.getPropertyValue('--font-sans').trim() || "Open Sans, sans-serif";
-  const resolvedFont = fontSans.replace(/var\([^)]+\),?\s*/g, '').trim() || "Open Sans, sans-serif";
-  const gridColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
-  const axisColor = isDark ? "rgba(229,231,235,0.7)" : "rgba(51,51,51,0.7)";
+  return {
+    isDark,
+    baseTextColor: isDark
+      ? computedStyle.getPropertyValue("--tw-prose-body").trim() || "#E5E7EB"
+      : computedStyle.getPropertyValue("--tw-prose-body").trim() || "#333333",
+    primaryColor:
+      computedStyle.getPropertyValue("--primary").trim() || "#3A86FF",
+    gridColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+    axisColor: isDark ? "rgba(229,231,235,0.7)" : "rgba(51,51,51,0.7)",
+    fontSans: (() => {
+      const fontSans =
+        computedStyle.getPropertyValue("--font-sans").trim() ||
+        "Open Sans, sans-serif";
+      return (
+        fontSans.replace(/var\([^)]+\),?\s*/g, "").trim() ||
+        "Open Sans, sans-serif"
+      );
+    })(),
+  };
+}
+
+export function applyDaisyUITheme(spec, options = {}) {
+  const colors = getThemeColors(options.isDark);
   const themedSpec = {
     ...spec,
     config: {
       ...(spec.config || {}),
       view: { stroke: null },
       axis: {
-        gridColor: gridColor,
+        gridColor: colors.gridColor,
         gridOpacity: 1,
-        domainColor: axisColor,
-        tickColor: axisColor,
-        labelColor: baseTextColor,
-        titleColor: baseTextColor,
-        labelFont: resolvedFont,
-        titleFont: resolvedFont,
+        domainColor: colors.axisColor,
+        tickColor: colors.axisColor,
+        labelColor: colors.baseTextColor,
+        titleColor: colors.baseTextColor,
+        labelFont: colors.fontSans,
+        titleFont: colors.fontSans,
         labelFontSize: 10,
         titleFontSize: 12,
       },
       style: {
         "guide-label": {
-          fill: baseTextColor,
-          font: resolvedFont,
+          fill: colors.baseTextColor,
+          font: colors.fontSans,
           fontSize: 10,
         },
         "guide-title": {
-          fill: baseTextColor,
-          font: resolvedFont,
+          fill: colors.baseTextColor,
+          font: colors.fontSans,
           fontSize: 12,
         },
       },
       mark: {
-        color: primaryColor,
+        color: colors.primaryColor,
       },
     },
   };
@@ -51,43 +86,42 @@ export function applyDaisyUITheme(spec, options = {}) {
           ...spec.encoding.x,
           axis: {
             ...spec.encoding.x.axis,
-            labelColor: baseTextColor,
-            titleColor: baseTextColor,
-            gridColor: gridColor,
-            domainColor: axisColor,
-            tickColor: axisColor,
-            labelFont: resolvedFont,
-            titleFont: resolvedFont,
-          }
-        }
+            labelColor: colors.baseTextColor,
+            titleColor: colors.baseTextColor,
+            gridColor: colors.gridColor,
+            domainColor: colors.axisColor,
+            tickColor: colors.axisColor,
+            labelFont: colors.fontSans,
+            titleFont: colors.fontSans,
+          },
+        },
       }),
       ...(spec.encoding.y && {
         y: {
           ...spec.encoding.y,
           axis: {
             ...spec.encoding.y.axis,
-            labelColor: baseTextColor,
-            titleColor: baseTextColor,
-            gridColor: gridColor,
-            domainColor: axisColor,
-            tickColor: axisColor,
-            labelFont: resolvedFont,
-            titleFont: resolvedFont,
-          }
-        }
+            labelColor: colors.baseTextColor,
+            titleColor: colors.baseTextColor,
+            gridColor: colors.gridColor,
+            domainColor: colors.axisColor,
+            tickColor: colors.axisColor,
+            labelFont: colors.fontSans,
+            titleFont: colors.fontSans,
+          },
+        },
       }),
-      ...(spec.encoding.color && spec.encoding.color.scale && {
-        color: {
-          ...spec.encoding.color,
-          scale: {
-            ...spec.encoding.color.scale,
-            range: spec.encoding.color.scale.range?.map(color => 
-              color === "var(--primary)" ? primaryColor : color
-            ) || [primaryColor]
-          }
-        }
-      })
+      ...(spec.encoding.color &&
+        spec.encoding.color.scale && {
+          color: {
+            ...spec.encoding.color,
+            scale: {
+              ...spec.encoding.color.scale,
+              range: spec.encoding.color.scale.range || [colors.primaryColor],
+            },
+          },
+        }),
     };
   }
- return themedSpec;
+  return themedSpec;
 }
