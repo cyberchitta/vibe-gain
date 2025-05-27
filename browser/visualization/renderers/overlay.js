@@ -27,7 +27,7 @@ export function createOverlaySpec(chartData, options = {}) {
       x: {
         field: "binStart",
         type: "quantitative",
-        title: options.xLabel || "Values",
+        title: options.xLabel,
         bin: false,
         scale: {
           domain: options.range,
@@ -43,7 +43,7 @@ export function createOverlaySpec(chartData, options = {}) {
       y: {
         field: yField,
         type: "quantitative",
-        title: options.yLabel || "Count",
+        title: options.yLabel,
         axis: {
           grid: true,
           labels: true,
