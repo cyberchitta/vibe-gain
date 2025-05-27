@@ -84,8 +84,8 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
   const groupAssignments = {};
   const shapeDefinitions = ["circle", "square", "triangle", "diamond", "cross"];
   uniqueRepos.forEach((repo, index) => {
-    const groupId = index % groupCount; // Alternates colors by commit rank
-    const shapeIndex = Math.floor(index / groupCount) % shapeDefinitions.length;
+    const groupId = index % groupCount;
+    const shapeIndex = index % shapeDefinitions.length;
     groupAssignments[repo] = {
       group: `group${groupId}`,
       groupIndex: groupId,
