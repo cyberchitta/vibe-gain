@@ -23,6 +23,48 @@ export function createOverlaySpec(chartData, options = {}) {
     width: options.width || "container",
     height: options.height || 180,
     data: { values: combinedData },
+    encoding: {
+      x: {
+        field: "binStart",
+        type: "quantitative",
+        title: options.xLabel || "Values",
+        bin: false,
+        scale: {
+          domain: options.range,
+          nice: false,
+        },
+        axis: {
+          grid: false,
+          labels: true,
+          labelOverlap: true,
+        },
+      },
+      x2: { field: "binEnd" },
+      y: {
+        field: yField,
+        type: "quantitative",
+        title: options.yLabel || "Count",
+        axis: {
+          grid: true,
+          labels: true,
+          format: yField === "percentageCount" ? ".0f" : "d",
+        },
+        scale: {
+          domain:
+            options.viewMode === "percentage" ? [0, 100] : options.yDomain,
+          nice: false,
+        },
+      },
+      color: {
+        field: "period",
+        type: "nominal",
+        scale: {
+          domain: chartData.map((chart) => chart.period),
+          range: chartData.map((chart) => chart.color),
+        },
+        legend: null,
+      },
+    },
     layer: chartData.map((chart) => ({
       mark: {
         type: "bar",
@@ -30,37 +72,6 @@ export function createOverlaySpec(chartData, options = {}) {
         cornerRadiusEnd: 2,
       },
       encoding: {
-        x: {
-          field: "binStart",
-          type: "quantitative",
-          title: null,
-          bin: false,
-          scale: {
-            domain: options.range,
-            nice: false,
-          },
-          axis: {
-            grid: false,
-            labels: true,
-            labelOverlap: true,
-          },
-        },
-        x2: { field: "binEnd" },
-        y: {
-          field: yField,
-          type: "quantitative",
-          title: null,
-          axis: {
-            grid: true,
-            labels: true,
-            format: yField === "percentageCount" ? ".0f" : "d",
-          },
-          scale: {
-            domain:
-              options.viewMode === "percentage" ? [0, 100] : options.yDomain,
-            nice: false,
-          },
-        },
         color: {
           datum: chart.period,
         },
@@ -71,16 +82,5 @@ export function createOverlaySpec(chartData, options = {}) {
         },
       ],
     })),
-    encoding: {
-      color: {
-        field: "period",
-        type: "nominal",
-        scale: {
-          domain: chartData.map((chart) => chart.period),
-          range: chartData.map((chart) => chart.color || "var(--primary)"),
-        },
-        legend: null,
-      },
-    },
   };
 }
