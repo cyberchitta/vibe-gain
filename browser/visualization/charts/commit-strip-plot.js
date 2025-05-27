@@ -1,8 +1,3 @@
-import {
-  prepareStripPlotData,
-  calculateClusterStats,
-} from "../data/clustering.js";
-
 /**
  * Format timestamp to extract time of day component
  * @param {string|Date} timestamp - Full timestamp
@@ -27,7 +22,6 @@ export function calculateRepositoryStats(commits) {
       averageCommitsPerRepo: 0,
     };
   }
-
   const repoCommitCounts = {};
   commits.forEach((commit) => {
     if (!repoCommitCounts[commit.repo]) {
@@ -35,11 +29,9 @@ export function calculateRepositoryStats(commits) {
     }
     repoCommitCounts[commit.repo]++;
   });
-
   const sortedRepos = Object.entries(repoCommitCounts).sort(
     ([, a], [, b]) => b - a
   );
-
   return {
     totalRepositories: Object.keys(repoCommitCounts).length,
     repositoryDistribution: repoCommitCounts,
@@ -65,10 +57,8 @@ export function createTimeRange(commits) {
       ],
     };
   }
-
   const timestamps = commits.map((c) => new Date(c.timestamp));
   const dates = commits.map((c) => new Date(c.date));
-
   return {
     dateRange: [new Date(Math.min(...dates)), new Date(Math.max(...dates))],
     timeRange: [
@@ -87,10 +77,8 @@ export function normalizeCommitData(commits) {
   if (!commits || commits.length === 0) {
     return [];
   }
-
   return commits.map((commit) => ({
     ...commit,
-    // Ensure consistent data types
     timestamp: new Date(commit.timestamp),
     date:
       typeof commit.date === "string"
@@ -98,10 +86,8 @@ export function normalizeCommitData(commits) {
         : commit.date.toISOString().split("T")[0],
     additions: Number(commit.additions) || 0,
     deletions: Number(commit.deletions) || 0,
-    // Calculate commit size
     commitSize:
       (Number(commit.additions) || 0) + (Number(commit.deletions) || 0),
-    // Ensure boolean types
     isDocOnly: Boolean(commit.isDocOnly),
     private: Boolean(commit.private),
     isFork: Boolean(commit.isFork),
@@ -124,7 +110,6 @@ export function generateGroupColors(groupCount = 4) {
     "#e377c2", // pink
     "#7f7f7f", // gray
   ];
-
   return baseColors.slice(0, groupCount);
 }
 
@@ -153,13 +138,53 @@ export function filterCommitsByTimeRange(commits, startTime, endTime) {
   if (!commits || commits.length === 0) {
     return [];
   }
-
   return commits.filter((commit) => {
     const commitTime = new Date(commit.timestamp);
     const timeOfDay = commitTime.getHours() * 60 + commitTime.getMinutes();
     const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
     const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-
     return timeOfDay >= startMinutes && timeOfDay <= endMinutes;
   });
+}
+
+/**
+ * Get color for a repository group
+ * @param {string} groupId - Group identifier (e.g., 'group0', 'group1')
+ * @returns {string} - Color hex code
+ */
+function getColorForGroup(groupId) {
+  const colors = generateGroupColors(4); // Use the same function from commit-strip-plot.js
+  const groupIndex = parseInt(groupId.replace("group", "")) || 0;
+  return colors[groupIndex] || colors[0];
+}
+
+/**
+ * Prepare legend data for repository visualization
+ * @param {Object} stripPlotData - Processed strip plot data
+ * @param {Object} options - Legend options
+ * @returns {Array} - Array of legend items sorted by commit count
+ */
+export function prepareLegendData(stripPlotData, options = {}) {
+  const {
+    sortBy = "commitCount",
+    sortOrder = "desc",
+    includePrivate = true,
+    includeForks = true,
+  } = options;
+  return stripPlotData.repositories
+    .filter((repo) => {
+      if (!includePrivate && repo.isPrivate) return false;
+      if (!includeForks && repo.isFork) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const order = sortOrder === "desc" ? -1 : 1;
+      return order * (b[sortBy] - a[sortBy]);
+    })
+    .map((repo) => ({
+      ...repo,
+      color: getColorForGroup(repo.group),
+      displayName: repo.repo.split("/").pop(),
+      fullName: repo.repo,
+    }));
 }

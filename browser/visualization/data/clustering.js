@@ -8,8 +8,6 @@ export function identifyCommitClusters(commits, thresholdMinutes = 30) {
   if (!commits || commits.length === 0) {
     return [];
   }
-
-  // Group commits by date first - replace _.groupBy
   const commitsByDate = commits.reduce((groups, commit) => {
     const date = commit.date;
     if (!groups[date]) {
@@ -18,16 +16,12 @@ export function identifyCommitClusters(commits, thresholdMinutes = 30) {
     groups[date].push(commit);
     return groups;
   }, {});
-
   const allClusters = [];
   let globalClusterId = 0;
-
   Object.entries(commitsByDate).forEach(([date, dayCommits]) => {
-    // Sort commits by timestamp within each day
     const sortedCommits = [...dayCommits].sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
-
     let currentCluster = {
       id: `cluster-${globalClusterId++}`,
       date: date,
@@ -36,24 +30,19 @@ export function identifyCommitClusters(commits, thresholdMinutes = 30) {
       endTime: new Date(sortedCommits[0].timestamp),
       repositories: new Set([sortedCommits[0].repo]),
     };
-
     for (let i = 1; i < sortedCommits.length; i++) {
       const prevTimestamp = new Date(sortedCommits[i - 1].timestamp);
       const currTimestamp = new Date(sortedCommits[i].timestamp);
       const diffMinutes = (currTimestamp - prevTimestamp) / (1000 * 60);
-
       if (diffMinutes <= thresholdMinutes) {
-        // Add to current cluster
         currentCluster.commits.push(sortedCommits[i]);
         currentCluster.endTime = currTimestamp;
         currentCluster.repositories.add(sortedCommits[i].repo);
       } else {
-        // Finalize current cluster and start new one
         currentCluster.repositories = Array.from(currentCluster.repositories);
         currentCluster.duration =
           (currentCluster.endTime - currentCluster.startTime) / (1000 * 60);
         allClusters.push(currentCluster);
-
         currentCluster = {
           id: `cluster-${globalClusterId++}`,
           date: date,
@@ -64,8 +53,6 @@ export function identifyCommitClusters(commits, thresholdMinutes = 30) {
         };
       }
     }
-
-    // Add the final cluster
     if (currentCluster.commits.length > 0) {
       currentCluster.repositories = Array.from(currentCluster.repositories);
       currentCluster.duration =
@@ -73,7 +60,6 @@ export function identifyCommitClusters(commits, thresholdMinutes = 30) {
       allClusters.push(currentCluster);
     }
   });
-
   return allClusters;
 }
 
@@ -88,25 +74,18 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
   if (!repos || repos.length === 0) {
     return {};
   }
-
-  // Calculate commit counts per repository
   const repoCommitCounts = {};
   commits.forEach((commit) => {
     repoCommitCounts[commit.repo] = (repoCommitCounts[commit.repo] || 0) + 1;
   });
-
-  // Sort repositories by commit count (descending) - most active first
   const uniqueRepos = [...new Set(repos)].sort(
     (a, b) => (repoCommitCounts[b] || 0) - (repoCommitCounts[a] || 0)
   );
-
   const groupAssignments = {};
   const shapeDefinitions = ["circle", "square", "triangle", "diamond", "cross"];
-
   uniqueRepos.forEach((repo, index) => {
     const groupId = index % groupCount; // Alternates colors by commit rank
     const shapeIndex = Math.floor(index / groupCount) % shapeDefinitions.length;
-
     groupAssignments[repo] = {
       group: `group${groupId}`,
       groupIndex: groupId,
@@ -115,7 +94,6 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
       overallIndex: index,
     };
   });
-
   return groupAssignments;
 }
 
@@ -130,8 +108,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
   const thresholdMinutes = options.clusterThreshold || 30;
   const groupCount = options.groupCount || 4;
   const periodStart = options.periodStart; // new
-  const periodEnd = options.periodEnd;     // new
-
+  const periodEnd = options.periodEnd; // new
   if (!commits || commits.length === 0) {
     return {
       commits: [],
@@ -143,53 +120,44 @@ export function prepareStripPlotData(commits, period, options = {}) {
         totalCommits: 0,
         totalRepositories: 0,
         totalClusters: 0,
-        periodRange: periodStart && periodEnd ? {
-          start: new Date(periodStart),
-          end: new Date(periodEnd)
-        } : null,
+        periodRange:
+          periodStart && periodEnd
+            ? {
+                start: new Date(periodStart),
+                end: new Date(periodEnd),
+              }
+            : null,
       },
     };
   }
-
-  // Get unique repositories and assign groups - replace _.uniq
   const uniqueRepos = [...new Set(commits.map((c) => c.repo))];
   const repoGroupings = assignRepositoryGroups(
     uniqueRepos,
     commits,
     groupCount
   );
-
-  // Identify clusters
   const clusters = identifyCommitClusters(commits, thresholdMinutes);
-
-  // Enhance commits with cluster and group information
   const enhancedCommits = commits.map((commit) => {
-    // Find which cluster this commit belongs to
     const cluster = clusters.find((c) =>
       c.commits.some((cc) => cc.sha === commit.sha)
     );
-
     return {
       ...commit,
       period: period,
       clusterId: cluster ? cluster.id : `single-${commit.sha}`,
       repoGroup: repoGroupings[commit.repo]?.group || "group0",
       repoShape: repoGroupings[commit.repo]?.shape || "circle",
-      // Format time for visualization
       dayTimestamp: new Date(commit.date + "T00:00:00Z"),
       timeOfDay: extractTimeOfDay(commit.timestamp),
       commitSize: (commit.additions || 0) + (commit.deletions || 0),
     };
   });
-
-  // Prepare repository metadata
   const repositoryMetadata = uniqueRepos.map((repo) => ({
     repo: repo,
     ...repoGroupings[repo],
     commitCount: commits.filter((c) => c.repo === repo).length,
     period: period,
   }));
-
   return {
     commits: enhancedCommits,
     repositories: repositoryMetadata,
@@ -199,10 +167,13 @@ export function prepareStripPlotData(commits, period, options = {}) {
       totalCommits: commits.length,
       totalRepositories: uniqueRepos.length,
       totalClusters: clusters.length,
-      periodRange: periodStart && periodEnd ? {
-        start: new Date(periodStart),
-        end: new Date(periodEnd)
-      } : null,
+      periodRange:
+        periodStart && periodEnd
+          ? {
+              start: new Date(periodStart),
+              end: new Date(periodEnd),
+            }
+          : null,
       dateRange: {
         start: new Date(Math.min(...commits.map((c) => new Date(c.timestamp)))),
         end: new Date(Math.max(...commits.map((c) => new Date(c.timestamp)))),
@@ -221,9 +192,6 @@ function extractTimeOfDay(timestamp) {
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const seconds = date.getSeconds();
-
-  // Return normalized date for visualization (same base date, different time)
-  // Make sure we're using a consistent base date
   return new Date(2000, 0, 1, hours, minutes, seconds);
 }
 
@@ -242,7 +210,6 @@ export function calculateClusterStats(clusters) {
       multiRepoClusters: 0,
     };
   }
-
   const clusterSizes = clusters.map((c) => c.commits.length);
   const clusterDurations = clusters.map((c) => c.duration || 0);
   const singleCommitClusters = clusters.filter(
@@ -251,7 +218,6 @@ export function calculateClusterStats(clusters) {
   const multiRepoClusters = clusters.filter(
     (c) => c.repositories.length > 1
   ).length;
-
   return {
     totalClusters: clusters.length,
     averageClusterSize:
@@ -263,36 +229,4 @@ export function calculateClusterStats(clusters) {
     multiRepoClusters: multiRepoClusters,
     contextSwitchingRate: multiRepoClusters / clusters.length,
   };
-}
-
-/**
- * Prepare legend data for repository visualization
- * @param {Object} stripPlotData - Processed strip plot data
- * @param {Object} options - Legend options
- * @returns {Array} - Array of legend items sorted by commit count
- */
-export function prepareLegendData(stripPlotData, options = {}) {
-  const {
-    sortBy = "commitCount",
-    sortOrder = "desc",
-    includePrivate = true,
-    includeForks = true,
-  } = options;
-
-  return stripPlotData.repositories
-    .filter((repo) => {
-      if (!includePrivate && repo.isPrivate) return false;
-      if (!includeForks && repo.isFork) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      const order = sortOrder === "desc" ? -1 : 1;
-      return order * (b[sortBy] - a[sortBy]);
-    })
-    .map((repo) => ({
-      ...repo,
-      color: getColorForGroup(repo.group),
-      displayName: repo.repo.split("/").pop(),
-      fullName: repo.repo,
-    }));
 }

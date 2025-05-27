@@ -9,6 +9,7 @@ export {
   createTimeRange,
   generateGroupColors,
   generateShapeDefinitions,
+  prepareLegendData,
 } from "./visualization/charts/commit-strip-plot.js";
 
 export {
@@ -19,7 +20,6 @@ export {
 
 export {
   renderStripPlot,
-  applyTheme,
   handleResize,
   addInteractivity,
   cleanup,
@@ -31,5 +31,4 @@ export {
   assignRepositoryGroups,
   prepareStripPlotData,
   calculateClusterStats,
-  prepareLegendData,
 } from "./visualization/data/clustering.js";
