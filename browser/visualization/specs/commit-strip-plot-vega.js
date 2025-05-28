@@ -127,12 +127,14 @@ export function createStripPlotSpec(data, options = {}) {
       from: { data: "docOnlyCommits" },
       encode: {
         enter: {
-          x: xField,
-          y: yField,
           fill: { value: "black" },
           size: { value: 10 },
           shape: { value: "circle" },
           strokeWidth: { value: 0 },
+        },
+        update: {
+          x: xField,
+          y: yField,
         },
       },
     });
@@ -214,7 +216,6 @@ export function createStripPlotSpec(data, options = {}) {
       {
         name: "chartWidth",
         value: defaultOptions.width,
-        bind: { input: "range", min: 100, max: 2000 },
       },
       {
         name: "effectiveWidth",
