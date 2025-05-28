@@ -51,7 +51,7 @@ export function createStripPlotSpec(data, options = {}) {
       name: "xScale",
       type: xConfig.type,
       domain: xConfig.domain,
-      range: [0, defaultOptions.width],
+      range: [0, { signal: "effectiveWidth" }],
       nice: false,
       zero: xConfig.type === "linear" ? false : undefined,
     },
@@ -102,8 +102,6 @@ export function createStripPlotSpec(data, options = {}) {
       from: { data: "commits" },
       encode: {
         enter: {
-          x: xField,
-          y: yField,
           fill: { scale: "colorScale", field: "repoGroup" },
           stroke: { value: "#333333" },
           strokeWidth: { value: 0.5 },
@@ -111,6 +109,8 @@ export function createStripPlotSpec(data, options = {}) {
           opacity: { scale: "opacityScale", field: "commitSize" },
         },
         update: {
+          x: xField,
+          y: yField,
           shape: { scale: "shapeScale", field: "repoShape" },
         },
         hover: {
@@ -211,6 +211,15 @@ export function createStripPlotSpec(data, options = {}) {
     marks,
     axes,
     signals: [
+      {
+        name: "chartWidth",
+        value: defaultOptions.width,
+        bind: { input: "range", min: 100, max: 2000 },
+      },
+      {
+        name: "effectiveWidth",
+        update: "chartWidth - " + defaultOptions.padding?.left,
+      },
       {
         name: "tooltip",
         value: {},
