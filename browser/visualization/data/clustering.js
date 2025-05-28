@@ -107,8 +107,8 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
 export function prepareStripPlotData(commits, period, options = {}) {
   const thresholdMinutes = options.clusterThreshold || 30;
   const groupCount = options.groupCount || 4;
-  const periodStart = options.periodStart; // new
-  const periodEnd = options.periodEnd; // new
+  const periodStart = options.periodStart;
+  const periodEnd = options.periodEnd;
   if (!commits || commits.length === 0) {
     return {
       commits: [],
@@ -120,24 +120,31 @@ export function prepareStripPlotData(commits, period, options = {}) {
         totalCommits: 0,
         totalRepositories: 0,
         totalClusters: 0,
-        periodRange:
-          periodStart && periodEnd
-            ? {
-                start: new Date(periodStart),
-                end: new Date(periodEnd),
-              }
-            : null,
+        periodRange: periodStart && periodEnd ? {
+          start: new Date(periodStart),
+          end: new Date(periodEnd)
+        } : null,
       },
     };
   }
-  const uniqueRepos = [...new Set(commits.map((c) => c.repo))];
+  let filteredCommits = commits;
+  if (periodStart && periodEnd) {
+    const periodStartDate = new Date(periodStart + "T00:00:00Z");
+    const periodEndDate = new Date(periodEnd + "T23:59:59Z");
+    filteredCommits = commits.filter(commit => {
+      const commitDate = new Date(commit.timestamp);
+      return commitDate >= periodStartDate && commitDate <= periodEndDate;
+    });
+    console.log(`Filtered commits: ${commits.length} -> ${filteredCommits.length} (period: ${periodStart} to ${periodEnd})`);
+  }
+  const uniqueRepos = [...new Set(filteredCommits.map((c) => c.repo))];
   const repoGroupings = assignRepositoryGroups(
     uniqueRepos,
-    commits,
+    filteredCommits,
     groupCount
   );
-  const clusters = identifyCommitClusters(commits, thresholdMinutes);
-  const enhancedCommits = commits.map((commit) => {
+  const clusters = identifyCommitClusters(filteredCommits, thresholdMinutes);
+  const enhancedCommits = filteredCommits.map((commit) => {
     const cluster = clusters.find((c) =>
       c.commits.some((cc) => cc.sha === commit.sha)
     );
