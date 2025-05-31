@@ -1,4 +1,4 @@
-export { createBaseVegaSpec } from "./visualization/renderers/vega-base.js";
+export { createBaseVegaSpec } from "./visualization/specs/vega-base.js";
 export { applyDaisyUITheme } from "./visualization/themes/daisyui.js";
 
 export {

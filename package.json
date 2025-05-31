@@ -7,13 +7,7 @@
   "browser": "./browser/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./browser": "./browser/index.js",
-    "./visualization": "./browser/visualization/index.js",
-    "./visualization/charts/*": "./browser/visualization/charts/*.js",
-    "./visualization/renderers/*": "./browser/visualization/renderers/*.js",
-    "./visualization/specs/*": "./browser/visualization/specs/*.js",
-    "./visualization/themes/*": "./browser/visualization/themes/*.js",
-    "./visualization/data/*": "./browser/visualization/data/*.js"
+    "./browser": "./browser/index.js"
   },
   "scripts": {
     "start": "bun lib/index.js",
