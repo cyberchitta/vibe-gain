@@ -1,6 +1,4 @@
-export { prepareHistogramData } from "./visualization/charts/histogram.js";
 export { createBaseVegaSpec } from "./visualization/renderers/vega-base.js";
-export { createHistogramSpec } from "./visualization/renderers/histogram.js";
 export { applyDaisyUITheme } from "./visualization/themes/daisyui.js";
 
 export {
@@ -25,6 +23,13 @@ export {
   cleanup,
   refreshVisualization,
 } from "./visualization/renderers/commit-strip-plot.js";
+
+export {
+  prepareNaturalBucketData,
+  createNaturalBins,
+  hasNaturalBuckets,
+  getNaturalBuckets,
+} from "./visualization/data/bucketing.js";
 
 export {
   identifyCommitClusters,

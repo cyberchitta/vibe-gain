@@ -1,8 +1,46 @@
 import { createBaseVegaSpec } from "./vega-base.js";
+import {
+  prepareNaturalBucketData,
+  hasNaturalBuckets,
+} from "../data/bucketing.js";
 
 /**
- * Create a Vega-Lite specification for overlaid histograms
- * @param {Array} chartData - Array of prepared histogram data with period information
+ * Prepare overlay data using natural buckets when available
+ * @param {Array} periodsData - Array of {period, metricData, color} objects
+ * @param {string} metricId - Metric identifier
+ * @param {Object} options - Options for bucketing and display
+ * @returns {Array} - Array of prepared chart data with natural buckets
+ */
+export function prepareOverlayData(periodsData, metricId, options = {}) {
+  const useNaturalBuckets =
+    options.useNaturalBuckets !== false && hasNaturalBuckets(metricId);
+
+  if (!useNaturalBuckets) {
+    // Fallback to existing logic for metrics without natural buckets
+    throw new Error(
+      `Natural buckets not available for metric: ${metricId}. Please define natural buckets first.`
+    );
+  }
+
+  return periodsData.map((periodData) => {
+    const bucketData = prepareNaturalBucketData(
+      periodData.metricData,
+      metricId,
+      options
+    );
+
+    return {
+      period: periodData.period,
+      bucketData: bucketData,
+      color: periodData.color,
+      metricId: metricId,
+    };
+  });
+}
+
+/**
+ * Create a Vega-Lite specification for overlaid charts using natural buckets with bin edges
+ * @param {Array} chartData - Array of prepared chart data from prepareOverlayData
  * @param {Object} options - Rendering options
  * @returns {Object} - Vega-Lite specification for overlaid charts
  */
@@ -12,9 +50,12 @@ export function createOverlaySpec(chartData, options = {}) {
     options.viewMode === "percentage" ? "percentageCount" : "count";
   const combinedData = [];
   chartData.forEach((chart) => {
-    const periodData = chart.histogram.bins.map((bin) => ({
+    const periodData = chart.bucketData.bins.map((bin) => ({
       ...bin,
       period: chart.period,
+      metricId: chart.metricId,
+      xStart: bin.binStart,
+      xEnd: bin.binEnd === Infinity ? bin.binStart * 3 : bin.binEnd, // Handle infinity
     }));
     combinedData.push(...periodData);
   });
@@ -25,21 +66,22 @@ export function createOverlaySpec(chartData, options = {}) {
     data: { values: combinedData },
     encoding: {
       x: {
-        field: "binStart",
+        field: "xStart",
         type: "quantitative",
         title: options.xLabel,
-        bin: false,
         scale: {
-          domain: options.range,
-          nice: false,
+          type: options.useLogScale ? "log" : "linear",
+          ...(options.useLogScale && { base: 10 }),
         },
         axis: {
-          grid: false,
+          grid: true,
           labels: true,
-          labelOverlap: true,
+          values: options.tickValues,
         },
       },
-      x2: { field: "binEnd" },
+      x2: {
+        field: "xEnd",
+      },
       y: {
         field: yField,
         type: "quantitative",
@@ -47,7 +89,7 @@ export function createOverlaySpec(chartData, options = {}) {
         axis: {
           grid: true,
           labels: true,
-          format: yField === "percentageCount" ? ".0f" : "d",
+          format: yField === "percentageCount" ? ".1f" : "d",
         },
         scale: {
           domain:
@@ -62,25 +104,25 @@ export function createOverlaySpec(chartData, options = {}) {
           domain: chartData.map((chart) => chart.period),
           range: chartData.map((chart) => chart.color),
         },
-        legend: null,
-      },
-    },
-    layer: chartData.map((chart) => ({
-      mark: {
-        type: "bar",
-        opacity: 0.6,
-        cornerRadiusEnd: 2,
-      },
-      encoding: {
-        color: {
-          datum: chart.period,
+        legend: {
+          title: "Period",
+          orient: "top-right",
         },
       },
-      transform: [
+      tooltip: [
+        { field: "binLabel", title: "Range" },
+        { field: "period", title: "Period" },
         {
-          filter: `datum.period === '${chart.period}'`,
+          field: yField,
+          title: options.yLabel,
+          format: yField === "percentageCount" ? ".1f" : "d",
         },
       ],
-    })),
+    },
+    mark: {
+      type: "bar",
+      opacity: 0.7,
+      cornerRadiusEnd: 2,
+    },
   };
 }
