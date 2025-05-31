@@ -19,29 +19,31 @@ const NATURAL_BUCKETS = {
   ],
 
   commits: [
-    // commits per day
-    { min: 1, max: 1, label: "1", logCenter: 1 },
-    { min: 2, max: 5, label: "2-5", logCenter: 3.5 },
-    { min: 6, max: 10, label: "6-10", logCenter: 8 },
-    { min: 11, max: 20, label: "11-20", logCenter: 15.5 },
+    { min: 1, max: 2, label: "1", logCenter: 1 },
+    { min: 2, max: 6, label: "2-5", logCenter: 3.5 },  
+    { min: 6, max: 11, label: "6-10", logCenter: 8 },
+    { min: 11, max: 21, label: "11-20", logCenter: 15.5 },
     { min: 21, max: Infinity, label: "> 20", logCenter: 30 },
   ],
 
   hours: [
-    // hours per day
     { min: 0.1, max: 1, label: "< 1", logCenter: 0.5 },
     { min: 1, max: 2, label: "1-2", logCenter: 1.5 },
     { min: 2, max: 4, label: "2-4", logCenter: 3 },
     { min: 4, max: 8, label: "4-8", logCenter: 6 },
-    { min: 8, max: Infinity, label: "> 8", logCenter: 12 },
+    { min: 8, max: 12, label: "8-12", logCenter: 10 },
+    { min: 12, max: 16, label: "12-16", logCenter: 14 },
+    { min: 16, max: Infinity, label: "> 16", logCenter: 20 },
   ],
 
   loc: [
-    // lines of code per day
     { min: 1, max: 50, label: "1-50", logCenter: 25 },
-    { min: 51, max: 200, label: "51-200", logCenter: 125 },
-    { min: 201, max: 1000, label: "201-1000", logCenter: 600 },
-    { min: 1001, max: Infinity, label: "> 1000", logCenter: 2000 },
+    { min: 50, max: 200, label: "50-200", logCenter: 125 },
+    { min: 200, max: 500, label: "200-500", logCenter: 350 },
+    { min: 500, max: 1000, label: "500-1000", logCenter: 750 },
+    { min: 1000, max: 2000, label: "1000-2000", logCenter: 1500 },
+    { min: 2000, max: 5000, label: "2000-5000", logCenter: 3500 },
+    { min: 5000, max: Infinity, label: "> 5000", logCenter: 7500 },
   ],
 
   repos: [
