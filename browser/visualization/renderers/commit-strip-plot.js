@@ -1,4 +1,4 @@
-import { createStripPlotSpec } from "../specs/commit-strip-plot-vega.js";
+import { createStripPlotSpec } from "../specs/commit-strip-plot.js";
 import { applyDaisyUITheme } from "../themes/daisyui.js";
 
 export async function renderStripPlot(container, data, options = {}) {

@@ -14,7 +14,7 @@ export {
   createStripPlotSpec,
   getShapeDefinitions,
   getColorScale,
-} from "./visualization/specs/commit-strip-plot-vega.js";
+} from "./visualization/specs/commit-strip-plot.js";
 
 export {
   renderStripPlot,
