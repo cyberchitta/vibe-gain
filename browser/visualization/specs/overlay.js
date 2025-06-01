@@ -1,39 +1,4 @@
 import { createBaseVegaSpec } from "./vega-base.js";
-import {
-  prepareNaturalBucketData,
-  hasNaturalBuckets,
-} from "../data/bucketing.js";
-
-/**
- * Prepare overlay data using natural buckets when available
- * @param {Array} periodsData - Array of {period, metricData, color} objects
- * @param {string} metricId - Metric identifier
- * @param {Object} options - Options for bucketing and display
- * @returns {Array} - Array of prepared chart data with natural buckets
- */
-export function prepareOverlayData(periodsData, metricId, options = {}) {
-  const useNaturalBuckets =
-    options.useNaturalBuckets !== false && hasNaturalBuckets(metricId);
-  if (!useNaturalBuckets) {
-    // Fallback to existing logic for metrics without natural buckets
-    throw new Error(
-      `Natural buckets not available for metric: ${metricId}. Please define natural buckets first.`
-    );
-  }
-  return periodsData.map((periodData) => {
-    const bucketData = prepareNaturalBucketData(
-      periodData.metricData,
-      metricId,
-      options
-    );
-    return {
-      period: periodData.period,
-      bucketData: bucketData,
-      color: periodData.color,
-      metricId: metricId,
-    };
-  });
-}
 
 /**
  * Create a Vega-Lite specification for overlaid charts using natural buckets with bin edges
