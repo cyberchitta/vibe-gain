@@ -20,7 +20,7 @@ const NATURAL_BUCKETS = {
 
   commits: [
     { min: 1, max: 2, label: "1", logCenter: 1 },
-    { min: 2, max: 6, label: "2-5", logCenter: 3.5 },  
+    { min: 2, max: 6, label: "2-5", logCenter: 3.5 },
     { min: 6, max: 11, label: "6-10", logCenter: 8 },
     { min: 11, max: 21, label: "11-20", logCenter: 15.5 },
     { min: 21, max: Infinity, label: "> 20", logCenter: 30 },
@@ -91,7 +91,6 @@ export function extractValues(metricData, metricId) {
     } else if (item[metricId] !== undefined) {
       value = item[metricId];
     }
-
     if (value !== null && !isNaN(value)) {
       values.push(value);
     }
