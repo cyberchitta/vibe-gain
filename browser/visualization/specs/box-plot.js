@@ -1,174 +1,67 @@
 import { createBaseVegaSpec } from "./vega-base.js";
 
 /**
- * Create Vega-Lite specification for a single box plot (for one period)
- * @param {Object} periodData - {period, values, color} object
+ * Create side-by-side vertical box plots in a single unified spec
+ * @param {Array} periodsData - Array of {period, values, color} objects
  * @param {Object} options - Visualization options
- * @returns {Object} - Vega-Lite specification for single box plot
+ * @returns {Object} - Vega-Lite specification with side-by-side box plots
  */
-export function createSingleBoxPlotSpec(periodData, options = {}) {
+export function createSideBySideBoxPlotSpec(periodsData, options = {}) {
   const baseSpec = createBaseVegaSpec();
   const defaultOptions = {
-    width: 600,
-    height: 60,
-    boxHeight: 20,
-    yPosition: 30, // Center position
+    width: "container",
+    height: 400,
+    useLogScale: false,
     ...options,
   };
-
-  const boxPlotData = periodData.values.map((v) => ({
-    value: v,
-    period: periodData.period,
-    yPosition: defaultOptions.yPosition,
-    yTop: defaultOptions.yPosition + defaultOptions.boxHeight / 2,
-    yBottom: defaultOptions.yPosition - defaultOptions.boxHeight / 2,
-  }));
-
+  const combinedData = [];
+  periodsData.forEach((periodData) => {
+    periodData.values.forEach((value) => {
+      combinedData.push({
+        period: periodData.period,
+        value: value,
+      });
+    });
+  });
   return {
     ...baseSpec,
     width: defaultOptions.width,
     height: defaultOptions.height,
-    data: { values: boxPlotData },
-    layer: [
-      // Box (Q1 to Q3)
-      {
-        transform: [
-          {
-            aggregate: [
-              { op: "q1", field: "value", as: "q1" },
-              { op: "q3", field: "value", as: "q3" },
-            ],
-          },
-        ],
-        mark: {
-          type: "bar",
-          height: defaultOptions.boxHeight,
-          color: periodData.color,
-          opacity: 0.8,
+    data: { values: combinedData },
+    mark: {
+      type: "boxplot",
+      extent: "min-max",
+    },
+    encoding: {
+      x: {
+        field: "period",
+        type: "nominal",
+        axis: null,
+        sort: periodsData.map((p) => p.period),
+      },
+      y: {
+        field: "value",
+        type: "quantitative",
+        title: options.yLabel || "Value",
+        scale: {
+          type: defaultOptions.useLogScale ? "log" : "linear",
+          ...(defaultOptions.useLogScale && { base: 10 }),
+          nice: !defaultOptions.useLogScale,
         },
-        encoding: {
-          x: {
-            field: "q1",
-            type: "quantitative",
-            axis: null,
-            scale: options.xScale || {},
-          },
-          x2: { field: "q3", type: "quantitative" },
-          y: { value: defaultOptions.yPosition },
+        axis: {
+          grid: true,
+          ...(defaultOptions.useLogScale && { format: "~s" }),
         },
       },
-      // Median line
-      {
-        transform: [
-          {
-            aggregate: [{ op: "median", field: "value", as: "median" }],
-          },
-        ],
-        mark: {
-          type: "rule",
-          color: "#2c3e50",
-          strokeWidth: 2,
+      color: {
+        field: "period",
+        type: "nominal",
+        scale: {
+          domain: periodsData.map((p) => p.period),
+          range: periodsData.map((p) => p.color),
         },
-        encoding: {
-          x: { field: "median", type: "quantitative" },
-          y: { value: defaultOptions.yPosition - defaultOptions.boxHeight / 2 },
-          y2: {
-            value: defaultOptions.yPosition + defaultOptions.boxHeight / 2,
-          },
-        },
+        legend: null,
       },
-      // Whiskers
-      {
-        transform: [
-          {
-            aggregate: [
-              { op: "min", field: "value", as: "min" },
-              { op: "q1", field: "value", as: "q1" },
-              { op: "q3", field: "value", as: "q3" },
-              { op: "max", field: "value", as: "max" },
-            ],
-          },
-        ],
-        layer: [
-          // Left whisker
-          {
-            mark: {
-              type: "rule",
-              color: periodData.color,
-              strokeWidth: 1,
-            },
-            encoding: {
-              x: { field: "min", type: "quantitative" },
-              x2: { field: "q1", type: "quantitative" },
-              y: { value: defaultOptions.yPosition },
-            },
-          },
-          // Right whisker
-          {
-            mark: {
-              type: "rule",
-              color: periodData.color,
-              strokeWidth: 1,
-            },
-            encoding: {
-              x: { field: "q3", type: "quantitative" },
-              x2: { field: "max", type: "quantitative" },
-              y: { value: defaultOptions.yPosition },
-            },
-          },
-        ],
-      },
-    ],
-  };
-}
-
-/**
- * Create Vega-Lite specification for box plots (legacy - for backward compatibility)
- */
-export function createBoxPlotSpec(periodsData, options = {}) {
-  // For backward compatibility, create a combined spec
-  const defaultOptions = {
-    width: 600,
-    height: 150,
-    boxHeight: 20,
-    spacing: 40,
-    ...options,
-  };
-
-  const boxPlotData = periodsData
-    .map((periodData, index) => {
-      const yPos = index * defaultOptions.spacing + defaultOptions.spacing / 2;
-      const values = periodData.values.map((v) => ({
-        value: v,
-        period: periodData.period,
-        yPosition: yPos,
-        yTop: yPos + defaultOptions.boxHeight / 2,
-        yBottom: yPos - defaultOptions.boxHeight / 2,
-      }));
-      return values;
-    })
-    .flat();
-
-  const baseSpec = createBaseVegaSpec();
-  return {
-    ...baseSpec,
-    width: defaultOptions.width,
-    height:
-      periodsData.length * defaultOptions.spacing + defaultOptions.spacing,
-    data: { values: boxPlotData },
-    layer: [
-      // Box plots for all periods
-      ...periodsData
-        .map((periodData, index) => {
-          const yPos =
-            index * defaultOptions.spacing + defaultOptions.spacing / 2;
-          return createSingleBoxPlotSpec(periodData, {
-            ...defaultOptions,
-            yPosition: yPos,
-            height: defaultOptions.spacing,
-          }).layer;
-        })
-        .flat(),
-    ],
+    },
   };
 }

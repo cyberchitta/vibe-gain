@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stacked Histogram with Box Plots Test</title>
+    <title>Vertical Box Plots Test</title>
     <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
     <style>
@@ -43,20 +43,21 @@
 </head>
 
 <body>
-    <h1>Stacked Histogram with Box Plots Test</h1>
+    <h1>Vertical Box Plots Test</h1>
 
     <div class="chart-container">
         <h2>Commits Per Day Distribution</h2>
-        <div id="stacked-chart" style="height: 400px;"></div>
+        <div id="box-plot-chart" style="height: 450px; width: 800px;"></div>
         <button onclick="renderChart()">Render Chart</button>
+        <button onclick="toggleLogScale()">Toggle Log Scale</button>
         <button onclick="clearChart()">Clear</button>
     </div>
 
     <script type="module">
-        import { createOverlaySpec } from './browser/visualization/specs/overlay.js';
-        import { createSingleBoxPlotSpec } from './browser/visualization/specs/box-plot.js';
-        import { prepareNaturalBucketData } from './browser/visualization/data/bucketing.js';
+        import { createSideBySideBoxPlotSpec } from './browser/visualization/specs/box-plot.js';
         import { arrayFormatToCommits } from './browser/data/formats.js';
+
+        let useLogScale = false;
 
         // Load real commit data
         async function loadCommitData() {
@@ -85,82 +86,6 @@
                 commits
             }));
         }
-
-        function removeXAxisFromLayer(layer) {
-            if (layer.layer) {
-                // Handle nested layers
-                return {
-                    ...layer,
-                    layer: layer.layer.map(removeXAxisFromLayer)
-                };
-            } else if (layer.encoding && layer.encoding.x) {
-                // Remove x-axis from this layer
-                return {
-                    ...layer,
-                    encoding: {
-                        ...layer.encoding,
-                        x: {
-                            ...layer.encoding.x,
-                            axis: null
-                        }
-                    }
-                };
-            } else {
-                // No x encoding, return as-is
-                return layer;
-            }
-        }
-
-        function createStackedChart(overlayData, preAIData, recentAIData, options = {}) {
-            const histogramSpec = createOverlaySpec(overlayData, {
-                ...options,
-                width: 600,
-                height: 200
-            });
-
-            const preAIBoxSpec = createSingleBoxPlotSpec(preAIData, {
-                width: 600,
-                height: 60
-            });
-
-            const recentAIBoxSpec = createSingleBoxPlotSpec(recentAIData, {
-                width: 600,
-                height: 60
-            });
-
-            // Remove x-axis from histogram and pre-AI box plot
-            const histogramWithoutXAxis = {
-                ...histogramSpec,
-                encoding: {
-                    ...histogramSpec.encoding,
-                    x: {
-                        ...histogramSpec.encoding.x,
-                        axis: null
-                    }
-                }
-            };
-
-            const preAIBoxWithoutXAxis = {
-                ...preAIBoxSpec,
-                layer: preAIBoxSpec.layer.map(removeXAxisFromLayer)
-            };
-
-            return {
-                $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-                vconcat: [
-                    preAIBoxWithoutXAxis,
-                    histogramWithoutXAxis,
-                    recentAIBoxSpec
-                ],
-                resolve: {
-                    scale: {
-                        x: "shared"
-                    }
-                },
-                spacing: 5
-            };
-        }
-
         window.renderChart = async function () {
             try {
                 const { preCommits, recentCommits } = await loadCommitData();
@@ -168,21 +93,7 @@
                 const preMetricData = getCommitsMetricData(preCommits);
                 const recentMetricData = getCommitsMetricData(recentCommits);
 
-                // Prepare data for overlay histogram
-                const overlayData = [
-                    {
-                        period: 'Pre-AI',
-                        bucketData: prepareNaturalBucketData(preMetricData, 'commits'),
-                        color: '#e74c3c'
-                    },
-                    {
-                        period: 'Recent-AI',
-                        bucketData: prepareNaturalBucketData(recentMetricData, 'commits'),
-                        color: '#3498db'
-                    }
-                ];
-
-                // Prepare data for individual box plots
+                // Prepare data for box plots
                 const preAIData = {
                     period: 'Pre-AI',
                     values: preMetricData.map(d => d.commits),
@@ -195,30 +106,47 @@
                     color: '#3498db'
                 };
 
-                const stackedSpec = createStackedChart(overlayData, preAIData, recentAIData, {
-                    xLabel: 'Commits per Day',
-                    yLabel: 'Days'
+                // Calculate dimensions (following strip plot pattern)
+                const container = document.getElementById('box-plot-chart');
+                const containerWidth = container.clientWidth - 40; // Account for padding
+                const dimensions = {
+                    width: Math.min(containerWidth, 800),
+                    height: 400
+                };
+
+                console.log(`Rendering box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
+
+                // Create vertical box plot chart
+                const boxPlotSpec = createSideBySideBoxPlotSpec([preAIData, recentAIData], {
+                    ...dimensions,
+                    yLabel: 'Commits per Day',
+                    useLogScale: useLogScale
                 });
 
-                const container = document.getElementById('stacked-chart');
                 container.innerHTML = '';
 
-                const view = new vega.View(vega.parse(vegaLite.compile(stackedSpec).spec))
+                const view = new vega.View(vega.parse(vegaLite.compile(boxPlotSpec).spec))
                     .renderer('canvas')
                     .initialize(container);
 
                 await view.runAsync();
                 container._vegaView = view;
 
-                console.log('Stacked chart rendered successfully');
+                console.log('Vertical box plot rendered successfully');
             } catch (error) {
                 console.error('Error rendering chart:', error);
-                document.getElementById('stacked-chart').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('box-plot-chart').innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         };
 
+        window.toggleLogScale = function () {
+            useLogScale = !useLogScale;
+            console.log(`Log scale: ${useLogScale ? 'enabled' : 'disabled'}`);
+            renderChart();
+        };
+
         window.clearChart = function () {
-            const container = document.getElementById('stacked-chart');
+            const container = document.getElementById('box-plot-chart');
             if (container._vegaView) {
                 container._vegaView.finalize();
                 container._vegaView = null;
