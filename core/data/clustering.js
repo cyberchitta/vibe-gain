@@ -120,10 +120,13 @@ export function prepareStripPlotData(commits, period, options = {}) {
         totalCommits: 0,
         totalRepositories: 0,
         totalClusters: 0,
-        periodRange: periodStart && periodEnd ? {
-          start: new Date(periodStart),
-          end: new Date(periodEnd)
-        } : null,
+        periodRange:
+          periodStart && periodEnd
+            ? {
+                start: new Date(periodStart),
+                end: new Date(periodEnd),
+              }
+            : null,
       },
     };
   }
@@ -131,11 +134,13 @@ export function prepareStripPlotData(commits, period, options = {}) {
   if (periodStart && periodEnd) {
     const periodStartDate = new Date(periodStart + "T00:00:00Z");
     const periodEndDate = new Date(periodEnd + "T23:59:59Z");
-    filteredCommits = commits.filter(commit => {
+    filteredCommits = commits.filter((commit) => {
       const commitDate = new Date(commit.timestamp);
       return commitDate >= periodStartDate && commitDate <= periodEndDate;
     });
-    console.log(`Filtered commits: ${commits.length} -> ${filteredCommits.length} (period: ${periodStart} to ${periodEnd})`);
+    console.log(
+      `Filtered commits: ${commits.length} -> ${filteredCommits.length} (period: ${periodStart} to ${periodEnd})`
+    );
   }
   const uniqueRepos = [...new Set(filteredCommits.map((c) => c.repo))];
   const repoGroupings = assignRepositoryGroups(
@@ -236,4 +241,48 @@ export function calculateClusterStats(clusters) {
     multiRepoClusters: multiRepoClusters,
     contextSwitchingRate: multiRepoClusters / clusters.length,
   };
+}
+
+export function calculateTimeBetweenCommits(timestamps) {
+  if (timestamps.length <= 1) {
+    return 0;
+  }
+  const intervals = [];
+  for (let i = 1; i < timestamps.length; i++) {
+    intervals.push((timestamps[i] - timestamps[i - 1]) / (1000 * 60));
+  }
+  const avgInterval =
+    intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
+  return avgInterval;
+}
+
+export function calculateGapsBetweenClusters(
+  timestamps,
+  clusterThresholdMinutes
+) {
+  if (timestamps.length <= 1) {
+    return 0;
+  }
+  const clusters = [];
+  let currentCluster = [timestamps[0]];
+  for (let i = 1; i < timestamps.length; i++) {
+    const timeDiff = (timestamps[i] - timestamps[i - 1]) / (1000 * 60);
+    if (timeDiff <= clusterThresholdMinutes) {
+      currentCluster.push(timestamps[i]);
+    } else {
+      clusters.push(currentCluster);
+      currentCluster = [timestamps[i]];
+    }
+  }
+  clusters.push(currentCluster);
+  if (clusters.length <= 1) {
+    return 0;
+  }
+  const avgGap =
+    clusters.slice(1).reduce((sum, cluster, i) => {
+      const gap = (cluster[0] - clusters[i][0]) / (1000 * 60);
+      return sum + gap;
+    }, 0) /
+    (clusters.length - 1);
+  return avgGap;
 }

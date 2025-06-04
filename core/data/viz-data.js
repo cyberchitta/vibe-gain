@@ -1,13 +1,17 @@
 import _ from "lodash";
+import {
+  calculateTimeBetweenCommits,
+  calculateGapsBetweenClusters,
+} from "./clustering.js";
 
 /**
- * Compute metrics from a specific set of commit data
+ * Compute visualization data from a specific set of commit data
  * @param {Array} commits - Array of commit objects
  * @param {number} clusterThresholdMinutes - Threshold for clustering commits in minutes
  * @param {string} type - Type identifier ('all', 'code', or 'doc')
- * @returns {Object} - Object containing various metrics
+ * @returns {Object} - Object containing various metrics for visualization
  */
-function computeMetricsForType(commits, clusterThresholdMinutes, type) {
+export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
   if (!commits || commits.length === 0) {
     return {
       type,
@@ -59,42 +63,13 @@ function computeMetricsForType(commits, clusterThresholdMinutes, type) {
     hoursPerDay.push({ date, hours });
     const cph = timestamps.length / Math.max(hours, 0.1);
     commitsPerHour.push({ date, commits_per_hour: cph });
-    if (timestamps.length <= 1) {
-      gapsPerDay.push({ date, avg_gap_minutes: 0 });
-    } else {
-      const clusters = [];
-      let currentCluster = [timestamps[0]];
-      for (let i = 1; i < timestamps.length; i++) {
-        const timeDiff = (timestamps[i] - timestamps[i - 1]) / (1000 * 60);
-        if (timeDiff <= clusterThresholdMinutes) {
-          currentCluster.push(timestamps[i]);
-        } else {
-          clusters.push(currentCluster);
-          currentCluster = [timestamps[i]];
-        }
-      }
-      clusters.push(currentCluster);
-      const avgGap =
-        clusters.length <= 1
-          ? 0
-          : clusters.slice(1).reduce((sum, cluster, i) => {
-              const gap = (cluster[0] - clusters[i][0]) / (1000 * 60);
-              return sum + gap;
-            }, 0) /
-            (clusters.length - 1);
-      gapsPerDay.push({ date, avg_gap_minutes: avgGap });
-    }
-    if (timestamps.length <= 1) {
-      timeBetweenCommits.push({ date, avg_time_between_commits: 0 });
-    } else {
-      const intervals = [];
-      for (let i = 1; i < timestamps.length; i++) {
-        intervals.push((timestamps[i] - timestamps[i - 1]) / (1000 * 60));
-      }
-      const avgInterval =
-        intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
-      timeBetweenCommits.push({ date, avg_time_between_commits: avgInterval });
-    }
+    const avgGap = calculateGapsBetweenClusters(
+      timestamps,
+      clusterThresholdMinutes
+    );
+    gapsPerDay.push({ date, avg_gap_minutes: avgGap });
+    const avgInterval = calculateTimeBetweenCommits(timestamps);
+    timeBetweenCommits.push({ date, avg_time_between_commits: avgInterval });
   }
   return {
     type,
@@ -125,12 +100,12 @@ function computeMetricsForType(commits, clusterThresholdMinutes, type) {
 }
 
 /**
- * Compute metrics for all three categories: all commits, code commits, and doc commits
+ * Compute visualization data for all three categories: all commits, code commits, and doc commits
  * @param {Array} commits - Array of commit objects
  * @param {number} clusterThresholdMinutes - Threshold for clustering commits in minutes
- * @returns {Object} - Object containing metrics for all three categories
+ * @returns {Object} - Object containing visualization data for all three categories
  */
-function computeMetrics(commits, clusterThresholdMinutes) {
+export function computeVizData(commits, clusterThresholdMinutes) {
   if (!commits || commits.length === 0) {
     return {
       all: { type: "all", metadata: { total_commits: 0 } },
@@ -148,25 +123,25 @@ function computeMetrics(commits, clusterThresholdMinutes) {
   const allCommits = commits;
   const codeCommits = commits.filter((c) => !c.isDocOnly);
   const docCommits = commits.filter((c) => c.isDocOnly);
-  const allMetrics = computeMetricsForType(
+  const allVizData = computeVizDataForType(
     allCommits,
     clusterThresholdMinutes,
     "all"
   );
-  const codeMetrics = computeMetricsForType(
+  const codeVizData = computeVizDataForType(
     codeCommits,
     clusterThresholdMinutes,
     "code"
   );
-  const docMetrics = computeMetricsForType(
+  const docVizData = computeVizDataForType(
     docCommits,
     clusterThresholdMinutes,
     "doc"
   );
   return {
-    all: allMetrics,
-    code: codeMetrics,
-    doc: docMetrics,
+    all: allVizData,
+    code: codeVizData,
+    doc: docVizData,
     summary: {
       total_commits: commits.length,
       code_commits: codeCommits.length,
@@ -178,11 +153,11 @@ function computeMetrics(commits, clusterThresholdMinutes) {
 }
 
 /**
- * Compute aggregate metrics across all periods
+ * Compute aggregate visualization data across all periods
  * @param {Array} allCommits - Array of all commit objects from all periods
- * @returns {Object} - Object containing aggregate metrics for all three categories
+ * @returns {Object} - Object containing aggregate visualization data for all three categories
  */
-function computeAggregateMetrics(allCommits) {
+export function computeAggregateVizData(allCommits) {
   if (!allCommits || allCommits.length === 0) {
     return {
       all: { total_commits: 0 },
@@ -220,7 +195,7 @@ function computeAggregateMetrics(allCommits) {
     };
   });
   repoStats.sort((a, b) => b.commit_count - a.commit_count);
-  function getMetricsForCommitSet(commits) {
+  function getVizDataForCommitSet(commits) {
     const activeDays = new Set(commits.map((c) => c.date)).size;
     return {
       total_commits: commits.length,
@@ -241,9 +216,9 @@ function computeAggregateMetrics(allCommits) {
     };
   }
   return {
-    all: getMetricsForCommitSet(allCommits),
-    code: getMetricsForCommitSet(codeCommits),
-    doc: getMetricsForCommitSet(docCommits),
+    all: getVizDataForCommitSet(allCommits),
+    code: getVizDataForCommitSet(codeCommits),
+    doc: getVizDataForCommitSet(docCommits),
     summary: {
       total_commits: allCommits.length,
       code_commits: codeCommits.length,
@@ -255,21 +230,15 @@ function computeAggregateMetrics(allCommits) {
 }
 
 /**
- * Export metrics as JSON
- * @param {Object} metrics - Metrics object from computeMetrics
+ * Format visualization data for export
+ * @param {Object} vizData - Visualization data object from computeVizData
  * @param {string} periodName - Name of the period
  * @returns {Object} - Formatted data for export
  */
-function formatMetricsForExport(metrics, periodName) {
+export function formatVizDataForExport(vizData, periodName) {
   return {
     period_name: periodName,
     generated_at: new Date().toISOString(),
-    metrics,
+    viz_data: vizData,
   };
 }
-
-export {
-  computeMetrics,
-  computeAggregateMetrics,
-  formatMetricsForExport,
-};
