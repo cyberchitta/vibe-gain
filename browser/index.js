@@ -36,13 +36,13 @@ export {
   generateGroupColors,
   generateShapeDefinitions,
   prepareLegendData,
-} from "./visualization/charts/commit-strip-plot.js";
+} from "./charts/commit-strip-plot.js";
 
 export {
   createStripPlotSpec,
   getShapeDefinitions,
   getColorScale,
-} from "./visualization/specs/commit-strip-plot.js";
+} from "./specs/commit-strip-plot.js";
 
 export {
   renderStripPlot,
@@ -50,20 +50,20 @@ export {
   addInteractivity,
   cleanup,
   refreshVisualization,
-} from "./visualization/renderers/commit-strip-plot.js";
+} from "./renderers/commit-strip-plot.js";
 
-export { createBaseVegaSpec } from "./visualization/specs/vega-base.js";
-export { createSideBySideBoxPlotSpec } from "./visualization/specs/box-plot.js";
-export { createOverlaySpec } from "./visualization/specs/overlay.js";
+export { createBaseVegaSpec } from "./specs/vega-base.js";
+export { createSideBySideBoxPlotSpec } from "./specs/box-plot.js";
+export { createOverlaySpec } from "./specs/overlay.js";
 
 export {
   prepareOverlayData,
   renderOverlay,
   cleanupOverlay,
-} from "./visualization/renderers/overlay.js";
+} from "./renderers/overlay.js";
 
 export {
   detectDarkMode,
   getThemeColors,
   applyDaisyUITheme,
-} from "./visualization/themes/daisyui.js";
+} from "./themes/daisyui.js";
