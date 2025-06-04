@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacked Histogram with Box Plots Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .error {
+            color: red;
+            background: #fee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Stacked Histogram with Box Plots Test</h1>
+
+    <div class="chart-container">
+        <h2>Commits Per Day Distribution</h2>
+        <div id="stacked-chart" style="height: 400px;"></div>
+        <button onclick="renderChart()">Render Chart</button>
+        <button onclick="clearChart()">Clear</button>
+    </div>
+
+    <script type="module">
+        import { createOverlaySpec } from './browser/visualization/specs/overlay.js';
+        import { createSingleBoxPlotSpec } from './browser/visualization/specs/box-plot.js';
+        import { prepareNaturalBucketData } from './browser/visualization/data/bucketing.js';
+        import { arrayFormatToCommits } from './browser/data/formats.js';
+
+        // Load real commit data
+        async function loadCommitData() {
+            const [preResponse, recentResponse] = await Promise.all([
+                fetch('./output/restlessronin/raw/commits_Pre-AI.json'),
+                fetch('./output/restlessronin/raw/commits_Recent-AI.json')
+            ]);
+
+            const preArrayFormat = await preResponse.json();
+            const recentArrayFormat = await recentResponse.json();
+
+            const preCommits = arrayFormatToCommits(preArrayFormat);
+            const recentCommits = arrayFormatToCommits(recentArrayFormat);
+
+            return { preCommits, recentCommits };
+        }
+
+        // Convert commits to metric data format
+        function getCommitsMetricData(commits) {
+            const commitsByDate = {};
+            commits.forEach(commit => {
+                commitsByDate[commit.date] = (commitsByDate[commit.date] || 0) + 1;
+            });
+            return Object.entries(commitsByDate).map(([date, commits]) => ({
+                date,
+                commits
+            }));
+        }
+
+        function removeXAxisFromLayer(layer) {
+            if (layer.layer) {
+                // Handle nested layers
+                return {
+                    ...layer,
+                    layer: layer.layer.map(removeXAxisFromLayer)
+                };
+            } else if (layer.encoding && layer.encoding.x) {
+                // Remove x-axis from this layer
+                return {
+                    ...layer,
+                    encoding: {
+                        ...layer.encoding,
+                        x: {
+                            ...layer.encoding.x,
+                            axis: null
+                        }
+                    }
+                };
+            } else {
+                // No x encoding, return as-is
+                return layer;
+            }
+        }
+
+        function createStackedChart(overlayData, preAIData, recentAIData, options = {}) {
+            const histogramSpec = createOverlaySpec(overlayData, {
+                ...options,
+                width: 600,
+                height: 200
+            });
+
+            const preAIBoxSpec = createSingleBoxPlotSpec(preAIData, {
+                width: 600,
+                height: 60
+            });
+
+            const recentAIBoxSpec = createSingleBoxPlotSpec(recentAIData, {
+                width: 600,
+                height: 60
+            });
+
+            // Remove x-axis from histogram and pre-AI box plot
+            const histogramWithoutXAxis = {
+                ...histogramSpec,
+                encoding: {
+                    ...histogramSpec.encoding,
+                    x: {
+                        ...histogramSpec.encoding.x,
+                        axis: null
+                    }
+                }
+            };
+
+            const preAIBoxWithoutXAxis = {
+                ...preAIBoxSpec,
+                layer: preAIBoxSpec.layer.map(removeXAxisFromLayer)
+            };
+
+            return {
+                $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+                vconcat: [
+                    preAIBoxWithoutXAxis,
+                    histogramWithoutXAxis,
+                    recentAIBoxSpec
+                ],
+                resolve: {
+                    scale: {
+                        x: "shared"
+                    }
+                },
+                spacing: 5
+            };
+        }
+
+        window.renderChart = async function () {
+            try {
+                const { preCommits, recentCommits } = await loadCommitData();
+
+                const preMetricData = getCommitsMetricData(preCommits);
+                const recentMetricData = getCommitsMetricData(recentCommits);
+
+                // Prepare data for overlay histogram
+                const overlayData = [
+                    {
+                        period: 'Pre-AI',
+                        bucketData: prepareNaturalBucketData(preMetricData, 'commits'),
+                        color: '#e74c3c'
+                    },
+                    {
+                        period: 'Recent-AI',
+                        bucketData: prepareNaturalBucketData(recentMetricData, 'commits'),
+                        color: '#3498db'
+                    }
+                ];
+
+                // Prepare data for individual box plots
+                const preAIData = {
+                    period: 'Pre-AI',
+                    values: preMetricData.map(d => d.commits),
+                    color: '#e74c3c'
+                };
+
+                const recentAIData = {
+                    period: 'Recent-AI',
+                    values: recentMetricData.map(d => d.commits),
+                    color: '#3498db'
+                };
+
+                const stackedSpec = createStackedChart(overlayData, preAIData, recentAIData, {
+                    xLabel: 'Commits per Day',
+                    yLabel: 'Days'
+                });
+
+                const container = document.getElementById('stacked-chart');
+                container.innerHTML = '';
+
+                const view = new vega.View(vega.parse(vegaLite.compile(stackedSpec).spec))
+                    .renderer('canvas')
+                    .initialize(container);
+
+                await view.runAsync();
+                container._vegaView = view;
+
+                console.log('Stacked chart rendered successfully');
+            } catch (error) {
+                console.error('Error rendering chart:', error);
+                document.getElementById('stacked-chart').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        };
+
+        window.clearChart = function () {
+            const container = document.getElementById('stacked-chart');
+            if (container._vegaView) {
+                container._vegaView.finalize();
+                container._vegaView = null;
+            }
+            container.innerHTML = 'Chart cleared. Click "Render Chart" to visualize data.';
+        };
+
+        // Auto-render on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(renderChart, 1000);
+        });
+    </script>
+</body>
+
+</html>
