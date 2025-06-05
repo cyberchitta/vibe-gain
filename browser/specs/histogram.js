@@ -2,11 +2,11 @@ import { createBaseVegaSpec } from "./vega-base.js";
 
 /**
  * Create a Vega-Lite specification for overlaid charts using natural buckets with bin edges
- * @param {Array} chartData - Array of prepared chart data from prepareOverlayData
+ * @param {Array} chartData - Array of prepared chart data from prepareHistogramData
  * @param {Object} options - Rendering options
  * @returns {Object} - Vega-Lite specification for overlaid charts
  */
-export function createOverlaySpec(chartData, options = {}) {
+export function createHistogramSpec(chartData, options = {}) {
   const baseSpec = createBaseVegaSpec();
   const yField =
     options.viewMode === "percentage" ? "percentageCount" : "count";

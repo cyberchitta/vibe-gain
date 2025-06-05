@@ -54,7 +54,7 @@
     </div>
 
     <script type="module">
-        import { createSideBySideBoxPlotSpec } from './browser/specs/box-plot.js';
+        import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
 
         let useLogScale = false;
@@ -117,7 +117,7 @@
                 console.log(`Rendering box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
 
                 // Create vertical box plot chart
-                const boxPlotSpec = createSideBySideBoxPlotSpec([preAIData, recentAIData], {
+                const boxPlotSpec = createBoxPlotSpec([preAIData, recentAIData], {
                     ...dimensions,
                     yLabel: 'Commits per Day',
                     useLogScale: useLogScale

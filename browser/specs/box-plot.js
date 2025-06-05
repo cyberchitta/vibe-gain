@@ -6,7 +6,7 @@ import { createBaseVegaSpec } from "./vega-base.js";
  * @param {Object} options - Visualization options
  * @returns {Object} - Vega-Lite specification with side-by-side box plots
  */
-export function createSideBySideBoxPlotSpec(periodsData, options = {}) {
+export function createBoxPlotSpec(periodsData, options = {}) {
   const baseSpec = createBaseVegaSpec();
   const defaultOptions = {
     width: "container",

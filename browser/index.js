@@ -53,14 +53,14 @@ export {
 } from "./renderers/commit-strip-plot.js";
 
 export { createBaseVegaSpec } from "./specs/vega-base.js";
-export { createSideBySideBoxPlotSpec } from "./specs/box-plot.js";
-export { createOverlaySpec } from "./specs/overlay.js";
+export { createBoxPlotSpec } from "./specs/box-plot.js";
+export { createHistogramSpec } from "./specs/histogram.js";
 
 export {
-  prepareOverlayData,
-  renderOverlay,
-  cleanupOverlay,
-} from "./renderers/overlay.js";
+  prepareHistogramData,
+  renderHistogram,
+  cleanupHistogram,
+} from "./renderers/histogram.js";
 
 export {
   detectDarkMode,

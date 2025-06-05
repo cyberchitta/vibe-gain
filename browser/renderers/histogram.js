@@ -1,4 +1,4 @@
-import { createOverlaySpec } from "../specs/overlay.js";
+import { createHistogramSpec } from "../specs/histogram.js";
 import {
   prepareNaturalBucketData,
   hasNaturalBuckets,
@@ -12,7 +12,7 @@ import { applyDaisyUITheme } from "../themes/daisyui.js";
  * @param {Object} options - Options for bucketing and display
  * @returns {Array} - Array of prepared chart data with natural buckets
  */
-export function prepareOverlayData(periodsData, metricId, options = {}) {
+export function prepareHistogramData(periodsData, metricId, options = {}) {
   const useNaturalBuckets =
     options.useNaturalBuckets !== false && hasNaturalBuckets(metricId);
   if (!useNaturalBuckets) {
@@ -43,14 +43,14 @@ export function prepareOverlayData(periodsData, metricId, options = {}) {
  * @param {Object} options - Rendering options
  * @returns {Promise<Object>} - Vega view instance
  */
-export async function renderOverlay(container, chartData, options = {}) {
+export async function renderHistogram(container, chartData, options = {}) {
   if (!container) {
     throw new Error("Container element is required");
   }
 
   container.innerHTML = "";
 
-  const spec = createOverlaySpec(chartData, options);
+  const spec = createHistogramSpec(chartData, options);
   const themedSpec = applyDaisyUITheme(spec, options);
 
   try {
@@ -73,7 +73,7 @@ export async function renderOverlay(container, chartData, options = {}) {
  * Cleanup overlay resources
  * @param {HTMLElement} container - Container element
  */
-export function cleanupOverlay(container) {
+export function cleanupHistogram(container) {
   if (!container) return;
 
   if (container._vegaView) {
