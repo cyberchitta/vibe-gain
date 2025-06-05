@@ -2,7 +2,7 @@ import { createOverlaySpec } from "../specs/overlay.js";
 import {
   prepareNaturalBucketData,
   hasNaturalBuckets,
-} from "../data/bucketing.js";
+} from "../../core/data/bucketing.js";
 import { applyDaisyUITheme } from "../themes/daisyui.js";
 
 /**
