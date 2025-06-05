@@ -73,7 +73,7 @@
         }
         async function loadActualData(periodName) {
             try {
-                const response = await fetch(`./output/restlessronin/raw/commits_${periodName.replace(/\s+/g, '_')}.json`);
+                const response = await fetch(`./data/restlessronin/raw/commits_${periodName.replace(/\s+/g, '_')}.json`);
                 if (!response.ok) {
                     throw new Error(`Failed to load data: ${response.status}`);
                 }

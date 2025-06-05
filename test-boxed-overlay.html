@@ -56,26 +56,18 @@
     <script type="module">
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
-
         let useLogScale = false;
-
-        // Load real commit data
         async function loadCommitData() {
             const [preResponse, recentResponse] = await Promise.all([
-                fetch('./output/restlessronin/raw/commits_Pre-AI.json'),
-                fetch('./output/restlessronin/raw/commits_Recent-AI.json')
+                fetch('./data/restlessronin/raw/commits_Pre-AI.json'),
+                fetch('./data/restlessronin/raw/commits_Recent-AI.json')
             ]);
-
             const preArrayFormat = await preResponse.json();
             const recentArrayFormat = await recentResponse.json();
-
             const preCommits = arrayFormatToCommits(preArrayFormat);
             const recentCommits = arrayFormatToCommits(recentArrayFormat);
-
             return { preCommits, recentCommits };
         }
-
-        // Convert commits to metric data format
         function getCommitsMetricData(commits) {
             const commitsByDate = {};
             commits.forEach(commit => {
@@ -89,49 +81,36 @@
         window.renderChart = async function () {
             try {
                 const { preCommits, recentCommits } = await loadCommitData();
-
                 const preMetricData = getCommitsMetricData(preCommits);
                 const recentMetricData = getCommitsMetricData(recentCommits);
-
-                // Prepare data for box plots
                 const preAIData = {
                     period: 'Pre-AI',
                     values: preMetricData.map(d => d.commits),
                     color: '#e74c3c'
                 };
-
                 const recentAIData = {
                     period: 'Recent-AI',
                     values: recentMetricData.map(d => d.commits),
                     color: '#3498db'
                 };
-
-                // Calculate dimensions (following strip plot pattern)
                 const container = document.getElementById('box-plot-chart');
                 const containerWidth = container.clientWidth - 40; // Account for padding
                 const dimensions = {
                     width: Math.min(containerWidth, 800),
                     height: 400
                 };
-
                 console.log(`Rendering box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
-
-                // Create vertical box plot chart
                 const boxPlotSpec = createBoxPlotSpec([preAIData, recentAIData], {
                     ...dimensions,
                     yLabel: 'Commits per Day',
                     useLogScale: useLogScale
                 });
-
                 container.innerHTML = '';
-
                 const view = new vega.View(vega.parse(vegaLite.compile(boxPlotSpec).spec))
                     .renderer('canvas')
                     .initialize(container);
-
                 await view.runAsync();
                 container._vegaView = view;
-
                 console.log('Vertical box plot rendered successfully');
             } catch (error) {
                 console.error('Error rendering chart:', error);
@@ -144,7 +123,6 @@
             console.log(`Log scale: ${useLogScale ? 'enabled' : 'disabled'}`);
             renderChart();
         };
-
         window.clearChart = function () {
             const container = document.getElementById('box-plot-chart');
             if (container._vegaView) {
@@ -153,8 +131,6 @@
             }
             container.innerHTML = 'Chart cleared. Click "Render Chart" to visualize data.';
         };
-
-        // Auto-render on load
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(renderChart, 1000);
         });

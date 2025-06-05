@@ -1,8 +1,0 @@
-{
-  "PERIODS": [
-    { "name": "Pre-AI", "start": "2022-06-01", "end": "2022-11-30" },
-    { "name": "Recent-AI", "start": "2024-11-01", "end": "2025-04-30" }
-  ],
-  "GITHUB_USERNAMES": ["restlessronin"],
-  "CLUSTER_THRESHOLD_MINUTES": 30
-}
