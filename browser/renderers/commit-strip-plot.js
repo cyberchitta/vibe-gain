@@ -31,10 +31,6 @@ export async function renderStripPlot(container, data, options = {}) {
   }
 }
 
-// Remove applyTheme, applyCustomTheme, detectDarkMode functions - they're now in themes/daisyui.js
-
-// Keep the rest of the utility functions (addSafeTooltips, etc.)
-
 /**
  * Add tooltips without causing update loops
  */
