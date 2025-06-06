@@ -31,7 +31,6 @@ export { createDateRange } from "../core/utils/date.js";
 
 export {
   calculateRepositoryStats,
-  normalizeCommitData,
   createTimeRange,
   generateGroupColors,
   generateShapeDefinitions,

@@ -69,33 +69,6 @@ export function createTimeRange(commits) {
 }
 
 /**
- * Normalize commit data for consistent visualization
- * @param {Array} commits - Raw commit data
- * @returns {Array} - Normalized commit data
- */
-export function normalizeCommitData(commits) {
-  if (!commits || commits.length === 0) {
-    return [];
-  }
-  return commits.map((commit) => ({
-    ...commit,
-    timestamp: new Date(commit.timestamp),
-    date:
-      typeof commit.date === "string"
-        ? commit.date
-        : commit.date.toISOString().split("T")[0],
-    additions: Number(commit.additions) || 0,
-    deletions: Number(commit.deletions) || 0,
-    filesChanged: Number(commit.filesChanged) || 0,
-    commitSize:
-      (Number(commit.additions) || 0) + (Number(commit.deletions) || 0),
-    isDocOnly: Boolean(commit.isDocOnly),
-    private: Boolean(commit.private),
-    isFork: Boolean(commit.isFork),
-  }));
-}
-
-/**
  * Generate color palette for repository groups
  * @param {number} groupCount - Number of groups
  * @returns {Array} - Array of color values
