@@ -11,7 +11,12 @@ import {
  * @param {string} type - Type identifier ('all', 'code', or 'doc')
  * @returns {Object} - Object containing various metrics for visualization
  */
-export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
+export function computeVizDataForType(
+  commits,
+  clusterThresholdMinutes,
+  type,
+  fetchStats
+) {
   if (!commits || commits.length === 0) {
     return {
       type,
@@ -93,6 +98,12 @@ export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
           Math.max(...commits.map((c) => new Date(c.timestamp)))
         ).toISOString(),
       },
+      missing_commits: fetchStats?.missingCommits || 0,
+      expected_total_commits: fetchStats?.expectedTotalCount || commits.length,
+      missing_commits_percentage: fetchStats?.missingPercentage || 0,
+      data_completeness_percentage: fetchStats?.expectedTotalCount
+        ? (commits.length / fetchStats.expectedTotalCount) * 100
+        : 100,
     },
   };
 }
@@ -103,7 +114,7 @@ export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
  * @param {number} clusterThresholdMinutes - Threshold for clustering commits in minutes
  * @returns {Object} - Object containing visualization data for all three categories
  */
-export function computeVizData(commits, clusterThresholdMinutes) {
+export function computeVizData(commits, clusterThresholdMinutes, fetchStats) {
   if (!commits || commits.length === 0) {
     return {
       all: { type: "all", metadata: { total_commits: 0 } },
@@ -124,17 +135,20 @@ export function computeVizData(commits, clusterThresholdMinutes) {
   const allVizData = computeVizDataForType(
     allCommits,
     clusterThresholdMinutes,
-    "all"
+    "all",
+    fetchStats
   );
   const codeVizData = computeVizDataForType(
     codeCommits,
     clusterThresholdMinutes,
-    "code"
+    "code",
+    fetchStats
   );
   const docVizData = computeVizDataForType(
     docCommits,
     clusterThresholdMinutes,
-    "doc"
+    "doc",
+    fetchStats
   );
   return {
     all: allVizData,
@@ -146,6 +160,11 @@ export function computeVizData(commits, clusterThresholdMinutes) {
       doc_commits: docCommits.length,
       doc_percentage: (docCommits.length / commits.length) * 100,
       total_repositories: new Set(commits.map((c) => c.repo)).size,
+      missing_commits: fetchStats?.missingCommits || 0,
+      expected_total_commits: fetchStats?.expectedTotalCount || commits.length,
+      data_completeness_percentage: fetchStats?.expectedTotalCount
+        ? (commits.length / fetchStats.expectedTotalCount) * 100
+        : 100,
     },
   };
 }
