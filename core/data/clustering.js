@@ -243,17 +243,35 @@ export function calculateClusterStats(clusters) {
   };
 }
 
-export function calculateTimeBetweenCommits(timestamps) {
-  if (timestamps.length <= 1) {
-    return 0;
+/**
+ * Extract all individual time intervals between consecutive commits
+ * @param {Array} commits - Array of commit objects with timestamp property
+ * @returns {Array} - Array of interval objects with time differences in minutes
+ */
+export function extractCommitIntervals(commits) {
+  if (!commits || commits.length < 2) {
+    return [];
   }
+  const sortedCommits = [...commits].sort(
+    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+  );
   const intervals = [];
-  for (let i = 1; i < timestamps.length; i++) {
-    intervals.push((timestamps[i] - timestamps[i - 1]) / (1000 * 60));
+  for (let i = 1; i < sortedCommits.length; i++) {
+    const prevTime = new Date(sortedCommits[i - 1].timestamp);
+    const currTime = new Date(sortedCommits[i].timestamp);
+    const intervalMinutes = (currTime - prevTime) / (1000 * 60);
+    intervals.push({
+      date: sortedCommits[i].date,
+      interval_minutes: intervalMinutes,
+      from_commit: sortedCommits[i - 1].sha,
+      to_commit: sortedCommits[i].sha,
+      from_repo: sortedCommits[i - 1].repo,
+      to_repo: sortedCommits[i].repo,
+      same_repo: sortedCommits[i - 1].repo === sortedCommits[i].repo,
+      cross_day: sortedCommits[i - 1].date !== sortedCommits[i].date,
+    });
   }
-  const avgInterval =
-    intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
-  return avgInterval;
+  return intervals;
 }
 
 export function calculateGapsBetweenClusters(

@@ -1,7 +1,7 @@
 import _ from "lodash";
 import {
-  calculateTimeBetweenCommits,
   calculateGapsBetweenClusters,
+  extractCommitIntervals,
 } from "./clustering.js";
 
 /**
@@ -21,7 +21,7 @@ export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
       hours: [],
       gaps: [],
       commits_per_hour: [],
-      time_between_commits: [],
+      commit_intervals: [],
       metadata: {
         total_commits: 0,
         active_days: 0,
@@ -47,7 +47,6 @@ export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
   const hoursPerDay = [];
   const commitsPerHour = [];
   const gapsPerDay = [];
-  const timeBetweenCommits = [];
   for (const [date, group] of Object.entries(commitsByDate)) {
     const timestamps = group
       .map((c) => new Date(c.timestamp))
@@ -68,9 +67,8 @@ export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
       clusterThresholdMinutes
     );
     gapsPerDay.push({ date, avg_gap_minutes: avgGap });
-    const avgInterval = calculateTimeBetweenCommits(timestamps);
-    timeBetweenCommits.push({ date, avg_time_between_commits: avgInterval });
   }
+  const allIntervals = extractCommitIntervals(commits);
   return {
     type,
     commits: commitsPerDay,
@@ -79,7 +77,7 @@ export function computeVizDataForType(commits, clusterThresholdMinutes, type) {
     hours: hoursPerDay,
     gaps: gapsPerDay,
     commits_per_hour: commitsPerHour,
-    time_between_commits: timeBetweenCommits,
+    commit_intervals: allIntervals,
     metadata: {
       total_commits: commits.length,
       active_days: Object.keys(commitsByDate).length,
