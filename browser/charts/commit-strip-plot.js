@@ -86,6 +86,7 @@ export function normalizeCommitData(commits) {
         : commit.date.toISOString().split("T")[0],
     additions: Number(commit.additions) || 0,
     deletions: Number(commit.deletions) || 0,
+    filesChanged: Number(commit.filesChanged) || 0,
     commitSize:
       (Number(commit.additions) || 0) + (Number(commit.deletions) || 0),
     isDocOnly: Boolean(commit.isDocOnly),
