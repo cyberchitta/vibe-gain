@@ -10,8 +10,6 @@ export {
   assignRepositoryGroups,
   prepareStripPlotData,
   calculateClusterStats,
-  calculateTimeBetweenCommits,
-  calculateGapsBetweenClusters,
 } from "../core/data/clustering.js";
 
 export {
@@ -57,7 +55,9 @@ export { createHistogramSpec } from "./specs/histogram.js";
 
 export {
   prepareHistogramData,
+  prepareHourOfDayData,
   renderHistogram,
+  renderHourOfDayHistogram,
   cleanupHistogram,
 } from "./renderers/histogram.js";
 

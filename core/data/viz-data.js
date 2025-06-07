@@ -1,57 +1,45 @@
-import _ from "lodash";
-import {
-  calculateGapsBetweenClusters,
-  extractCommitIntervals,
-} from "./clustering.js";
+import { extractCommitIntervals } from "./clustering.js";
 
-/**
- * Compute visualization data from a specific set of commit data
- * @param {Array} commits - Array of commit objects
- * @param {number} clusterThresholdMinutes - Threshold for clustering commits in minutes
- * @param {string} type - Type identifier ('all', 'code', or 'doc')
- * @returns {Object} - Object containing various metrics for visualization
- */
-export function computeVizDataForType(
-  commits,
-  clusterThresholdMinutes,
-  type,
-  fetchStats
-) {
-  if (!commits || commits.length === 0) {
-    return {
-      type,
-      commits: [],
-      loc: [],
-      repos: [],
-      hours: [],
-      gaps: [],
-      commits_per_hour: [],
-      commit_intervals: [],
-      metadata: {
-        total_commits: 0,
-        active_days: 0,
-        private_repo_percentage: 0,
-        fork_percentage: 0,
-        date_range: { start: null, end: null },
-      },
-    };
-  }
-  const commitsByDate = _.groupBy(commits, "date");
-  const commitsPerDay = Object.entries(commitsByDate).map(([date, group]) => ({
+function groupBy(array, key) {
+  return array.reduce((groups, item) => {
+    const group = item[key];
+    groups[group] = groups[group] || [];
+    groups[group].push(item);
+    return groups;
+  }, {});
+}
+
+function uniq(array) {
+  return [...new Set(array)];
+}
+
+function getCommitsPerDay(commits) {
+  const commitsByDate = groupBy(commits, "date");
+  return Object.entries(commitsByDate).map(([date, group]) => ({
     date,
     commits: group.length,
   }));
-  const locPerDay = Object.entries(commitsByDate).map(([date, group]) => {
+}
+
+function getLinesOfCodePerDay(commits) {
+  const commitsByDate = groupBy(commits, "date");
+  return Object.entries(commitsByDate).map(([date, group]) => {
     const loc = group.reduce((sum, c) => sum + c.additions + c.deletions, 0);
     return { date, loc };
   });
-  const reposPerDay = Object.entries(commitsByDate).map(([date, group]) => ({
+}
+
+function getRepositoriesPerDay(commits) {
+  const commitsByDate = groupBy(commits, "date");
+  return Object.entries(commitsByDate).map(([date, group]) => ({
     date,
-    repos: _.uniq(group.map((c) => c.repo)).length,
+    repos: uniq(group.map((c) => c.repo)).length,
   }));
+}
+
+function getHoursPerDay(commits) {
+  const commitsByDate = groupBy(commits, "date");
   const hoursPerDay = [];
-  const commitsPerHour = [];
-  const gapsPerDay = [];
   for (const [date, group] of Object.entries(commitsByDate)) {
     const timestamps = group
       .map((c) => new Date(c.timestamp))
@@ -65,56 +53,110 @@ export function computeVizDataForType(
       hours = Math.min(timeDiff, 8);
     }
     hoursPerDay.push({ date, hours });
-    const cph = timestamps.length / Math.max(hours, 0.1);
-    commitsPerHour.push({ date, commits_per_hour: cph });
-    const avgGap = calculateGapsBetweenClusters(
-      timestamps,
-      clusterThresholdMinutes
-    );
-    gapsPerDay.push({ date, avg_gap_minutes: avgGap });
   }
-  const allIntervals = extractCommitIntervals(commits);
+  return hoursPerDay;
+}
+
+function getHourlyCommitDistribution(commits) {
+  const hourlyCommits = {};
+  commits.forEach((commit) => {
+    const timestamp =
+      commit.timestamp instanceof Date
+        ? commit.timestamp.toISOString()
+        : commit.timestamp;
+    const hourKey = timestamp.slice(0, 13);
+    hourlyCommits[hourKey] = (hourlyCommits[hourKey] || 0) + 1;
+  });
+  return Object.values(hourlyCommits);
+}
+
+function getCommitsByHourOfDay(commits) {
+  const hourCounts = new Array(24).fill(0);
+  commits.forEach((commit) => {
+    const hour = new Date(commit.timestamp).getHours();
+    hourCounts[hour]++;
+  });
+  return hourCounts;
+}
+
+function calculateMetadata(commits) {
+  if (commits.length === 0) {
+    return {
+      total_commits: 0,
+      active_days: 0,
+      private_repo_percentage: 0,
+      fork_percentage: 0,
+      date_range: { start: null, end: null },
+    };
+  }
+  const commitsByDate = groupBy(commits, "date");
+  return {
+    total_commits: commits.length,
+    active_days: Object.keys(commitsByDate).length,
+    private_repo_percentage:
+      (commits.filter((c) => c.private).length / commits.length) * 100,
+    fork_percentage:
+      (commits.filter((c) => c.isFork).length / commits.length) * 100,
+    date_range: {
+      start: new Date(
+        Math.min(...commits.map((c) => new Date(c.timestamp)))
+      ).toISOString(),
+      end: new Date(
+        Math.max(...commits.map((c) => new Date(c.timestamp)))
+      ).toISOString(),
+    },
+  };
+}
+
+function createEmptyVizData(type) {
   return {
     type,
-    commits: commitsPerDay,
-    loc: locPerDay,
-    repos: reposPerDay,
-    hours: hoursPerDay,
-    gaps: gapsPerDay,
-    commits_per_hour: commitsPerHour,
-    commit_intervals: allIntervals,
+    commits: [],
+    loc: [],
+    repos: [],
+    hours: [],
+    commit_intervals: [],
+    hourly_commit_distribution: [],
+    commits_by_hour_of_day: new Array(24).fill(0),
     metadata: {
-      total_commits: commits.length,
-      active_days: Object.keys(commitsByDate).length,
-      private_repo_percentage:
-        (commits.filter((c) => c.private).length / commits.length) * 100,
-      fork_percentage:
-        (commits.filter((c) => c.isFork).length / commits.length) * 100,
-      date_range: {
-        start: new Date(
-          Math.min(...commits.map((c) => new Date(c.timestamp)))
-        ).toISOString(),
-        end: new Date(
-          Math.max(...commits.map((c) => new Date(c.timestamp)))
-        ).toISOString(),
-      },
-      missing_commits: fetchStats?.missingCommits || 0,
-      expected_total_commits: fetchStats?.expectedTotalCount || commits.length,
-      missing_commits_percentage: fetchStats?.missingPercentage || 0,
-      data_completeness_percentage: fetchStats?.expectedTotalCount
-        ? (commits.length / fetchStats.expectedTotalCount) * 100
-        : 100,
+      total_commits: 0,
+      active_days: 0,
+      private_repo_percentage: 0,
+      fork_percentage: 0,
+      date_range: { start: null, end: null },
     },
+  };
+}
+
+/**
+ * Compute visualization data from a specific set of commit data
+ * @param {Array} commits - Array of commit objects
+ * @param {string} type - Type identifier ('all', 'code', or 'doc')
+ * @returns {Object} - Object containing various metrics for visualization
+ */
+export function computeVizDataForType(commits, type) {
+  if (!commits || commits.length === 0) {
+    return createEmptyVizData(type);
+  }
+  return {
+    type,
+    commits: getCommitsPerDay(commits),
+    loc: getLinesOfCodePerDay(commits),
+    repos: getRepositoriesPerDay(commits),
+    hours: getHoursPerDay(commits),
+    commit_intervals: extractCommitIntervals(commits),
+    hourly_commit_distribution: getHourlyCommitDistribution(commits),
+    commits_by_hour_of_day: getCommitsByHourOfDay(commits),
+    metadata: calculateMetadata(commits),
   };
 }
 
 /**
  * Compute visualization data for all three categories: all commits, code commits, and doc commits
  * @param {Array} commits - Array of commit objects
- * @param {number} clusterThresholdMinutes - Threshold for clustering commits in minutes
  * @returns {Object} - Object containing visualization data for all three categories
  */
-export function computeVizData(commits, clusterThresholdMinutes, fetchStats) {
+export function computeVizData(commits, fetchStats) {
   if (!commits || commits.length === 0) {
     return {
       all: { type: "all", metadata: { total_commits: 0 } },
@@ -132,24 +174,9 @@ export function computeVizData(commits, clusterThresholdMinutes, fetchStats) {
   const allCommits = commits;
   const codeCommits = commits.filter((c) => !c.isDocOnly);
   const docCommits = commits.filter((c) => c.isDocOnly);
-  const allVizData = computeVizDataForType(
-    allCommits,
-    clusterThresholdMinutes,
-    "all",
-    fetchStats
-  );
-  const codeVizData = computeVizDataForType(
-    codeCommits,
-    clusterThresholdMinutes,
-    "code",
-    fetchStats
-  );
-  const docVizData = computeVizDataForType(
-    docCommits,
-    clusterThresholdMinutes,
-    "doc",
-    fetchStats
-  );
+  const allVizData = computeVizDataForType(allCommits, "all", fetchStats);
+  const codeVizData = computeVizDataForType(codeCommits, "code", fetchStats);
+  const docVizData = computeVizDataForType(docCommits, "doc", fetchStats);
   return {
     all: allVizData,
     code: codeVizData,

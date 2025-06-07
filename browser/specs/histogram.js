@@ -88,7 +88,9 @@ export function createHistogramSpec(chartData, options = {}) {
         },
         scale: {
           domain:
-            options.viewMode === "percentage" ? [0, 100] : options.yDomain,
+            options.viewMode === "percentage"
+              ? options.yDomain || [0, 100]
+              : options.yDomain,
           nice: options.viewMode !== "percentage",
         },
       },
@@ -99,10 +101,13 @@ export function createHistogramSpec(chartData, options = {}) {
           domain: chartData.map((chart) => chart.period),
           range: chartData.map((chart) => chart.color),
         },
-        legend: {
-          title: "Period",
-          orient: "top-right",
-        },
+        legend:
+          options.showLegend === false
+            ? null
+            : {
+                title: "Period",
+                orient: "top-right",
+              },
       },
       tooltip: [
         { field: "binLabel", title: "Range" },

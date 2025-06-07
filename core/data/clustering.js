@@ -273,34 +273,3 @@ export function extractCommitIntervals(commits) {
   }
   return intervals;
 }
-
-export function calculateGapsBetweenClusters(
-  timestamps,
-  clusterThresholdMinutes
-) {
-  if (timestamps.length <= 1) {
-    return 0;
-  }
-  const clusters = [];
-  let currentCluster = [timestamps[0]];
-  for (let i = 1; i < timestamps.length; i++) {
-    const timeDiff = (timestamps[i] - timestamps[i - 1]) / (1000 * 60);
-    if (timeDiff <= clusterThresholdMinutes) {
-      currentCluster.push(timestamps[i]);
-    } else {
-      clusters.push(currentCluster);
-      currentCluster = [timestamps[i]];
-    }
-  }
-  clusters.push(currentCluster);
-  if (clusters.length <= 1) {
-    return 0;
-  }
-  const avgGap =
-    clusters.slice(1).reduce((sum, cluster, i) => {
-      const gap = (cluster[0] - clusters[i][0]) / (1000 * 60);
-      return sum + gap;
-    }, 0) /
-    (clusters.length - 1);
-  return avgGap;
-}

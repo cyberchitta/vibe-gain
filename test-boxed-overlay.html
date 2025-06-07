@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vertical Box Plots Test</title>
+    <title>Commit Distribution Analysis</title>
     <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
     <style>
@@ -13,10 +13,20 @@
             margin: 20px;
         }
 
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
         .chart-container {
-            margin: 20px 0;
+            flex: 1;
+            min-width: 400px;
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 20px;
+            border-radius: 8px;
         }
 
         .error {
@@ -39,24 +49,48 @@
         button:hover {
             background: #2980b9;
         }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
-    <h1>Vertical Box Plots Test</h1>
+    <h1>Commit Distribution Analysis</h1>
 
-    <div class="chart-container">
-        <h2>Commits Per Day Distribution</h2>
-        <div id="box-plot-chart" style="height: 450px; width: 800px;"></div>
-        <button onclick="renderChart()">Render Chart</button>
-        <button onclick="toggleLogScale()">Toggle Log Scale</button>
-        <button onclick="clearChart()">Clear</button>
+    <div class="container">
+        <div class="chart-container">
+            <h2>Commits per Hour Distribution</h2>
+            <div id="box-plot-chart" style="height: 400px;"></div>
+            <div style="text-align: center; margin-top: 10px;">
+                <button onclick="renderCharts()">Render Charts</button>
+                <button onclick="toggleLogScale()">Toggle Log Scale</button>
+                <button onclick="clearCharts()">Clear</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2>Commits by Hour of Day</h2>
+            <div id="histogram-chart" style="height: 400px;"></div>
+        </div>
     </div>
 
     <script type="module">
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
+        import { createHistogramSpec } from './browser/specs/histogram.js';
+        import { prepareHourOfDayData, renderHourOfDayHistogram } from './browser/renderers/histogram.js';
+        import { computeVizDataForType } from './core/data/viz-data.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
+
         let useLogScale = false;
+
         async function loadCommitData() {
             const [preResponse, recentResponse] = await Promise.all([
                 fetch('./data/restlessronin/raw/commits_Pre-AI.json'),
@@ -68,71 +102,102 @@
             const recentCommits = arrayFormatToCommits(recentArrayFormat);
             return { preCommits, recentCommits };
         }
-        function getCommitsMetricData(commits) {
-            const commitsByDate = {};
-            commits.forEach(commit => {
-                commitsByDate[commit.date] = (commitsByDate[commit.date] || 0) + 1;
+
+        async function renderHourlyDistributionBoxPlot(preVizData, recentVizData) {
+            const preAIData = {
+                period: 'Pre-AI',
+                values: preVizData.hourly_commit_distribution,
+                color: '#e74c3c'
+            };
+            const recentAIData = {
+                period: 'Recent-AI',
+                values: recentVizData.hourly_commit_distribution,
+                color: '#3498db'
+            };
+            const container = document.getElementById('box-plot-chart');
+            const containerWidth = container.clientWidth - 40;
+            const dimensions = {
+                width: Math.min(containerWidth, 400),
+                height: 350
+            };
+            console.log(`Rendering hourly distribution box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
+            const boxPlotSpec = createBoxPlotSpec([preAIData, recentAIData], {
+                ...dimensions,
+                yLabel: 'Commits per Hour',
+                useLogScale: useLogScale
             });
-            return Object.entries(commitsByDate).map(([date, commits]) => ({
-                date,
-                commits
-            }));
+            container.innerHTML = '';
+            const view = new vega.View(vega.parse(vegaLite.compile(boxPlotSpec).spec))
+                .renderer('canvas')
+                .initialize(container);
+            await view.runAsync();
+            container._vegaView = view;
+            console.log('Hourly distribution box plot rendered successfully');
         }
-        window.renderChart = async function () {
+
+        async function _renderHourOfDayHistogram(preVizData, recentVizData) {
+            const periodsData = [
+                {
+                    period: 'Pre-AI',
+                    hourlyData: preVizData.commits_by_hour_of_day,
+                    color: '#e74c3c'
+                },
+                {
+                    period: 'Recent-AI',
+                    hourlyData: recentVizData.commits_by_hour_of_day,
+                    color: '#3498db'
+                }
+            ];
+
+            const container = document.getElementById('histogram-chart');
+            console.log('Rendering hour of day histogram with dedicated renderer');
+
+            await renderHourOfDayHistogram(container, periodsData, {
+                width: Math.min(container.clientWidth - 40, 400),
+                height: 350,
+                useLogScale: false,
+                viewMode: 'percentage',
+                yLabel: 'Percentage of Commits',
+                showLegend: false
+            });
+
+            console.log('Hour of day histogram rendered successfully');
+        }
+        window.renderCharts = async function () {
             try {
                 const { preCommits, recentCommits } = await loadCommitData();
-                const preMetricData = getCommitsMetricData(preCommits);
-                const recentMetricData = getCommitsMetricData(recentCommits);
-                const preAIData = {
-                    period: 'Pre-AI',
-                    values: preMetricData.map(d => d.commits),
-                    color: '#e74c3c'
-                };
-                const recentAIData = {
-                    period: 'Recent-AI',
-                    values: recentMetricData.map(d => d.commits),
-                    color: '#3498db'
-                };
-                const container = document.getElementById('box-plot-chart');
-                const containerWidth = container.clientWidth - 40; // Account for padding
-                const dimensions = {
-                    width: Math.min(containerWidth, 800),
-                    height: 400
-                };
-                console.log(`Rendering box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
-                const boxPlotSpec = createBoxPlotSpec([preAIData, recentAIData], {
-                    ...dimensions,
-                    yLabel: 'Commits per Day',
-                    useLogScale: useLogScale
-                });
-                container.innerHTML = '';
-                const view = new vega.View(vega.parse(vegaLite.compile(boxPlotSpec).spec))
-                    .renderer('canvas')
-                    .initialize(container);
-                await view.runAsync();
-                container._vegaView = view;
-                console.log('Vertical box plot rendered successfully');
+                const preVizData = computeVizDataForType(preCommits, 'all');
+                const recentVizData = computeVizDataForType(recentCommits, 'all');
+                console.log('Pre-AI hourly distribution:', preVizData.hourly_commit_distribution);
+                console.log('Recent-AI hourly distribution:', recentVizData.hourly_commit_distribution);
+                console.log('Pre-AI hour of day:', preVizData.commits_by_hour_of_day);
+                console.log('Recent-AI hour of day:', recentVizData.commits_by_hour_of_day);
+                await renderHourlyDistributionBoxPlot(preVizData, recentVizData);
+                await _renderHourOfDayHistogram(preVizData, recentVizData); // Pass raw commits
+                console.log('Both charts rendered successfully');
             } catch (error) {
-                console.error('Error rendering chart:', error);
+                console.error('Error rendering charts:', error);
                 document.getElementById('box-plot-chart').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('histogram-chart').innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         };
-
         window.toggleLogScale = function () {
             useLogScale = !useLogScale;
             console.log(`Log scale: ${useLogScale ? 'enabled' : 'disabled'}`);
-            renderChart();
+            window.renderCharts();
         };
-        window.clearChart = function () {
-            const container = document.getElementById('box-plot-chart');
-            if (container._vegaView) {
-                container._vegaView.finalize();
-                container._vegaView = null;
-            }
-            container.innerHTML = 'Chart cleared. Click "Render Chart" to visualize data.';
+        window.clearCharts = function () {
+            ['box-plot-chart', 'histogram-chart'].forEach(id => {
+                const container = document.getElementById(id);
+                if (container._vegaView) {
+                    container._vegaView.finalize();
+                    container._vegaView = null;
+                }
+                container.innerHTML = 'Chart cleared. Click "Render Charts" to visualize data.';
+            });
         };
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(renderChart, 1000);
+            setTimeout(() => window.renderCharts(), 1000);
         });
     </script>
 </body>

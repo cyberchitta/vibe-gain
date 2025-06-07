@@ -9,15 +9,6 @@ const NATURAL_BUCKETS = {
     { min: 10080, max: Infinity, label: "> 1 week", logCenter: 20160 },
   ],
 
-  commits_per_hour: [
-    { min: 0, max: 0.1, label: "< 0.1", logCenter: 0.05 },
-    { min: 0.1, max: 0.5, label: "0.1-0.5", logCenter: 0.3 },
-    { min: 0.5, max: 1, label: "0.5-1", logCenter: 0.75 },
-    { min: 1, max: 3, label: "1-3", logCenter: 2 },
-    { min: 3, max: 10, label: "3-10", logCenter: 6.5 },
-    { min: 10, max: Infinity, label: "> 10", logCenter: 15 },
-  ],
-
   commits: [
     { min: 1, max: 2, label: "1", logCenter: 1 },
     { min: 2, max: 6, label: "2-5", logCenter: 3.5 },
@@ -47,21 +38,9 @@ const NATURAL_BUCKETS = {
   ],
 
   repos: [
-    // repos per day
     { min: 1, max: 1, label: "1", logCenter: 1 },
     { min: 2, max: 3, label: "2-3", logCenter: 2.5 },
     { min: 4, max: Infinity, label: "4+", logCenter: 6 },
-  ],
-
-  gaps: [
-    // average gap minutes per day (same as time_between_commits but different context)
-    { min: 0, max: 5, label: "< 5 min", logCenter: 2.5 },
-    { min: 5, max: 15, label: "5-15 min", logCenter: 10 },
-    { min: 15, max: 60, label: "15-60 min", logCenter: 37.5 },
-    { min: 60, max: 240, label: "1-4 hours", logCenter: 150 },
-    { min: 240, max: 1440, label: "4-24 hours", logCenter: 840 },
-    { min: 1440, max: 10080, label: "1-7 days", logCenter: 5760 },
-    { min: 10080, max: Infinity, label: "> 1 week", logCenter: 20160 },
   ],
 };
 
