@@ -60,9 +60,7 @@ export { createHistogramSpec } from "./specs/histogram.js";
 
 export {
   prepareHistogramData,
-  prepareHourOfDayData,
   renderHistogram,
-  renderHourOfDayHistogram,
   cleanupHistogram,
 } from "./renderers/histogram.js";
 

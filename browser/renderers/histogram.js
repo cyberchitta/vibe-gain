@@ -6,33 +6,36 @@ import {
 import { applyDaisyUITheme } from "../themes/daisyui.js";
 
 /**
- * Prepare overlay data using natural buckets when available
- * @param {Array} periodsData - Array of {period, metricData, color} objects
- * @param {string} metricId - Metric identifier
+ * Unified data preparation for all histogram types
+ * @param {Array} periodsData - Array of period data objects
  * @param {Object} options - Options for bucketing and display
- * @returns {Array} - Array of prepared chart data with natural buckets
+ * @returns {Array} - Array of prepared chart data
  */
-export function prepareHistogramData(periodsData, metricId, options = {}) {
-  const useNaturalBuckets =
-    options.useNaturalBuckets !== false && hasNaturalBuckets(metricId);
-  if (!useNaturalBuckets) {
-    throw new Error(
-      `Natural buckets not available for metric: ${metricId}. Please define natural buckets first.`
-    );
+export function prepareHistogramData(periodsData, options = {}) {
+  if (!periodsData || periodsData.length === 0) {
+    throw new Error("periodsData is required and must not be empty");
   }
-  return periodsData.map((periodData) => {
-    const bucketData = prepareNaturalBucketData(
-      periodData.metricData,
-      metricId,
-      options
-    );
-    return {
-      period: periodData.period,
-      bucketData: bucketData,
-      color: periodData.color,
-      metricId: metricId,
-    };
-  });
+  const firstPeriod = periodsData[0];
+  if (firstPeriod.hourlyData && Array.isArray(firstPeriod.hourlyData)) {
+    return prepareHourOfDayData(periodsData, options);
+  }
+  if (firstPeriod.metricData && options.metricId) {
+    return prepareNaturalBucketsData(periodsData, options.metricId, options);
+  }
+  if (
+    options.metricId === "hour_of_day" ||
+    options.metricId === "commits_by_hour_of_day"
+  ) {
+    const hourOfDayPeriodsData = periodsData.map((p) => ({
+      period: p.period,
+      hourlyData: p.metricData || p.hourlyData,
+      color: p.color,
+    }));
+    return prepareHourOfDayData(hourOfDayPeriodsData, options);
+  }
+  throw new Error(
+    "Unable to determine data type. Provide either hourlyData or metricData with metricId"
+  );
 }
 
 /**
@@ -71,64 +74,81 @@ export function prepareHourOfDayData(periodsData, options = {}) {
 }
 
 /**
- * Render overlay plot
- * @param {HTMLElement} container - Container element
- * @param {Array} chartData - Prepared chart data
- * @param {Object} options - Rendering options
- * @returns {Promise<Object>} - Vega view instance
+ * Prepare natural buckets data for histogram visualization
+ * @param {Array} periodsData - Array of {period, metricData, color} objects
+ * @param {string} metricId - Metric identifier
+ * @param {Object} options - Options for bucketing and display
+ * @returns {Array} - Array of prepared chart data with natural buckets
  */
-export async function renderHistogram(container, chartData, options = {}) {
-  if (!container) {
-    throw new Error("Container element is required");
+function prepareNaturalBucketsData(periodsData, metricId, options = {}) {
+  const useNaturalBuckets =
+    options.useNaturalBuckets !== false && hasNaturalBuckets(metricId);
+  if (!useNaturalBuckets) {
+    throw new Error(
+      `Natural buckets not available for metric: ${metricId}. Please define natural buckets first.`
+    );
   }
-  container.innerHTML = "";
-  const spec = createHistogramSpec(chartData, options);
-  const themedSpec = applyDaisyUITheme(spec, options);
-  try {
-    const view = new vega.View(vega.parse(themedSpec))
-      .renderer("canvas")
-      .initialize(container);
-    await view.runAsync();
-    container._vegaView = view;
-    return view;
-  } catch (error) {
-    container.innerHTML = `<div class="error-message p-4 text-error">Error: ${error.message}</div>`;
-    throw error;
-  }
+  return periodsData.map((periodData) => {
+    const bucketData = prepareNaturalBucketData(
+      periodData.metricData,
+      metricId,
+      options
+    );
+    return {
+      period: periodData.period,
+      bucketData: bucketData,
+      color: periodData.color,
+      metricId: metricId,
+    };
+  });
 }
 
 /**
- * Render hour-of-day histogram
+ * Unified histogram renderer - handles both natural buckets and hour-of-day data
  * @param {HTMLElement} container - Container element
- * @param {Array} periodsData - Array of {period, hourlyData, color} objects
+ * @param {Array} periodsData - Array of period data objects
  * @param {Object} options - Rendering options
  * @returns {Promise<Object>} - Vega view instance
  */
-export async function renderHourOfDayHistogram(container, periodsData, options = {}) {
+export async function renderHistogram(container, periodsData, options = {}) {
   if (!container) {
     throw new Error("Container element is required");
   }
   container.innerHTML = "";
-  const chartData = prepareHourOfDayData(periodsData, options);
+  const chartData = prepareHistogramData(periodsData, options);
   let yDomain = undefined;
-  if (options.viewMode === 'percentage') {
-    const allPercentages = chartData.flatMap(chart => 
-      chart.bucketData.bins.map(bin => bin.percentageCount)
+  if (
+    options.viewMode === "percentage" &&
+    chartData.length > 0 &&
+    chartData[0].metricId === "hour_of_day"
+  ) {
+    const allPercentages = chartData.flatMap((chart) =>
+      chart.bucketData.bins.map((bin) => bin.percentageCount)
     );
     const maxPercentage = Math.max(...allPercentages);
-    const minPercentage = Math.min(...allPercentages.filter(p => p > 0)); // Exclude zeros
     const range = maxPercentage - 0;
     const padding = Math.max(range * 0.1, 1);
     yDomain = [0, maxPercentage + padding];
-    console.log(`Percentage range: 0% to ${maxPercentage.toFixed(1)}%, setting domain to [0, ${(maxPercentage + padding).toFixed(1)}]`);
+    console.log(
+      `Percentage range: 0% to ${maxPercentage.toFixed(
+        1
+      )}%, setting domain to [0, ${(maxPercentage + padding).toFixed(1)}]`
+    );
   }
-  const spec = createHistogramSpec(chartData, {
+  const isHourOfDay =
+    chartData.length > 0 && chartData[0].metricId === "hour_of_day";
+  const finalOptions = {
+    xLabel: isHourOfDay ? "Hour of Day" : options.xLabel,
+    yLabel: isHourOfDay
+      ? options.viewMode === "percentage"
+        ? "Percentage of Commits"
+        : "Total Commits"
+      : options.yLabel,
+    yDomain: yDomain,
     ...options,
-    xLabel: options.xLabel || 'Hour of Day',
-    yLabel: options.yLabel || 'Total Commits',
-    yDomain: yDomain
-  });
-  const themedSpec = applyDaisyUITheme(spec, options);
+  };
+  const spec = createHistogramSpec(chartData, finalOptions);
+  const themedSpec = applyDaisyUITheme(spec, finalOptions);
   try {
     const view = new vega.View(vega.parse(vegaLite.compile(themedSpec).spec))
       .renderer("canvas")
@@ -137,14 +157,14 @@ export async function renderHourOfDayHistogram(container, periodsData, options =
     container._vegaView = view;
     return view;
   } catch (error) {
-    console.error("Error rendering hour-of-day histogram:", error);
+    console.error("Error rendering histogram:", error);
     container.innerHTML = `<div class="error-message p-4 text-error">Error: ${error.message}</div>`;
     throw error;
   }
 }
 
 /**
- * Cleanup overlay resources
+ * Cleanup histogram resources
  * @param {HTMLElement} container - Container element
  */
 export function cleanupHistogram(container) {

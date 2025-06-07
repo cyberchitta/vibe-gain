@@ -85,7 +85,7 @@
     <script type="module">
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { createHistogramSpec } from './browser/specs/histogram.js';
-        import { prepareHourOfDayData, renderHourOfDayHistogram } from './browser/renderers/histogram.js';
+        import { prepareHistogramData, renderHistogram } from './browser/renderers/histogram.js';
         import { computeVizDataForType } from './core/data/viz-data.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
 
@@ -148,19 +148,15 @@
                     color: '#3498db'
                 }
             ];
-
             const container = document.getElementById('histogram-chart');
             console.log('Rendering hour of day histogram with dedicated renderer');
-
-            await renderHourOfDayHistogram(container, periodsData, {
+            await renderHistogram(container, periodsData, {
                 width: Math.min(container.clientWidth - 40, 400),
                 height: 350,
                 useLogScale: false,
                 viewMode: 'percentage',
-                yLabel: 'Percentage of Commits',
                 showLegend: false
             });
-
             console.log('Hour of day histogram rendered successfully');
         }
         window.renderCharts = async function () {
