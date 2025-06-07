@@ -1,7 +1,7 @@
 {
   "name": "vibe-gain",
   "version": "0.0.2",
-  "description": "Analyze GitHub commit data for productivity metrics with interactive visualizations",
+  "description": "Visualize GitHub commit patterns to evaluate vibe-coding productivity gains",
   "type": "module",
   "main": "./lib/index.js",
   "browser": "./browser/index.js",
