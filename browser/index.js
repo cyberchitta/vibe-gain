@@ -6,11 +6,16 @@ export {
 } from "../core/data/viz-data.js";
 
 export {
-  identifyCommitClusters,
   assignRepositoryGroups,
   prepareStripPlotData,
-  calculateClusterStats,
-} from "../core/data/clustering.js";
+} from "../core/data/strip-plot.js";
+
+export {
+  loadChartDataFromFiles,
+  loadChartDataFromRaw,
+  extractChartData,
+  preparePeriodDataForHistogram,
+} from '../core/data/chart-adapter.js';
 
 export {
   prepareNaturalBucketData,

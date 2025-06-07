@@ -1,5 +1,3 @@
-import { extractCommitIntervals } from "./clustering.js";
-
 function groupBy(array, key) {
   return array.reduce((groups, item) => {
     const group = item[key];
@@ -11,6 +9,37 @@ function groupBy(array, key) {
 
 function uniq(array) {
   return [...new Set(array)];
+}
+
+/**
+ * Extract all individual time intervals between consecutive commits
+ * @param {Array} commits - Array of commit objects with timestamp property
+ * @returns {Array} - Array of interval objects with time differences in minutes
+ */
+export function extractCommitIntervals(commits) {
+  if (!commits || commits.length < 2) {
+    return [];
+  }
+  const sortedCommits = [...commits].sort(
+    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+  );
+  const intervals = [];
+  for (let i = 1; i < sortedCommits.length; i++) {
+    const prevTime = new Date(sortedCommits[i - 1].timestamp);
+    const currTime = new Date(sortedCommits[i].timestamp);
+    const intervalMinutes = (currTime - prevTime) / (1000 * 60);
+    intervals.push({
+      date: sortedCommits[i].date,
+      interval_minutes: intervalMinutes,
+      from_commit: sortedCommits[i - 1].sha,
+      to_commit: sortedCommits[i].sha,
+      from_repo: sortedCommits[i - 1].repo,
+      to_repo: sortedCommits[i].repo,
+      same_repo: sortedCommits[i - 1].repo === sortedCommits[i].repo,
+      cross_day: sortedCommits[i - 1].date !== sortedCommits[i].date,
+    });
+  }
+  return intervals;
 }
 
 function getCommitsPerDay(commits) {
