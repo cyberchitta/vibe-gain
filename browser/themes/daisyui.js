@@ -30,6 +30,9 @@ export function getThemeColors(isDark = null) {
       computedStyle.getPropertyValue("--primary").trim() || "#3A86FF",
     gridColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
     axisColor: isDark ? "rgba(229,231,235,0.7)" : "rgba(51,51,51,0.7)",
+    medianColor:
+      computedStyle.getPropertyValue("--base-content").trim() ||
+      (isDark ? "#E5E7EB" : "#333333"),
     fontSans: (() => {
       const fontSans =
         computedStyle.getPropertyValue("--font-sans").trim() ||
@@ -75,6 +78,11 @@ export function applyDaisyUITheme(spec, options = {}) {
       },
       mark: {
         color: colors.primaryColor,
+      },
+      boxplot: {
+        median: { color: colors.medianColor, strokeWidth: 2 },
+        whisker: { color: colors.medianColor, strokeWidth: 1 },
+        rule: { color: colors.medianColor, strokeWidth: 1 },
       },
     },
   };

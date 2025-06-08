@@ -117,28 +117,30 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         layer: [
           {
             mark: {
-              type: "tick",
-              size: 15,
-              thickness: 2,
+              type: "point",
+              shape: "cross",
+              size: 40,
+              stroke: 1,
               opacity: 0.8,
             },
             encoding: {
               x: xEncoding,
               y: { field: "p5", type: "quantitative" },
-              color: colorEncoding,
+              stroke: colorEncoding,
             },
           },
           {
             mark: {
-              type: "tick",
-              size: 15,
-              thickness: 2,
+              type: "point",
+              shape: "cross",
+              size: 40,
+              stroke: 1,
               opacity: 0.8,
             },
             encoding: {
               x: xEncoding,
               y: { field: "p95", type: "quantitative" },
-              color: colorEncoding,
+              stroke: colorEncoding,
             },
           },
         ],
