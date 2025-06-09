@@ -15,7 +15,7 @@ export {
   loadChartDataFromRaw,
   extractChartData,
   preparePeriodDataForHistogram,
-} from '../core/data/chart-adapter.js';
+} from "../core/data/chart-adapter.js";
 
 export {
   prepareNaturalBucketData,
@@ -59,10 +59,17 @@ export { createBoxPlotSpec } from "./specs/box-plot.js";
 export { createHistogramSpec } from "./specs/histogram.js";
 
 export {
+  preparePeriodsForHistogram,
   prepareHistogramData,
   renderHistogram,
   cleanupHistogram,
 } from "./renderers/histogram.js";
+
+export {
+  preparePeriodsForBoxPlot,
+  renderBoxPlot,
+  cleanupBoxPlot,
+} from "./renderers/box-plot.js";
 
 export {
   detectDarkMode,

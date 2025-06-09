@@ -85,7 +85,8 @@
     <script type="module">
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { createHistogramSpec } from './browser/specs/histogram.js';
-        import { prepareHistogramData, renderHistogram } from './browser/renderers/histogram.js';
+        import { preparePeriodsForHistogram, prepareHistogramData, renderHistogram } from './browser/renderers/histogram.js';
+        import { renderBoxPlot } from './browser/renderers/box-plot.js';  // Add this
         import { computeVizDataForType } from './core/data/viz-data.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
 
@@ -104,16 +105,18 @@
         }
 
         async function renderHourlyDistributionBoxPlot(preVizData, recentVizData) {
-            const preAIData = {
-                period: 'Pre-AI',
-                values: preVizData.hourly_commit_distribution,
-                color: '#e74c3c'
-            };
-            const recentAIData = {
-                period: 'Recent-AI',
-                values: recentVizData.hourly_commit_distribution,
-                color: '#3498db'
-            };
+            const rawPeriodsData = [
+                {
+                    period: 'Pre-AI',
+                    data: preVizData.hourly_commit_distribution,
+                    color: '#e74c3c'
+                },
+                {
+                    period: 'Recent-AI',
+                    data: recentVizData.hourly_commit_distribution,
+                    color: '#3498db'
+                }
+            ];
             const container = document.getElementById('box-plot-chart');
             const containerWidth = container.clientWidth - 40;
             const dimensions = {
@@ -121,43 +124,50 @@
                 height: 350
             };
             console.log(`Rendering hourly distribution box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
-            const boxPlotSpec = createBoxPlotSpec([preAIData, recentAIData], {
-                ...dimensions,
-                yLabel: 'Commits per Hour',
-                useLogScale: useLogScale
-            });
-            container.innerHTML = '';
-            const view = new vega.View(vega.parse(vegaLite.compile(boxPlotSpec).spec))
-                .renderer('canvas')
-                .initialize(container);
-            await view.runAsync();
-            container._vegaView = view;
-            console.log('Hourly distribution box plot rendered successfully');
+            try {
+                await renderBoxPlot(container, rawPeriodsData, {
+                    metricId: 'hourly_commit_distribution',
+                    ...dimensions,
+                    yLabel: 'Commits per Hour',
+                    useLogScale: useLogScale,
+                    showPercentiles: true
+                });
+                console.log('Hourly distribution box plot rendered successfully');
+            } catch (error) {
+                console.error('Error rendering box plot:', error);
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
         }
 
         async function _renderHourOfDayHistogram(preVizData, recentVizData) {
-            const periodsData = [
+            const rawPeriodsData = [
                 {
                     period: 'Pre-AI',
-                    hourlyData: preVizData.commits_by_hour_of_day,
+                    data: preVizData.commits_by_hour_of_day,
                     color: '#e74c3c'
                 },
                 {
                     period: 'Recent-AI',
-                    hourlyData: recentVizData.commits_by_hour_of_day,
+                    data: recentVizData.commits_by_hour_of_day,
                     color: '#3498db'
                 }
             ];
             const container = document.getElementById('histogram-chart');
-            console.log('Rendering hour of day histogram with dedicated renderer');
-            await renderHistogram(container, periodsData, {
-                width: Math.min(container.clientWidth - 40, 400),
-                height: 350,
-                useLogScale: false,
-                viewMode: 'percentage',
-                showLegend: false
-            });
-            console.log('Hour of day histogram rendered successfully');
+            console.log('Rendering hour of day histogram with unified renderer');
+            try {
+                await renderHistogram(container, rawPeriodsData, {
+                    metricId: 'commits_by_hour_of_day',
+                    width: Math.min(container.clientWidth - 40, 400),
+                    height: 350,
+                    useLogScale: false,
+                    viewMode: 'percentage',
+                    showLegend: false
+                });
+                console.log('Hour of day histogram rendered successfully');
+            } catch (error) {
+                console.error('Error rendering histogram:', error);
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
         }
         window.renderCharts = async function () {
             try {

@@ -6,6 +6,22 @@ import {
 import { applyDaisyUITheme } from "../themes/daisyui.js";
 
 /**
+ * Prepare raw periods data for histogram rendering by structuring it correctly
+ * @param {Array} periodsRawData - Array of {period, data, color} objects
+ * @param {string} metricId - Metric identifier
+ * @returns {Array} - Properly structured periods data for prepareHistogramData
+ */
+export function preparePeriodsForHistogram(periodsRawData, metricId) {
+  return periodsRawData.map(({ period, data, color }) => {
+    if (metricId === "commits_by_hour_of_day") {
+      return { period, hourlyData: data, color };
+    } else {
+      return { period, metricData: data, color };
+    }
+  });
+}
+
+/**
  * Unified data preparation for all histogram types
  * @param {Array} periodsData - Array of period data objects
  * @param {Object} options - Options for bucketing and display
@@ -110,11 +126,15 @@ function prepareNaturalBucketsData(periodsData, metricId, options = {}) {
  * @param {Object} options - Rendering options
  * @returns {Promise<Object>} - Vega view instance
  */
-export async function renderHistogram(container, periodsData, options = {}) {
+export async function renderHistogram(container, periodsRawData, options = {}) {
   if (!container) {
     throw new Error("Container element is required");
   }
   container.innerHTML = "";
+  const periodsData = preparePeriodsForHistogram(
+    periodsRawData,
+    options.metricId
+  );
   const chartData = prepareHistogramData(periodsData, options);
   let yDomain = undefined;
   if (

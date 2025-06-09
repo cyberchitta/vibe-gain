@@ -1,5 +1,5 @@
 const NATURAL_BUCKETS = {
-  time_between_commits: [
+  commit_intervals: [
     { min: 0, max: 5, label: "< 5 min", logCenter: 2.5 },
     { min: 5, max: 15, label: "5-15 min", logCenter: 10 },
     { min: 15, max: 60, label: "15-60 min", logCenter: 37.5 },
@@ -56,10 +56,10 @@ export function extractValues(metricData, metricId) {
   metricData.forEach((item) => {
     let value = null;
     if (
-      metricId === "time_between_commits" &&
-      item["avg_time_between_commits"] !== undefined
+      metricId === "commit_intervals" &&
+      item["interval_minutes"] !== undefined
     ) {
-      value = item["avg_time_between_commits"];
+      value = item["interval_minutes"];
     } else if (
       metricId === "commits_per_hour" &&
       item["commits_per_hour"] !== undefined
