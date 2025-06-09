@@ -8,11 +8,36 @@ import { applyDaisyUITheme } from "../themes/daisyui.js";
  * @returns {Array} - Array of {period, values, color} objects for createBoxPlotSpec
  */
 export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
-  return periodsRawData.map(({ period, data, color }) => ({
-    period,
-    values: data,
-    color,
-  }));
+  return periodsRawData.map(({ period, data, color }) => {
+    let values;
+    
+    if (metricId === 'hourly_commit_distribution') {
+      // data is already a flat array of numbers
+      values = Array.isArray(data) ? data.filter(val => val > 0) : [];
+    } else {
+      // Handle other metrics that are arrays of objects
+      values = data
+        .map((item) => {
+          if (metricId === 'commit_intervals' && item.interval_minutes !== undefined) {
+            return item.interval_minutes;
+          } else if (metricId === 'commits_per_hour' && item.commits_per_hour !== undefined) {
+            return item.commits_per_hour;
+          } else if (metricId === 'gaps' && item.avg_gap_minutes !== undefined) {
+            return item.avg_gap_minutes;
+          } else if (item[metricId] !== undefined) {
+            return item[metricId];
+          }
+          return null;
+        })
+        .filter((val) => val !== null && !isNaN(val) && val > 0);
+    }
+    
+    return {
+      period,
+      values,
+      color,
+    };
+  });
 }
 
 /**

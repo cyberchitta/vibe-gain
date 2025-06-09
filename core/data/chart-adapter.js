@@ -110,6 +110,7 @@ export function extractChartData(vizData, metricType) {
       typeData.commits || [],
       typeData.hours || []
     ),
+    hourly_commit_distribution: typeData.hourly_commit_distribution || [],
     metadata: typeData.metadata || {},
   };
 }
