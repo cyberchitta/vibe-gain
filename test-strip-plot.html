@@ -60,9 +60,7 @@
     </div>
     <script type="module">
         import { renderStripPlot } from './browser/renderers/commit-strip-plot.js';
-        import { prepareStripPlotData } from './core/data/strip-plot.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
-
         function shouldUsePortraitOrientation() {
             const width = window.innerWidth;
             const height = window.innerHeight;
@@ -75,10 +73,10 @@
             const width = window.innerWidth;
             const height = window.innerHeight;
             info.innerHTML = `
-                Viewport: ${width}×${height} | 
-                Orientation: ${usePortrait ? 'Portrait' : 'Landscape'} | 
-                Mode: ${width < 768 ? 'Mobile' : 'Desktop'}
-            `;
+               Viewport: ${width}×${height} | 
+               Orientation: ${usePortrait ? 'Portrait' : 'Landscape'} | 
+               Mode: ${width < 768 ? 'Mobile' : 'Desktop'}
+           `;
         }
         async function loadParameters() {
             const response = await fetch('./data/parameters.json');
@@ -111,41 +109,41 @@
                 const period = params.PERIODS.find(p => p.name === periodName);
                 const commits = await loadActualData(periodName);
                 console.log(`Loaded ${commits.length} commits`);
-                const defaultUserConfig = {
+                const usePortrait = shouldUsePortraitOrientation();
+                updateOrientationInfo(usePortrait);
+                const containerWidth = container.clientWidth - 40;
+                const dimensions = usePortrait
+                    ? { width: Math.min(containerWidth, 400), height: 600 }
+                    : { width: Math.min(containerWidth, 1000), height: 400 };
+
+                console.log(`Rendering with dimensions: ${dimensions.width}×${dimensions.height}`);
+                const rawPeriodsData = [{
+                    period: periodName,
+                    data: commits,
+                    color: '#ed8936'
+                }];
+                const periodConfigs = {
+                    [periodName]: period
+                };
+                const userConfig = {
                     timezone_offset_hours: 5.5,
                     coding_day_start_hour: 4
                 };
-                const stripPlotData = prepareStripPlotData(commits, periodName, {
-                    periodStart: period.start,
-                    periodEnd: period.end,
-                    userConfig: defaultUserConfig
-                });
-                const usePortrait = shouldUsePortraitOrientation();
-                updateOrientationInfo(usePortrait);
-                console.log(`Using ${usePortrait ? 'portrait' : 'landscape'} orientation`);
-                const containerWidth = container.clientWidth - 40;
-                const dimensions = usePortrait
-                    ? {
-                        width: Math.min(containerWidth, 400),
-                        height: 600
-                    }
-                    : {
-                        width: Math.min(containerWidth, 1000),
-                        height: 400
-                    };
-                console.log(`Rendering with dimensions: ${dimensions.width}×${dimensions.height}`);
-                await renderStripPlot(container, stripPlotData, {
+                await renderStripPlot(container, rawPeriodsData, {
                     ...dimensions,
                     orientation: usePortrait ? 'portrait' : 'landscape',
                     showTooltips: false,
-                    isDark: detectDarkMode()
+                    isDark: detectDarkMode(),
+                    targetPeriod: periodName,
+                    periodConfigs: periodConfigs,
+                    userConfig: userConfig
                 });
-                console.log('Strip plot rendered successfully using simplified renderer!');
+                console.log('Strip plot rendered successfully using consistent renderer API!');
             } catch (error) {
                 console.error('Error rendering strip plot:', error);
                 document.getElementById('strip-plot-container').innerHTML =
                     `<div class="error">Error: ${error.message}<br>
-             Make sure you've run the data collection first and have data in ./data/restlessronin/raw/</div>`;
+            Make sure you've run the data collection first and have data in ./data/restlessronin/raw/</div>`;
             }
         }
         let resizeTimeout;
