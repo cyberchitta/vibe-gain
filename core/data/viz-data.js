@@ -1,6 +1,12 @@
-function groupBy(array, key) {
+import {
+  getLocalCodingDay,
+  getLocalHour,
+  isSameCodingDay,
+} from "../utils/timezone.js";
+
+function groupBy(array, keyOrFn) {
   return array.reduce((groups, item) => {
-    const group = item[key];
+    const group = typeof keyOrFn === "function" ? keyOrFn(item) : item[keyOrFn];
     groups[group] = groups[group] || [];
     groups[group].push(item);
     return groups;
@@ -12,73 +18,86 @@ function uniq(array) {
 }
 
 /**
- * Extract all individual time intervals between consecutive commits
+ * Extract all individual time intervals between consecutive commits within same coding day
  * @param {Array} commits - Array of commit objects with timestamp property
+ * @param {Object} userConfig - User configuration with timezone info
  * @returns {Array} - Array of interval objects with time differences in minutes
  */
-export function extractCommitIntervals(commits) {
+export function extractCommitIntervals(commits, userConfig) {
   if (!commits || commits.length < 2) {
     return [];
   }
   const sortedCommits = [...commits].sort(
-    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
   const intervals = [];
   for (let i = 1; i < sortedCommits.length; i++) {
-    const prevTime = new Date(sortedCommits[i - 1].timestamp);
-    const currTime = new Date(sortedCommits[i].timestamp);
+    const prevCommit = sortedCommits[i - 1];
+    const currCommit = sortedCommits[i];
+    if (!isSameCodingDay(prevCommit.timestamp, currCommit.timestamp, userConfig)) {
+      continue;
+    }
+    const prevTime = new Date(prevCommit.timestamp).getTime();
+    const currTime = new Date(currCommit.timestamp).getTime();
     const intervalMinutes = (currTime - prevTime) / (1000 * 60);
     intervals.push({
-      date: sortedCommits[i].date,
+      date: getLocalCodingDay(currCommit.timestamp, userConfig),
       interval_minutes: intervalMinutes,
-      from_commit: sortedCommits[i - 1].sha,
-      to_commit: sortedCommits[i].sha,
-      from_repo: sortedCommits[i - 1].repo,
-      to_repo: sortedCommits[i].repo,
-      same_repo: sortedCommits[i - 1].repo === sortedCommits[i].repo,
-      cross_day: sortedCommits[i - 1].date !== sortedCommits[i].date,
+      from_commit: prevCommit.sha,
+      to_commit: currCommit.sha,
+      from_repo: prevCommit.repo,
+      to_repo: currCommit.repo,
+      same_repo: prevCommit.repo === currCommit.repo,
+      cross_day: false,
     });
   }
   return intervals;
 }
 
-function getCommitsPerDay(commits) {
-  const commitsByDate = groupBy(commits, "date");
+function getCommitsPerDay(commits, userConfig) {
+  const commitsByDate = groupBy(commits, (commit) =>
+    getLocalCodingDay(commit.timestamp, userConfig)
+  );
   return Object.entries(commitsByDate).map(([date, group]) => ({
     date,
     commits: group.length,
   }));
 }
 
-function getLinesOfCodePerDay(commits) {
-  const commitsByDate = groupBy(commits, "date");
+function getLinesOfCodePerDay(commits, userConfig) {
+  const commitsByDate = groupBy(commits, (commit) =>
+    getLocalCodingDay(commit.timestamp, userConfig)
+  );
   return Object.entries(commitsByDate).map(([date, group]) => {
     const loc = group.reduce((sum, c) => sum + c.additions + c.deletions, 0);
     return { date, loc };
   });
 }
 
-function getRepositoriesPerDay(commits) {
-  const commitsByDate = groupBy(commits, "date");
+function getRepositoriesPerDay(commits, userConfig) {
+  const commitsByDate = groupBy(commits, (commit) =>
+    getLocalCodingDay(commit.timestamp, userConfig)
+  );
   return Object.entries(commitsByDate).map(([date, group]) => ({
     date,
     repos: uniq(group.map((c) => c.repo)).length,
   }));
 }
 
-function getHoursPerDay(commits) {
-  const commitsByDate = groupBy(commits, "date");
+function getHoursPerDay(commits, userConfig) {
+  const commitsByDate = groupBy(commits, (commit) =>
+    getLocalCodingDay(commit.timestamp, userConfig)
+  );
   const hoursPerDay = [];
   for (const [date, group] of Object.entries(commitsByDate)) {
-    const timestamps = group
-      .map((c) => new Date(c.timestamp))
+    const utcTimestamps = group
+      .map((c) => new Date(c.timestamp).getTime())
       .sort((a, b) => a - b);
     let hours;
-    if (timestamps.length === 1) {
+    if (utcTimestamps.length === 1) {
       hours = 0.1;
     } else {
-      const timeDiff =
-        (timestamps[timestamps.length - 1] - timestamps[0]) / (1000 * 3600);
+      const timeDiff = (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) / (1000 * 3600);
       hours = Math.min(timeDiff, 8);
     }
     hoursPerDay.push({ date, hours });
@@ -86,29 +105,35 @@ function getHoursPerDay(commits) {
   return hoursPerDay;
 }
 
-function getHourlyCommitDistribution(commits) {
+function getHourlyCommitDistribution(commits, userConfig) {
   const hourlyCommits = {};
   commits.forEach((commit) => {
-    const timestamp =
-      commit.timestamp instanceof Date
-        ? commit.timestamp.toISOString()
-        : commit.timestamp;
-    const hourKey = timestamp.slice(0, 13);
+    const localCodingDay = getLocalCodingDay(commit.timestamp, userConfig);
+    const localHour = getLocalHour(
+      commit.timestamp,
+      userConfig.timezone_offset_hours
+    );
+    const hourKey = `${localCodingDay}T${localHour
+      .toString()
+      .padStart(2, "0")}`;
     hourlyCommits[hourKey] = (hourlyCommits[hourKey] || 0) + 1;
   });
   return Object.values(hourlyCommits);
 }
 
-function getCommitsByHourOfDay(commits) {
+function getCommitsByHourOfDay(commits, userConfig) {
   const hourCounts = new Array(24).fill(0);
   commits.forEach((commit) => {
-    const hour = new Date(commit.timestamp).getHours();
-    hourCounts[hour]++;
+    const localHour = getLocalHour(
+      commit.timestamp,
+      userConfig.timezone_offset_hours
+    );
+    hourCounts[localHour]++;
   });
   return hourCounts;
 }
 
-function calculateMetadata(commits) {
+function calculateMetadata(commits, userConfig) {
   if (commits.length === 0) {
     return {
       total_commits: 0,
@@ -118,7 +143,9 @@ function calculateMetadata(commits) {
       date_range: { start: null, end: null },
     };
   }
-  const commitsByDate = groupBy(commits, "date");
+  const commitsByDate = groupBy(commits, (commit) =>
+    getLocalCodingDay(commit.timestamp, userConfig)
+  );
   return {
     total_commits: commits.length,
     active_days: Object.keys(commitsByDate).length,
@@ -161,31 +188,37 @@ function createEmptyVizData(type) {
  * Compute visualization data from a specific set of commit data
  * @param {Array} commits - Array of commit objects
  * @param {string} type - Type identifier ('all', 'code', or 'doc')
+ * @param {Object} userConfig - User configuration with timezone info
  * @returns {Object} - Object containing various metrics for visualization
  */
-export function computeVizDataForType(commits, type) {
+export function computeVizDataForType(commits, type, userConfig) {
   if (!commits || commits.length === 0) {
     return createEmptyVizData(type);
   }
   return {
     type,
-    commits: getCommitsPerDay(commits),
-    loc: getLinesOfCodePerDay(commits),
-    repos: getRepositoriesPerDay(commits),
-    hours: getHoursPerDay(commits),
-    commit_intervals: extractCommitIntervals(commits),
-    hourly_commit_distribution: getHourlyCommitDistribution(commits),
-    commits_by_hour_of_day: getCommitsByHourOfDay(commits),
-    metadata: calculateMetadata(commits),
+    commits: getCommitsPerDay(commits, userConfig),
+    loc: getLinesOfCodePerDay(commits, userConfig),
+    repos: getRepositoriesPerDay(commits, userConfig),
+    hours: getHoursPerDay(commits, userConfig),
+    commit_intervals: extractCommitIntervals(commits, userConfig),
+    hourly_commit_distribution: getHourlyCommitDistribution(
+      commits,
+      userConfig
+    ),
+    commits_by_hour_of_day: getCommitsByHourOfDay(commits, userConfig),
+    metadata: calculateMetadata(commits, userConfig),
   };
 }
 
 /**
- * Compute visualization data for all three categories: all commits, code commits, and doc commits
+ * Compute visualization data for all three categories
  * @param {Array} commits - Array of commit objects
+ * @param {Object} userConfig - User configuration with timezone info
+ * @param {Object} fetchStats - Optional fetch statistics
  * @returns {Object} - Object containing visualization data for all three categories
  */
-export function computeVizData(commits, fetchStats) {
+export function computeVizData(commits, userConfig, fetchStats) {
   if (!commits || commits.length === 0) {
     return {
       all: { type: "all", metadata: { total_commits: 0 } },
@@ -203,9 +236,9 @@ export function computeVizData(commits, fetchStats) {
   const allCommits = commits;
   const codeCommits = commits.filter((c) => !c.isDocOnly);
   const docCommits = commits.filter((c) => c.isDocOnly);
-  const allVizData = computeVizDataForType(allCommits, "all", fetchStats);
-  const codeVizData = computeVizDataForType(codeCommits, "code", fetchStats);
-  const docVizData = computeVizDataForType(docCommits, "doc", fetchStats);
+  const allVizData = computeVizDataForType(allCommits, "all", userConfig);
+  const codeVizData = computeVizDataForType(codeCommits, "code", userConfig);
+  const docVizData = computeVizDataForType(docCommits, "doc", userConfig);
   return {
     all: allVizData,
     code: codeVizData,
@@ -228,9 +261,10 @@ export function computeVizData(commits, fetchStats) {
 /**
  * Compute aggregate visualization data across all periods
  * @param {Array} allCommits - Array of all commit objects from all periods
+ * @param {Object} userConfig - User configuration with timezone info
  * @returns {Object} - Object containing aggregate visualization data for all three categories
  */
-export function computeAggregateVizData(allCommits) {
+export function computeAggregateVizData(allCommits, userConfig) {
   if (!allCommits || allCommits.length === 0) {
     return {
       all: { total_commits: 0 },
@@ -249,7 +283,9 @@ export function computeAggregateVizData(allCommits) {
     commitsByRepo[commit.repo].push(commit);
   });
   const repoStats = Object.entries(commitsByRepo).map(([repo, commits]) => {
-    const activeDays = new Set(commits.map((c) => c.date)).size;
+    const activeDays = new Set(
+      commits.map((c) => getLocalCodingDay(c.timestamp, userConfig))
+    ).size;
     const docOnlyCommits = commits.filter((c) => c.isDocOnly);
     const codeOnlyCommits = commits.filter((c) => !c.isDocOnly);
     return {
@@ -269,7 +305,9 @@ export function computeAggregateVizData(allCommits) {
   });
   repoStats.sort((a, b) => b.commit_count - a.commit_count);
   function getVizDataForCommitSet(commits) {
-    const activeDays = new Set(commits.map((c) => c.date)).size;
+    const activeDays = new Set(
+      commits.map((c) => getLocalCodingDay(c.timestamp, userConfig))
+    ).size;
     return {
       total_commits: commits.length,
       total_active_days: activeDays,

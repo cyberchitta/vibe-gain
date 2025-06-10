@@ -89,13 +89,15 @@
         import { renderBoxPlot } from './browser/renderers/box-plot.js';  // Add this
         import { computeVizDataForType } from './core/data/viz-data.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
+        import { loadChartDataFromRaw } from './core/data/chart-adapter.js';
 
         let useLogScale = false;
 
         async function loadCommitData() {
+            const dataPath = './data/restlessronin/raw';
             const [preResponse, recentResponse] = await Promise.all([
-                fetch('./data/restlessronin/raw/commits_Pre-AI.json'),
-                fetch('./data/restlessronin/raw/commits_Recent-AI.json')
+                fetch(`${dataPath}/commits_Pre-AI.json`),
+                fetch(`${dataPath}/commits_Recent-AI.json`)
             ]);
             const preArrayFormat = await preResponse.json();
             const recentArrayFormat = await recentResponse.json();
@@ -172,14 +174,14 @@
         window.renderCharts = async function () {
             try {
                 const { preCommits, recentCommits } = await loadCommitData();
-                const preVizData = computeVizDataForType(preCommits, 'all');
-                const recentVizData = computeVizDataForType(recentCommits, 'all');
-                console.log('Pre-AI hourly distribution:', preVizData.hourly_commit_distribution);
-                console.log('Recent-AI hourly distribution:', recentVizData.hourly_commit_distribution);
-                console.log('Pre-AI hour of day:', preVizData.commits_by_hour_of_day);
-                console.log('Recent-AI hour of day:', recentVizData.commits_by_hour_of_day);
+                const defaultUserConfig = {
+                    timezone_offset_hours: 5.5,
+                    coding_day_start_hour: 4
+                };
+                const preVizData = computeVizDataForType(preCommits, 'all', defaultUserConfig);
+                const recentVizData = computeVizDataForType(recentCommits, 'all', defaultUserConfig);
                 await renderHourlyDistributionBoxPlot(preVizData, recentVizData);
-                await _renderHourOfDayHistogram(preVizData, recentVizData); // Pass raw commits
+                await _renderHourOfDayHistogram(preVizData, recentVizData);
                 console.log('Both charts rendered successfully');
             } catch (error) {
                 console.error('Error rendering charts:', error);

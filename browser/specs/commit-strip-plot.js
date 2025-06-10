@@ -84,17 +84,11 @@ export function createStripPlotSpec(data, options = {}) {
     },
   ];
   const xField = isPortrait
-    ? {
-        scale: "xScale",
-        signal: "hours(datum.timeOfDay) + minutes(datum.timeOfDay)/60",
-      }
+    ? { scale: "xScale", field: "hourDecimal" }
     : { scale: "xScale", field: "dayTimestamp" };
   const yField = isPortrait
     ? { scale: "yScale", field: "dayTimestamp" }
-    : {
-        scale: "yScale",
-        signal: "hours(datum.timeOfDay) + minutes(datum.timeOfDay)/60",
-      };
+    : { scale: "yScale", field: "hourDecimal" };
   const marks = [
     {
       name: "commitMarks",

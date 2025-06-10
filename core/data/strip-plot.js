@@ -1,3 +1,5 @@
+import { getLocalCodingDay, getLocalHourDecimal, toLocalTime } from "../utils/timezone.js";
+
 /**
  * Assign repositories to visual groups using commit rank order
  * @param {Array} repos - Array of repository names
@@ -36,13 +38,24 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
  * Prepare data for strip plot visualization
  * @param {Array} commits - Array of commit objects
  * @param {string} period - Period identifier (e.g., 'Pre-AI', 'Recent-AI')
- * @param {Object} options - Configuration options
+ * @param {Object} options - Configuration options including userConfig
+ * @returns {Object} - Formatted data for visualization
+ */
+/**
+ * Prepare data for strip plot visualization
+ * @param {Array} commits - Array of commit objects
+ * @param {string} period - Period identifier (e.g., 'Pre-AI', 'Recent-AI')
+ * @param {Object} options - Configuration options including userConfig
  * @returns {Object} - Formatted data for visualization
  */
 export function prepareStripPlotData(commits, period, options = {}) {
   const groupCount = options.groupCount || 4;
   const periodStart = options.periodStart;
   const periodEnd = options.periodEnd;
+  const userConfig = options.userConfig || {
+    timezone_offset_hours: 0,
+    coding_day_start_hour: 4,
+  };
   if (!commits || commits.length === 0) {
     return {
       commits: [],
@@ -82,13 +95,21 @@ export function prepareStripPlotData(commits, period, options = {}) {
     groupCount
   );
   const enhancedCommits = filteredCommits.map((commit) => {
+    const timeOfDayDate = extractTimeOfDay(commit.timestamp, userConfig);
+    const hourDecimal = getLocalHourDecimal(
+      commit.timestamp,
+      userConfig.timezone_offset_hours
+    );
     return {
       ...commit,
       period: period,
       repoGroup: repoGroupings[commit.repo]?.group || "group0",
       repoShape: repoGroupings[commit.repo]?.shape || "circle",
-      dayTimestamp: new Date(commit.date + "T00:00:00Z"),
-      timeOfDay: extractTimeOfDay(commit.timestamp),
+      dayTimestamp: new Date(
+        getLocalCodingDay(commit.timestamp, userConfig) + "T00:00:00Z"
+      ),
+      timeOfDay: timeOfDayDate,
+      hourDecimal: hourDecimal,
       commitSize: (commit.additions || 0) + (commit.deletions || 0),
     };
   });
@@ -123,12 +144,24 @@ export function prepareStripPlotData(commits, period, options = {}) {
 /**
  * Extract time of day component from timestamp for visualization
  * @param {string|Date} timestamp - Full timestamp
- * @returns {Date} - Date object with time component normalized to 2000-01-01
+ * @param {Object} userConfig - User configuration with timezone info
+ * @returns {Date} - Date object with time component normalized to 2000-01-01 in UTC
  */
-function extractTimeOfDay(timestamp) {
-  const date = new Date(timestamp);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const seconds = date.getSeconds();
-  return new Date(2000, 0, 1, hours, minutes, seconds);
+function extractTimeOfDay(timestamp, userConfig) {
+  const localTime = toLocalTime(timestamp, userConfig.timezone_offset_hours);
+  const localHours = localTime.getUTCHours();
+  const localMinutes = localTime.getUTCMinutes();
+  const localSeconds = localTime.getUTCSeconds();
+  const localMilliseconds = localTime.getUTCMilliseconds();
+  return new Date(
+    Date.UTC(
+      2000,
+      0,
+      1,
+      localHours,
+      localMinutes,
+      localSeconds,
+      localMilliseconds
+    )
+  );
 }

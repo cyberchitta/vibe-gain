@@ -41,19 +41,23 @@ export async function loadChartDataFromFiles(
   return chartData;
 }
 
+// In /vibe-gain/core/data/chart-adapter.js
+
 /**
  * Load and prepare chart data from raw commit files
  * @param {string} dataPath - Base path to vibe-gain data
  * @param {string} username - Username
  * @param {Array} periods - Array of period objects with {name, start, end}
  * @param {string} metricType - 'all', 'code', or 'doc'
+ * @param {Object} userConfig - User configuration with timezone info
  * @returns {Promise<Object>} - Object with period data ready for charts
  */
 export async function loadChartDataFromRaw(
   dataPath,
   username,
   periods,
-  metricType = "code"
+  metricType,
+  userConfig
 ) {
   console.log(`Loading chart data from raw commits: ${dataPath}/${username}`);
   const chartData = {};
@@ -71,7 +75,12 @@ export async function loadChartDataFromRaw(
       }
       const arrayFormat = await response.json();
       const commits = arrayFormatToCommits(arrayFormat);
-      const vizData = computeVizDataForType(commits, metricType);
+      const defaultUserConfig = {
+        timezone_offset_hours: 0,
+        coding_day_start_hour: 4
+      };
+      const config = userConfig || defaultUserConfig;
+      const vizData = computeVizDataForType(commits, metricType, config);
       chartData[period.name] = extractChartData(
         { [metricType]: vizData },
         metricType

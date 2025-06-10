@@ -7,7 +7,6 @@ export function commitArrayFormat(commits) {
   const schema = [
     "repo",
     "sha",
-    "date",
     "timestamp",
     "additions",
     "deletions",
@@ -19,7 +18,6 @@ export function commitArrayFormat(commits) {
   const data = commits.map((commit) => [
     commit.repo,
     commit.sha,
-    commit.date,
     typeof commit.timestamp === "string"
       ? commit.timestamp
       : commit.timestamp.toISOString(),
