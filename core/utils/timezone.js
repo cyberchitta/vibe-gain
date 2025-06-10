@@ -64,21 +64,3 @@ export function isSameCodingDay(timestamp1, timestamp2, userConfig) {
   const day2 = getLocalCodingDay(timestamp2, userConfig);
   return day1 === day2;
 }
-
-/**
- * Convert local coding day back to UTC timestamp range
- * @param {string} codingDayStr - Coding day in YYYY-MM-DD format
- * @param {Object} userConfig - User configuration
- * @returns {Object} - {start: Date, end: Date} UTC timestamps for coding day boundaries
- */
-export function codingDayToUTCRange(codingDayStr, userConfig) {
-  const { timezone_offset_hours, coding_day_start_hour = 4 } = userConfig;
-  const localStart = new Date(codingDayStr + "T00:00:00");
-  localStart.setHours(coding_day_start_hour, 0, 0, 0);
-  const localEnd = new Date(localStart);
-  localEnd.setDate(localEnd.getDate() + 1);
-  const offsetMs = timezone_offset_hours * 60 * 60 * 1000;
-  const utcStart = new Date(localStart.getTime() - offsetMs);
-  const utcEnd = new Date(localEnd.getTime() - offsetMs);
-  return { start: utcStart, end: utcEnd };
-}
