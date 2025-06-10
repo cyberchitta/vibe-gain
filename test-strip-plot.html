@@ -40,12 +40,19 @@
             font-size: 14px;
             color: #666;
         }
+
+        .error {
+            color: red;
+            background: #fee;
+            padding: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Commit Strip Plot Test</h1>
+        <h1>Strip Plot Test</h1>
         <div id="orientation-info" class="orientation-info"></div>
         <div id="strip-plot-container" class="chart-container">
             <div class="loading">Loading strip plot...</div>
@@ -54,6 +61,8 @@
     <script type="module">
         import { renderStripPlot } from './browser/renderers/commit-strip-plot.js';
         import { prepareStripPlotData } from './core/data/strip-plot.js';
+        import { arrayFormatToCommits } from './core/data/formats.js';
+
         function shouldUsePortraitOrientation() {
             const width = window.innerWidth;
             const height = window.innerHeight;
@@ -83,22 +92,15 @@
                     throw new Error(`Failed to load data: ${response.status}`);
                 }
                 const arrayFormat = await response.json();
-                const { schema, data } = arrayFormat;
-                const commits = data.map(row => {
-                    const commit = {};
-                    row.forEach((value, index) => {
-                        commit[schema[index]] = value;
-                    });
-                    if (commit.timestamp && typeof commit.timestamp === 'string') {
-                        commit.timestamp = new Date(commit.timestamp);
-                    }
-                    return commit;
-                });
+                const commits = arrayFormatToCommits(arrayFormat);
                 return commits;
             } catch (error) {
                 console.error('Error loading commit data:', error);
                 throw error;
             }
+        }
+        function detectDarkMode() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         }
         async function testStripPlot() {
             try {
@@ -135,9 +137,10 @@
                 await renderStripPlot(container, stripPlotData, {
                     ...dimensions,
                     orientation: usePortrait ? 'portrait' : 'landscape',
-                    showTooltips: false
+                    showTooltips: false,
+                    isDark: detectDarkMode()
                 });
-                console.log('Strip plot rendered successfully!');
+                console.log('Strip plot rendered successfully using simplified renderer!');
             } catch (error) {
                 console.error('Error rendering strip plot:', error);
                 document.getElementById('strip-plot-container').innerHTML =
