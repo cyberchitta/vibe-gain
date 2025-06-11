@@ -50,6 +50,10 @@
             background: #2980b9;
         }
 
+        button.active {
+            background: #e74c3c;
+        }
+
         h1 {
             text-align: center;
             margin-bottom: 30px;
@@ -72,6 +76,7 @@
             <div style="text-align: center; margin-top: 10px;">
                 <button onclick="renderCharts()">Render Charts</button>
                 <button onclick="toggleLogScale()">Toggle Log Scale</button>
+                <button onclick="toggleDots()" id="dotsToggle">Show Dots</button>
                 <button onclick="clearCharts()">Clear</button>
             </div>
         </div>
@@ -86,12 +91,13 @@
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { createHistogramSpec } from './browser/specs/histogram.js';
         import { preparePeriodsForHistogram, prepareHistogramData, renderHistogram } from './browser/renderers/histogram.js';
-        import { renderBoxPlot } from './browser/renderers/box-plot.js';  // Add this
+        import { renderBoxPlot } from './browser/renderers/box-plot.js';
         import { computeVizDataForType } from './core/data/viz-data.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
         import { loadChartDataFromRaw } from './core/data/chart-adapter.js';
 
         let useLogScale = false;
+        let showDots = false;
 
         async function loadCommitData() {
             const dataPath = './data/restlessronin/raw';
@@ -125,14 +131,20 @@
                 width: Math.min(containerWidth, 400),
                 height: 350
             };
-            console.log(`Rendering hourly distribution box plot with dimensions: ${dimensions.width}×${dimensions.height}`);
+            console.log(`Rendering hourly distribution box plot with dimensions: ${dimensions.width}×${dimensions.height}, dots: ${showDots}`);
             try {
                 await renderBoxPlot(container, rawPeriodsData, {
                     metricId: 'hourly_commit_distribution',
                     ...dimensions,
                     yLabel: 'Commits per Hour',
                     useLogScale: useLogScale,
-                    showPercentiles: true
+                    showPercentiles: true,
+                    showDots: showDots,
+                    dotOptions: {
+                        dotSize: 12,
+                        opacity: 0.5,
+                        jitterWidth: 0.3,
+                    }
                 });
                 console.log('Hourly distribution box plot rendered successfully');
             } catch (error) {
@@ -171,6 +183,7 @@
                 container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
+
         window.renderCharts = async function () {
             try {
                 const { preCommits, recentCommits } = await loadCommitData();
@@ -189,11 +202,22 @@
                 document.getElementById('histogram-chart').innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         };
+
         window.toggleLogScale = function () {
             useLogScale = !useLogScale;
             console.log(`Log scale: ${useLogScale ? 'enabled' : 'disabled'}`);
             window.renderCharts();
         };
+
+        window.toggleDots = function () {
+            showDots = !showDots;
+            const button = document.getElementById('dotsToggle');
+            button.textContent = showDots ? 'Hide Dots' : 'Show Dots';
+            button.classList.toggle('active', showDots);
+            console.log(`Dots: ${showDots ? 'enabled' : 'disabled'}`);
+            window.renderCharts();
+        };
+
         window.clearCharts = function () {
             ['box-plot-chart', 'histogram-chart'].forEach(id => {
                 const container = document.getElementById(id);
@@ -204,6 +228,7 @@
                 container.innerHTML = 'Chart cleared. Click "Render Charts" to visualize data.';
             });
         };
+
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => window.renderCharts(), 1000);
         });

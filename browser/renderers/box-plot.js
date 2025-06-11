@@ -10,19 +10,25 @@ import { applyDaisyUITheme } from "../themes/daisyui.js";
 export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
   return periodsRawData.map(({ period, data, color }) => {
     let values;
-    
-    if (metricId === 'hourly_commit_distribution') {
-      // data is already a flat array of numbers
-      values = Array.isArray(data) ? data.filter(val => val > 0) : [];
+    if (metricId === "hourly_commit_distribution") {
+      values = Array.isArray(data) ? data.filter((val) => val > 0) : [];
     } else {
-      // Handle other metrics that are arrays of objects
       values = data
         .map((item) => {
-          if (metricId === 'commit_intervals' && item.interval_minutes !== undefined) {
+          if (
+            metricId === "commit_intervals" &&
+            item.interval_minutes !== undefined
+          ) {
             return item.interval_minutes;
-          } else if (metricId === 'commits_per_hour' && item.commits_per_hour !== undefined) {
+          } else if (
+            metricId === "commits_per_hour" &&
+            item.commits_per_hour !== undefined
+          ) {
             return item.commits_per_hour;
-          } else if (metricId === 'gaps' && item.avg_gap_minutes !== undefined) {
+          } else if (
+            metricId === "gaps" &&
+            item.avg_gap_minutes !== undefined
+          ) {
             return item.avg_gap_minutes;
           } else if (item[metricId] !== undefined) {
             return item[metricId];
@@ -31,7 +37,6 @@ export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
         })
         .filter((val) => val !== null && !isNaN(val) && val > 0);
     }
-    
     return {
       period,
       values,
@@ -41,7 +46,7 @@ export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
 }
 
 /**
- * Render box plot visualization
+ * Render box plot visualization with optional dot overlay
  * @param {HTMLElement} container - Container element
  * @param {Array} periodsRawData - Array of {period, data, color} objects
  * @param {Object} options - Rendering options
@@ -57,6 +62,12 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     height: 250,
     useLogScale: false,
     showPercentiles: true,
+    showDots: false,
+    dotOptions: {
+      dotSize: 15,
+      opacity: 0.4,
+      jitterWidth: 0.25,
+    },
     yLabel: "Value",
     ...options,
   };
@@ -71,7 +82,7 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     });
     const vegaSpec = vegaLite.compile(themedSpec).spec;
     const runtime = vega.parse(vegaSpec);
-    const view = new vega.View(runtime)
+    const view = await new vega.View(runtime)
       .renderer("canvas")
       .initialize(container)
       .width(defaultOptions.width)

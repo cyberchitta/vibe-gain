@@ -1,10 +1,10 @@
 import { createBaseVegaSpec } from "./vega-base.js";
 
 /**
- * Create side-by-side vertical box plots in a single unified spec
+ * Create side-by-side vertical box plots with optional dot overlay
  * @param {Array} periodsData - Array of {period, values, color} objects
  * @param {Object} options - Visualization options
- * @returns {Object} - Vega-Lite specification with side-by-side box plots
+ * @returns {Object} - Vega-Lite specification with box plots and optional dots
  */
 export function createBoxPlotSpec(periodsData, options = {}) {
   const baseSpec = createBaseVegaSpec();
@@ -13,25 +13,37 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     height: 400,
     useLogScale: false,
     showPercentiles: true,
+    showDots: false,
+    dotOptions: {},
     ...options,
   };
-  const combinedData = [];
-  periodsData.forEach((periodData) => {
+  const combinedDataWithPosition = [];
+  periodsData.forEach((periodData, periodIndex) => {
     periodData.values.forEach((value) => {
-      combinedData.push({
+      combinedDataWithPosition.push({
         period: periodData.period,
+        periodIndex: periodIndex,
         value: value,
       });
     });
   });
-  const xEncoding = {
+  const percentileData = [];
+  periodsData.forEach((periodData) => {
+    const sortedValues = [...periodData.values].sort((a, b) => a - b);
+    const n = sortedValues.length;
+    const p5Index = Math.floor(0.05 * (n - 1));
+    const p95Index = Math.floor(0.95 * (n - 1));
+    percentileData.push({
+      period: periodData.period,
+      p5: sortedValues[p5Index],
+      p95: sortedValues[p95Index],
+    });
+  });
+  const sharedXEncoding = {
     field: "period",
     type: "nominal",
-    axis: null,
     sort: periodsData.map((p) => p.period),
-    scale: {
-      type: "band",
-    },
+    axis: null,
   };
   const yEncoding = {
     field: "value",
@@ -56,95 +68,91 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     },
     legend: null,
   };
-  if (!defaultOptions.showPercentiles) {
-    return {
-      ...baseSpec,
-      width: defaultOptions.width,
-      height: defaultOptions.height,
-      data: { values: combinedData },
+  const layers = [];
+  if (defaultOptions.showDots) {
+    layers.push({
+      data: { name: "values" },
       mark: {
-        type: "boxplot",
-        extent: "min-max",
+        type: "point",
+        size: defaultOptions.dotOptions.dotSize || 6,
+        opacity: defaultOptions.dotOptions.opacity || 0.3,
+        filled: true,
       },
+      transform: [
+        {
+          calculate: `datum.periodIndex + (random() - 0.5) * 0.3`,
+          as: "jitteredX",
+        },
+      ],
       encoding: {
-        x: xEncoding,
-        y: yEncoding,
-        color: colorEncoding,
+        x: {
+          field: "jitteredX",
+          type: "quantitative",
+          scale: {
+            domain: [-0.5, periodsData.length - 0.5],
+            range: "width",
+          },
+          axis: null,
+        },
+        y: { field: "value", type: "quantitative" },
+        color: { field: "period", type: "nominal" },
       },
-    };
-  }
-  const percentileData = [];
-  periodsData.forEach((periodData) => {
-    const sortedValues = [...periodData.values].sort((a, b) => a - b);
-    const n = sortedValues.length;
-    const p5Index = Math.floor(0.05 * (n - 1));
-    const p95Index = Math.floor(0.95 * (n - 1));
-    percentileData.push({
-      period: periodData.period,
-      p5: sortedValues[p5Index],
-      p95: sortedValues[p95Index],
     });
+  }
+  layers.push({
+    data: { name: "values" },
+    mark: {
+      type: "boxplot",
+      extent: "min-max",
+      outliers: false,
+    },
+    encoding: {
+      x: sharedXEncoding,
+      y: yEncoding,
+      color: colorEncoding,
+    },
+  });
+  layers.push({
+    data: { name: "percentiles" },
+    layer: [
+      {
+        mark: {
+          type: "point",
+          shape: "cross",
+          size: 40,
+          stroke: 1,
+          opacity: 0.8,
+        },
+        encoding: {
+          x: sharedXEncoding,
+          y: { field: "p5", type: "quantitative" },
+          stroke: colorEncoding,
+        },
+      },
+      {
+        mark: {
+          type: "point",
+          shape: "cross",
+          size: 40,
+          stroke: 1,
+          opacity: 0.8,
+        },
+        encoding: {
+          x: sharedXEncoding,
+          y: { field: "p95", type: "quantitative" },
+          stroke: colorEncoding,
+        },
+      },
+    ],
   });
   return {
     ...baseSpec,
     width: defaultOptions.width,
     height: defaultOptions.height,
     datasets: {
-      values: combinedData,
+      values: combinedDataWithPosition,
       percentiles: percentileData,
     },
-    resolve: {
-      scale: {
-        x: "shared",
-      },
-    },
-    layer: [
-      {
-        data: { name: "values" },
-        mark: {
-          type: "boxplot",
-          extent: "min-max",
-          outliers: false,
-        },
-        encoding: {
-          x: xEncoding,
-          y: yEncoding,
-          color: colorEncoding,
-        },
-      },
-      {
-        data: { name: "percentiles" },
-        layer: [
-          {
-            mark: {
-              type: "point",
-              shape: "cross",
-              size: 40,
-              stroke: 1,
-              opacity: 0.8,
-            },
-            encoding: {
-              x: xEncoding,
-              y: { field: "p5", type: "quantitative" },
-              stroke: colorEncoding,
-            },
-          },
-          {
-            mark: {
-              type: "point",
-              shape: "cross",
-              size: 40,
-              stroke: 1,
-              opacity: 0.8,
-            },
-            encoding: {
-              x: xEncoding,
-              y: { field: "p95", type: "quantitative" },
-              stroke: colorEncoding,
-            },
-          },
-        ],
-      },
-    ],
+    layer: layers,
   };
 }
