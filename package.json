@@ -1,6 +1,6 @@
 {
   "name": "vibe-gain",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "description": "Visualize GitHub commit patterns to evaluate vibe-coding productivity gains",
   "type": "module",
   "main": "./lib/index.js",
@@ -8,6 +8,10 @@
   "exports": {
     ".": "./lib/index.js",
     "./browser": "./browser/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyberchitta/vibe-gain.git"
   },
   "scripts": {
     "start": "bun lib/index.js",
