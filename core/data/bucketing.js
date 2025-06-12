@@ -1,46 +1,69 @@
 const NATURAL_BUCKETS = {
   commit_intervals: [
-    { min: 0, max: 5, label: "< 5 min", logCenter: 2.5 },
-    { min: 5, max: 15, label: "5-15 min", logCenter: 10 },
-    { min: 15, max: 60, label: "15-60 min", logCenter: 37.5 },
-    { min: 60, max: 240, label: "1-4 hours", logCenter: 150 },
-    { min: 240, max: 1440, label: "4-24 hours", logCenter: 840 },
-    { min: 1440, max: 10080, label: "1-7 days", logCenter: 5760 },
+    { min: 0.1, max: 1, label: "< 1 min", logCenter: 0.5 }, // Start at 0.1, not 0
+    { min: 1, max: 5, label: "1-5 min", logCenter: 2.2 },
+    { min: 5, max: 15, label: "5-15 min", logCenter: 8.7 },
+    { min: 15, max: 60, label: "15-60 min", logCenter: 30 },
+    { min: 60, max: 240, label: "1-4 hours", logCenter: 120 },
+    { min: 240, max: 1440, label: "4-24 hours", logCenter: 580 },
+    { min: 1440, max: 10080, label: "1-7 days", logCenter: 3800 },
     { min: 10080, max: Infinity, label: "> 1 week", logCenter: 20160 },
   ],
-
   commits: [
     { min: 1, max: 2, label: "1", logCenter: 1 },
-    { min: 2, max: 6, label: "2-5", logCenter: 3.5 },
-    { min: 6, max: 11, label: "6-10", logCenter: 8 },
-    { min: 11, max: 21, label: "11-20", logCenter: 15.5 },
-    { min: 21, max: Infinity, label: "> 20", logCenter: 30 },
+    { min: 2, max: 3, label: "2", logCenter: 2 },
+    { min: 3, max: 5, label: "3-4", logCenter: 3.5 },
+    { min: 5, max: 10, label: "5-9", logCenter: 7 },
+    { min: 10, max: 20, label: "10-19", logCenter: 14 },
+    { min: 20, max: 50, label: "20-49", logCenter: 32 },
+    { min: 50, max: Infinity, label: "50+", logCenter: 75 },
   ],
-
   hours: [
-    { min: 0.1, max: 1, label: "< 1", logCenter: 0.5 },
-    { min: 1, max: 2, label: "1-2", logCenter: 1.5 },
-    { min: 2, max: 4, label: "2-4", logCenter: 3 },
-    { min: 4, max: 8, label: "4-8", logCenter: 6 },
-    { min: 8, max: 12, label: "8-12", logCenter: 10 },
-    { min: 12, max: 16, label: "12-16", logCenter: 14 },
-    { min: 16, max: Infinity, label: "> 16", logCenter: 20 },
+    { min: 0.01, max: 0.5, label: "< 0.5h", logCenter: 0.2 },
+    { min: 0.5, max: 1, label: "0.5-1h", logCenter: 0.7 },
+    { min: 1, max: 2, label: "1-2h", logCenter: 1.4 },
+    { min: 2, max: 4, label: "2-4h", logCenter: 2.8 },
+    { min: 4, max: 8, label: "4-8h", logCenter: 5.7 },
+    { min: 8, max: 12, label: "8-12h", logCenter: 9.8 },
+    { min: 12, max: Infinity, label: "12h+", logCenter: 16 },
   ],
-
   loc: [
-    { min: 1, max: 50, label: "1-50", logCenter: 25 },
-    { min: 50, max: 200, label: "50-200", logCenter: 125 },
-    { min: 200, max: 500, label: "200-500", logCenter: 350 },
-    { min: 500, max: 1000, label: "500-1000", logCenter: 750 },
-    { min: 1000, max: 2000, label: "1000-2000", logCenter: 1500 },
-    { min: 2000, max: 5000, label: "2000-5000", logCenter: 3500 },
-    { min: 5000, max: Infinity, label: "> 5000", logCenter: 7500 },
+    { min: 1, max: 5, label: "1-4", logCenter: 2.2 },
+    { min: 5, max: 10, label: "5-9", logCenter: 7.1 },
+    { min: 10, max: 25, label: "10-24", logCenter: 16 },
+    { min: 25, max: 50, label: "25-49", logCenter: 35 },
+    { min: 50, max: 100, label: "50-99", logCenter: 71 },
+    { min: 100, max: 200, label: "100-199", logCenter: 141 },
+    { min: 200, max: 500, label: "200-499", logCenter: 316 },
+    { min: 500, max: 1000, label: "500-999", logCenter: 707 },
+    { min: 1000, max: 2000, label: "1000-1999", logCenter: 1414 },
+    { min: 2000, max: 5000, label: "2000-4999", logCenter: 3162 },
+    { min: 5000, max: 10000, label: "5000-9999", logCenter: 7071 },
+    { min: 10000, max: Infinity, label: "10000+", logCenter: 14142 },
   ],
-
   repos: [
     { min: 1, max: 1, label: "1", logCenter: 1 },
-    { min: 2, max: 3, label: "2-3", logCenter: 2.5 },
-    { min: 4, max: Infinity, label: "4+", logCenter: 6 },
+    { min: 2, max: 2, label: "2", logCenter: 2 },
+    { min: 3, max: 3, label: "3", logCenter: 3 },
+    { min: 4, max: 5, label: "4-5", logCenter: 4.5 },
+    { min: 6, max: Infinity, label: "6+", logCenter: 8 },
+  ],
+  commits_per_hour: [
+    { min: 0.1, max: 0.5, label: "< 0.5", logCenter: 0.3 },
+    { min: 0.5, max: 1, label: "0.5-1", logCenter: 0.7 },
+    { min: 1, max: 2, label: "1-2", logCenter: 1.4 },
+    { min: 2, max: 5, label: "2-5", logCenter: 3.2 },
+    { min: 5, max: 10, label: "5-10", logCenter: 7.1 },
+    { min: 10, max: 20, label: "10-20", logCenter: 14.1 },
+    { min: 20, max: Infinity, label: "20+", logCenter: 28 },
+  ],
+  hourly_commit_distribution: [
+    { min: 1, max: 2, label: "1", logCenter: 1 },
+    { min: 2, max: 3, label: "2", logCenter: 2 },
+    { min: 3, max: 5, label: "3-4", logCenter: 3.5 },
+    { min: 5, max: 10, label: "5-9", logCenter: 7 },
+    { min: 10, max: 20, label: "10-19", logCenter: 14 },
+    { min: 20, max: Infinity, label: "20+", logCenter: 28 },
   ],
 };
 
@@ -95,7 +118,7 @@ export function createNaturalBins(values, metricId) {
     binLabel: bucket.label,
     count: 0,
     naturalBucket: true,
-    bucketDef: bucket, // Keep reference for violin plots
+    bucketDef: bucket,
   }));
   values.forEach((val) => {
     const bucketIndex = bucketDef.findIndex(

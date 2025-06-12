@@ -62,16 +62,11 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     height: 250,
     useLogScale: false,
     showPercentiles: true,
-    showDots: false,
-    dotOptions: {
-      dotSize: 15,
-      opacity: 0.4,
-      jitterWidth: 0.25,
-    },
+    histogramWidth: 0.3,
     yLabel: "Value",
     ...options,
   };
-  const periodsData = preparePeriodsForBoxPlot(
+ const periodsData = preparePeriodsForBoxPlot(
     periodsRawData,
     options.metricId
   );

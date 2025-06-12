@@ -1,10 +1,75 @@
 import { createBaseVegaSpec } from "./vega-base.js";
+import {
+  createNaturalBins,
+  hasNaturalBuckets,
+} from "../../core/data/bucketing.js";
+
+function shouldUseIntegerBinning(values, maxIntegerBins = 50) {
+  const uniqueValues = [...new Set(values)];
+  const allIntegers = uniqueValues.every((val) => Number.isInteger(val));
+  return allIntegers && uniqueValues.length <= maxIntegerBins;
+}
+
+function createHistogramBins(values, metricId) {
+  if (shouldUseIntegerBinning(values)) {
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const bins = [];
+    for (let i = min; i <= max; i++) {
+      const count = values.filter((v) => v === i).length;
+      if (count > 0) {
+        bins.push({
+          binStart: i,
+          binEnd: i + 1,
+          binCenter: i,
+          count: count,
+          percentage: (count / values.length) * 100,
+        });
+      }
+    }
+    return bins;
+  } else {
+    if (hasNaturalBuckets(metricId)) {
+      const naturalBins = createNaturalBins(values, metricId);
+      return naturalBins
+        .filter((bin) => bin.count > 0)
+        .map((bin) => ({
+          ...bin,
+          binCenter:
+            bin.logCenter || bin.binCenter || (bin.binStart + bin.binEnd) / 2,
+          percentage: bin.percentageCount || (bin.count / values.length) * 100,
+        }));
+    } else {
+      const binCount = Math.min(20, Math.ceil(Math.sqrt(values.length)));
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const binWidth = (max - min) / binCount;
+      const bins = [];
+      for (let i = 0; i < binCount; i++) {
+        const binStart = min + i * binWidth;
+        const binEnd =
+          i === binCount - 1 ? max + 0.001 : min + (i + 1) * binWidth;
+        const count = values.filter((v) => v >= binStart && v < binEnd).length;
+        if (count > 0) {
+          bins.push({
+            binStart,
+            binEnd,
+            binCenter: (binStart + binEnd) / 2,
+            count,
+            percentage: (count / values.length) * 100,
+          });
+        }
+      }
+      return bins;
+    }
+  }
+}
 
 /**
- * Create side-by-side vertical box plots with optional dot overlay
+ * Create side-by-side vertical box plots with optional histogram overlay
  * @param {Array} periodsData - Array of {period, values, color} objects
  * @param {Object} options - Visualization options
- * @returns {Object} - Vega-Lite specification with box plots and optional dots
+ * @returns {Object} - Vega-Lite specification with box plots and optional histogram bars
  */
 export function createBoxPlotSpec(periodsData, options = {}) {
   const baseSpec = createBaseVegaSpec();
@@ -13,8 +78,8 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     height: 400,
     useLogScale: false,
     showPercentiles: true,
-    showDots: false,
-    dotOptions: {},
+    showHistogram: false,
+    histogramWidth: 0.3,
     ...options,
   };
   const combinedDataWithPosition = [];
@@ -27,6 +92,41 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       });
     });
   });
+  const histogramData = [];
+  if (defaultOptions.showHistogram) {
+    periodsData.forEach((periodData, periodIndex) => {
+      const bins = createHistogramBins(periodData.values, options.metricId);
+      const maxPercentage = Math.max(...bins.map((b) => b.percentage));
+      bins.forEach((bin) => {
+        const normalizedWidth =
+          (bin.percentage / maxPercentage) * defaultOptions.histogramWidth;
+        histogramData.push({
+          period: periodData.period,
+          periodIndex: periodIndex,
+          binStart: bin.binStart,
+          binEnd: bin.binEnd,
+          binCenter: bin.binCenter,
+          percentage: bin.percentage,
+          count: bin.count,
+          barLeft: periodIndex - normalizedWidth / 2,
+          barRight: periodIndex,
+          side: "left",
+        });
+        histogramData.push({
+          period: periodData.period,
+          periodIndex: periodIndex,
+          binStart: bin.binStart,
+          binEnd: bin.binEnd,
+          binCenter: bin.binCenter,
+          percentage: bin.percentage,
+          count: bin.count,
+          barLeft: periodIndex,
+          barRight: periodIndex + normalizedWidth / 2,
+          side: "right",
+        });
+      });
+    });
+  }
   const percentileData = [];
   periodsData.forEach((periodData) => {
     const sortedValues = [...periodData.values].sort((a, b) => a - b);
@@ -69,24 +169,18 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     legend: null,
   };
   const layers = [];
-  if (defaultOptions.showDots) {
+  if (defaultOptions.showHistogram) {
     layers.push({
-      data: { name: "values" },
+      data: { name: "histogram" },
       mark: {
-        type: "point",
-        size: defaultOptions.dotOptions.dotSize || 6,
-        opacity: defaultOptions.dotOptions.opacity || 0.3,
-        filled: true,
+        type: "rect",
+        opacity: 0.6,
+        stroke: "white",
+        strokeWidth: 0.5,
       },
-      transform: [
-        {
-          calculate: `datum.periodIndex + (random() - 0.5) * 0.3`,
-          as: "jitteredX",
-        },
-      ],
       encoding: {
         x: {
-          field: "jitteredX",
+          field: "barLeft",
           type: "quantitative",
           scale: {
             domain: [-0.5, periodsData.length - 0.5],
@@ -94,8 +188,26 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           },
           axis: null,
         },
-        y: { field: "value", type: "quantitative" },
-        color: { field: "period", type: "nominal" },
+        x2: {
+          field: "barRight",
+          type: "quantitative",
+        },
+        y: {
+          field: "binStart",
+          type: "quantitative",
+          scale: yEncoding.scale,
+        },
+        y2: {
+          field: "binEnd",
+          type: "quantitative",
+        },
+        fill: colorEncoding,
+        tooltip: [
+          { field: "period", title: "Period" },
+          { field: "binCenter", title: "Value" },
+          { field: "count", title: "Count" },
+          { field: "percentage", title: "Percentage", format: ".1f" },
+        ],
       },
     });
   }
@@ -105,6 +217,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       type: "boxplot",
       extent: "min-max",
       outliers: false,
+      size: 40,
     },
     encoding: {
       x: sharedXEncoding,
@@ -112,47 +225,53 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       color: colorEncoding,
     },
   });
-  layers.push({
-    data: { name: "percentiles" },
-    layer: [
-      {
-        mark: {
-          type: "point",
-          shape: "cross",
-          size: 40,
-          stroke: 1,
-          opacity: 0.8,
+  if (defaultOptions.showPercentiles) {
+    layers.push({
+      data: { name: "percentiles" },
+      layer: [
+        {
+          mark: {
+            type: "point",
+            shape: "cross",
+            size: 40,
+            stroke: 1,
+            opacity: 0.8,
+          },
+          encoding: {
+            x: sharedXEncoding,
+            y: { field: "p5", type: "quantitative" },
+            stroke: colorEncoding,
+          },
         },
-        encoding: {
-          x: sharedXEncoding,
-          y: { field: "p5", type: "quantitative" },
-          stroke: colorEncoding,
+        {
+          mark: {
+            type: "point",
+            shape: "cross",
+            size: 40,
+            stroke: 1,
+            opacity: 0.8,
+          },
+          encoding: {
+            x: sharedXEncoding,
+            y: { field: "p95", type: "quantitative" },
+            stroke: colorEncoding,
+          },
         },
-      },
-      {
-        mark: {
-          type: "point",
-          shape: "cross",
-          size: 40,
-          stroke: 1,
-          opacity: 0.8,
-        },
-        encoding: {
-          x: sharedXEncoding,
-          y: { field: "p95", type: "quantitative" },
-          stroke: colorEncoding,
-        },
-      },
-    ],
-  });
+      ],
+    });
+  }
+  const datasets = {
+    values: combinedDataWithPosition,
+    percentiles: percentileData,
+  };
+  if (defaultOptions.showHistogram) {
+    datasets.histogram = histogramData;
+  }
   return {
     ...baseSpec,
     width: defaultOptions.width,
     height: defaultOptions.height,
-    datasets: {
-      values: combinedDataWithPosition,
-      percentiles: percentileData,
-    },
+    datasets: datasets,
     layer: layers,
   };
 }

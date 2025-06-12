@@ -144,15 +144,12 @@
     <div class="container">
         <h1>Vibe-Gain: Complete Chart Test Suite</h1>
         <p>Testing all chart types used in the indie-vibe-gains analysis with real commit data.</p>
-
         <div class="controls">
             <button onclick="renderAllCharts()">Render All Charts</button>
-            <button onclick="toggleLogScale()" id="logToggle">Toggle Log Scale</button>
-            <button onclick="toggleDots()" id="dotsToggle">Show Dots</button>
-            <button onclick="toggleViewMode()" id="viewToggle">Percentage View</button>
+            <button onclick="toggleLogScale()" id="logToggle" class="active">Linear Scale</button>
+            <button onclick="toggleHistogram()" id="histogramToggle" class="active">Hide Histogram</button>
             <button onclick="clearAllCharts()">Clear All</button>
         </div>
-
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #ed8936;"></div>
@@ -163,8 +160,6 @@
                 <span>Recent-AI (Nov-Apr 2025)</span>
             </div>
         </div>
-
-        <!-- Summary Table -->
         <div class="chart-section">
             <h2>Productivity Summary</h2>
             <table class="summary-table" id="summary-table">
@@ -183,8 +178,6 @@
                 </tbody>
             </table>
         </div>
-
-        <!-- Strip Plot -->
         <div class="chart-section">
             <h2>Commit Activity Timeline</h2>
             <p class="metric-description">Visual timeline showing when commits were made, with repository and cluster
@@ -193,8 +186,6 @@
                 <div class="loading">Loading strip plot...</div>
             </div>
         </div>
-
-        <!-- Box Plots Grid -->
         <div class="chart-section">
             <h2>Distribution Analysis (Box Plots)</h2>
             <div class="chart-grid">
@@ -228,43 +219,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Histograms Grid -->
-        <div class="chart-section">
-            <h2>Pattern Analysis (Histograms)</h2>
-            <div class="chart-grid">
-                <div>
-                    <h3>Commits by Hour of Day</h3>
-                    <p class="metric-description">When during the day commits typically happen</p>
-                    <div id="histogram-hour-of-day" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Commit Frequency Distribution</h3>
-                    <p class="metric-description">How often different commit frequencies occur</p>
-                    <div id="histogram-commits" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Time Gap Distribution</h3>
-                    <p class="metric-description">Distribution of time gaps between commits</p>
-                    <div id="histogram-intervals" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Daily Hours Distribution</h3>
-                    <p class="metric-description">How many hours per day are typically spent coding</p>
-                    <div id="histogram-hours" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Combined Analysis -->
         <div class="chart-section">
             <h2>Combined Metrics Analysis</h2>
             <div class="chart-grid">
@@ -273,13 +227,6 @@
                     <p class="metric-description">Distribution of repositories worked on per day</p>
                     <div id="box-plot-repos" class="chart-container">
                         <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Productivity Intensity</h3>
-                    <p class="metric-description">Commits per hour when actively coding</p>
-                    <div id="histogram-commits-per-hour" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
                     </div>
                 </div>
             </div>
@@ -294,9 +241,10 @@
         import { renderStripPlot } from './browser/renderers/commit-strip-plot.js';
         import { computeVizDataForType } from './core/data/viz-data.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
+        import { preparePeriodsForBoxPlot } from './browser/renderers/box-plot.js';
 
-        let useLogScale = false;
-        let showDots = false;
+        let useLogScale = true;
+        let showHistogram = true;
         let viewMode = 'percentage'; // 'count' or 'percentage'
         let cachedData = null;
 
@@ -307,24 +255,19 @@
                     fetch(`${dataPath}/commits_Pre-AI.json`),
                     fetch(`${dataPath}/commits_Recent-AI.json`)
                 ]);
-
                 if (!preResponse.ok || !recentResponse.ok) {
                     throw new Error('Failed to load commit data');
                 }
-
                 const preArrayFormat = await preResponse.json();
                 const recentArrayFormat = await recentResponse.json();
                 const preCommits = arrayFormatToCommits(preArrayFormat);
                 const recentCommits = arrayFormatToCommits(recentArrayFormat);
-
                 const defaultUserConfig = {
                     timezone_offset_hours: 5.5,
                     coding_day_start_hour: 4
                 };
-
                 const preVizData = computeVizDataForType(preCommits, 'code', defaultUserConfig);
                 const recentVizData = computeVizDataForType(recentCommits, 'code', defaultUserConfig);
-
                 cachedData = {
                     preCommits,
                     recentCommits,
@@ -343,7 +286,6 @@
         async function renderSummaryTable(data) {
             const tbody = document.querySelector('#summary-table tbody');
             const { preVizData, recentVizData } = data;
-
             const summaryMetrics = [
                 {
                     label: 'Total Commits',
@@ -370,7 +312,6 @@
                     format: 'percentage'
                 }
             ];
-
             const formatValue = (value, format) => {
                 if (value === null || value === undefined) return '-';
                 switch (format) {
@@ -384,14 +325,12 @@
                         return value.toString();
                 }
             };
-
             const calculateChange = (preValue, recentValue) => {
                 if (!preValue || !recentValue) return '-';
                 const change = ((recentValue - preValue) / preValue) * 100;
                 const sign = change >= 0 ? '+' : '';
                 return `${sign}${change.toFixed(1)}%`;
             };
-
             tbody.innerHTML = summaryMetrics.map(metric => `
                 <tr>
                     <td>${metric.label}</td>
@@ -405,7 +344,6 @@
         async function renderStripPlotVisualization(data) {
             const container = document.getElementById('strip-plot-container');
             if (!container) return;
-
             try {
                 const { preCommits, userConfig } = data;
                 const rawPeriodsData = [{
@@ -413,16 +351,13 @@
                     data: preCommits,
                     color: '#ed8936'
                 }];
-
                 const periodConfigs = {
                     'Pre-AI': { start: '2022-06-01', end: '2022-11-30' }
                 };
-
                 const usePortrait = window.innerWidth < 768;
                 const dimensions = usePortrait
                     ? { width: Math.min(container.clientWidth - 40, 400), height: 600 }
                     : { width: Math.min(container.clientWidth - 40, 1000), height: 400 };
-
                 await renderStripPlot(container, rawPeriodsData, {
                     ...dimensions,
                     orientation: usePortrait ? 'portrait' : 'landscape',
@@ -432,17 +367,14 @@
                     periodConfigs: periodConfigs,
                     userConfig: userConfig
                 });
-
                 console.log('Strip plot rendered successfully');
             } catch (error) {
                 console.error('Error rendering strip plot:', error);
                 container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
-
         async function renderBoxPlots(data) {
             const { preVizData, recentVizData } = data;
-
             const boxPlotConfigs = [
                 {
                     id: 'box-plot-hourly',
@@ -470,11 +402,9 @@
                     yLabel: 'Repositories per Day'
                 }
             ];
-
             for (const config of boxPlotConfigs) {
                 const container = document.getElementById(config.id);
                 if (!container) continue;
-
                 try {
                     const rawPeriodsData = [
                         {
@@ -488,7 +418,6 @@
                             color: '#48bb78'
                         }
                     ];
-
                     await renderBoxPlot(container, rawPeriodsData, {
                         metricId: config.metricId,
                         width: container.clientWidth - 40,
@@ -496,14 +425,9 @@
                         yLabel: config.yLabel,
                         useLogScale: useLogScale,
                         showPercentiles: true,
-                        showDots: showDots,
-                        dotOptions: {
-                            dotSize: 8,
-                            opacity: 0.4,
-                            jitterWidth: 0.25,
-                        }
+                        showHistogram: showHistogram,
+                        histogramWidth: 0.3,
                     });
-
                     console.log(`Box plot for ${config.metricId} rendered successfully`);
                 } catch (error) {
                     console.error(`Error rendering box plot for ${config.metricId}:`, error);
@@ -511,104 +435,22 @@
                 }
             }
         }
-
-        async function renderHistograms(data) {
-            const { preVizData, recentVizData } = data;
-
-            const histogramConfigs = [
-                {
-                    id: 'histogram-hour-of-day',
-                    metricId: 'commits_by_hour_of_day',
-                    xLabel: 'Hour of Day',
-                    yLabel: viewMode === 'percentage' ? 'Percentage of Commits' : 'Total Commits'
-                },
-                {
-                    id: 'histogram-commits',
-                    metricId: 'commits',
-                    xLabel: 'Commits per Day',
-                    yLabel: viewMode === 'percentage' ? 'Percentage (%)' : 'Count'
-                },
-                {
-                    id: 'histogram-intervals',
-                    metricId: 'commit_intervals',
-                    xLabel: 'Time Between Commits (minutes)',
-                    yLabel: viewMode === 'percentage' ? 'Percentage (%)' : 'Count'
-                },
-                {
-                    id: 'histogram-hours',
-                    metricId: 'hours',
-                    xLabel: 'Hours per Day',
-                    yLabel: viewMode === 'percentage' ? 'Percentage (%)' : 'Count'
-                },
-                {
-                    id: 'histogram-commits-per-hour',
-                    metricId: 'commits_per_hour',
-                    xLabel: 'Commits per Hour',
-                    yLabel: viewMode === 'percentage' ? 'Percentage (%)' : 'Count'
-                }
-            ];
-
-            for (const config of histogramConfigs) {
-                const container = document.getElementById(config.id);
-                if (!container) continue;
-
-                try {
-                    const rawPeriodsData = [
-                        {
-                            period: 'Pre-AI',
-                            data: preVizData[config.metricId] || [],
-                            color: '#ed8936'
-                        },
-                        {
-                            period: 'Recent-AI',
-                            data: recentVizData[config.metricId] || [],
-                            color: '#48bb78'
-                        }
-                    ];
-
-                    await renderHistogram(container, rawPeriodsData, {
-                        metricId: config.metricId,
-                        viewMode: viewMode,
-                        xLabel: config.xLabel,
-                        yLabel: config.yLabel,
-                        useLogScale: config.metricId === 'commit_intervals' ? useLogScale : false,
-                        width: container.clientWidth - 40,
-                        height: 200,
-                        showLegend: false
-                    });
-
-                    console.log(`Histogram for ${config.metricId} rendered successfully`);
-                } catch (error) {
-                    console.error(`Error rendering histogram for ${config.metricId}:`, error);
-                    container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-                }
-            }
-        }
-
         window.renderAllCharts = async function () {
             try {
                 console.log('Loading commit data...');
                 const data = cachedData || await loadCommitData();
-
                 console.log('Rendering summary table...');
                 await renderSummaryTable(data);
-
                 console.log('Rendering strip plot...');
                 await renderStripPlotVisualization(data);
-
                 console.log('Rendering box plots...');
                 await renderBoxPlots(data);
-
-                console.log('Rendering histograms...');
-                await renderHistograms(data);
-
                 console.log('All charts rendered successfully');
             } catch (error) {
                 console.error('Error rendering charts:', error);
                 alert(`Error rendering charts: ${error.message}`);
             }
         };
-
         window.toggleLogScale = function () {
             useLogScale = !useLogScale;
             const button = document.getElementById('logToggle');
@@ -616,20 +458,17 @@
             button.classList.toggle('active', useLogScale);
             if (cachedData) {
                 renderBoxPlots(cachedData);
-                renderHistograms(cachedData);
             }
         };
-
-        window.toggleDots = function () {
-            showDots = !showDots;
-            const button = document.getElementById('dotsToggle');
-            button.textContent = showDots ? 'Hide Dots' : 'Show Dots';
-            button.classList.toggle('active', showDots);
+        window.toggleHistogram = function () {
+            showHistogram = !showHistogram;
+            const button = document.getElementById('histogramToggle');
+            button.textContent = showHistogram ? 'Hide Histogram' : 'Show Histogram';
+            button.classList.toggle('active', showHistogram);
             if (cachedData) {
                 renderBoxPlots(cachedData);
             }
         };
-
         window.toggleViewMode = function () {
             viewMode = viewMode === 'count' ? 'percentage' : 'count';
             const button = document.getElementById('viewToggle');
@@ -639,14 +478,12 @@
                 renderHistograms(cachedData);
             }
         };
-
         window.clearAllCharts = function () {
             const containers = [
                 'strip-plot-container',
                 'box-plot-hourly', 'box-plot-intervals', 'box-plot-commits', 'box-plot-loc', 'box-plot-repos',
                 'histogram-hour-of-day', 'histogram-commits', 'histogram-intervals', 'histogram-hours', 'histogram-commits-per-hour'
             ];
-
             containers.forEach(id => {
                 const container = document.getElementById(id);
                 if (container) {
@@ -657,19 +494,14 @@
                     container.innerHTML = '<div class="loading">Chart cleared. Click "Render All Charts" to visualize data.</div>';
                 }
             });
-
             const summaryTbody = document.querySelector('#summary-table tbody');
             if (summaryTbody) {
                 summaryTbody.innerHTML = '<tr><td colspan="4" class="loading">Summary cleared. Click "Render All Charts" to reload data.</td></tr>';
             }
         };
-
-        // Auto-render on page load
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => window.renderAllCharts(), 1000);
         });
-
-        // Handle window resize
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
