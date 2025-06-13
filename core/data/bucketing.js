@@ -69,15 +69,6 @@ const NATURAL_BUCKETS = {
     { min: 4, max: 5, label: "4-5", logCenter: 4.5 },
     { min: 6, max: Infinity, label: "6+", logCenter: 8 },
   ],
-  commits_per_hour: [
-    { min: 0.1, max: 0.5, label: "< 0.5", logCenter: 0.3 },
-    { min: 0.5, max: 1, label: "0.5-1", logCenter: 0.7 },
-    { min: 1, max: 2, label: "1-2", logCenter: 1.4 },
-    { min: 2, max: 5, label: "2-5", logCenter: 3.2 },
-    { min: 5, max: 10, label: "5-10", logCenter: 7.1 },
-    { min: 10, max: 20, label: "10-20", logCenter: 14.1 },
-    { min: 20, max: Infinity, label: "20+", logCenter: 28 },
-  ],
   hourly_commit_distribution: [
     { min: 1, max: 2, label: "1", logCenter: 1 },
     { min: 2, max: 3, label: "2", logCenter: 2 },
