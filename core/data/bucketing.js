@@ -2,7 +2,8 @@ export const TIME_DURATION_METRICS = ["commit_intervals", "time", "gaps"];
 
 const NATURAL_BUCKETS = {
   commit_intervals: [
-    { min: 0.1, max: 1, label: "< 1 min", logCenter: 0.5 },
+    { min: 0.1, max: 0.316, label: "< 20 sec", logCenter: 0.178 },
+    { min: 0.316, max: 1, label: "20-60 sec", logCenter: 0.562 },
     { min: 1, max: 2, label: "1-2 min", logCenter: 1.4 },
     { min: 2, max: 5, label: "2-5 min", logCenter: 3.2 },
     { min: 5, max: 10, label: "5-10 min", logCenter: 7.1 },
@@ -49,7 +50,8 @@ const NATURAL_BUCKETS = {
     { min: 720, max: 1440, label: "12-24 hours", logCenter: 1014 },
   ],
   loc: [
-    { min: 1, max: 5, label: "1-4", logCenter: 2.2 },
+    { min: 1, max: 2, label: "1", logCenter: 1.4 },
+    { min: 2, max: 5, label: "2-4", logCenter: 2.8 },
     { min: 5, max: 10, label: "5-9", logCenter: 7.1 },
     { min: 10, max: 25, label: "10-24", logCenter: 16 },
     { min: 25, max: 50, label: "25-49", logCenter: 35 },
