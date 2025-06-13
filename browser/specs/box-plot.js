@@ -137,15 +137,21 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     });
   }
   const percentileData = [];
+  const medianData = [];
   periodsData.forEach((periodData) => {
     const sortedValues = [...periodData.values].sort((a, b) => a - b);
     const n = sortedValues.length;
     const p5Index = Math.floor(0.05 * (n - 1));
     const p95Index = Math.floor(0.95 * (n - 1));
+    const medianIndex = Math.floor(0.5 * (n - 1));
     percentileData.push({
       period: periodData.period,
       p5: sortedValues[p5Index],
       p95: sortedValues[p95Index],
+    });
+    medianData.push({
+      period: periodData.period,
+      median: sortedValues[medianIndex],
     });
   });
   const sharedXEncoding = {
@@ -195,6 +201,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       extent: "min-max",
       outliers: false,
       size: 40,
+      median: false,
     },
     encoding: {
       x: sharedXEncoding,
@@ -202,41 +209,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       color: colorEncoding,
     },
   });
-  if (defaultOptions.showPercentiles) {
-    layers.push({
-      data: { name: "percentiles" },
-      layer: [
-        {
-          mark: {
-            type: "point",
-            shape: "cross",
-            size: 40,
-            stroke: 1,
-            opacity: 0.8,
-          },
-          encoding: {
-            x: sharedXEncoding,
-            y: { field: "p5", type: "quantitative" },
-            stroke: colorEncoding,
-          },
-        },
-        {
-          mark: {
-            type: "point",
-            shape: "cross",
-            size: 40,
-            stroke: 1,
-            opacity: 0.8,
-          },
-          encoding: {
-            x: sharedXEncoding,
-            y: { field: "p95", type: "quantitative" },
-            stroke: colorEncoding,
-          },
-        },
-      ],
-    });
-  }
   if (defaultOptions.showHistogram) {
     layers.push({
       data: { name: "histogram" },
@@ -279,9 +251,60 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     });
   }
+  layers.push({
+    data: { name: "medians" },
+    mark: {
+      type: "point",
+      shape: "square",
+      size: 60,
+      strokeWidth: 0,
+      opacity: 1.0,
+      filled: true
+    },
+    encoding: {
+      x: sharedXEncoding,
+      y: { field: "median", type: "quantitative" },
+    },
+  });
+  if (defaultOptions.showPercentiles) {
+    layers.push({
+      data: { name: "percentiles" },
+      layer: [
+        {
+          mark: {
+            type: "point",
+            shape: "cross",
+            size: 10,
+            stroke: 1,
+            opacity: 1.0,
+          },
+          encoding: {
+            x: sharedXEncoding,
+            y: { field: "p5", type: "quantitative" },
+            stroke: colorEncoding,
+          },
+        },
+        {
+          mark: {
+            type: "point",
+            shape: "cross",
+            size: 10,
+            stroke: 1,
+            opacity: 1.0,
+          },
+          encoding: {
+            x: sharedXEncoding,
+            y: { field: "p95", type: "quantitative" },
+            stroke: colorEncoding,
+          },
+        },
+      ],
+    });
+  }
   const datasets = {
     values: combinedDataWithPosition,
     percentiles: percentileData,
+    medians: medianData,
   };
   if (defaultOptions.showHistogram) {
     datasets.histogram = histogramData;

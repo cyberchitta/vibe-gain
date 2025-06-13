@@ -131,5 +131,19 @@ export function applyDaisyUITheme(spec, options = {}) {
         }),
     };
   }
+  if (spec.layer && Array.isArray(spec.layer)) {
+    themedSpec.layer = spec.layer.map((layer) => {
+      if (layer.data && layer.data.name === "medians") {
+        return {
+          ...layer,
+          encoding: {
+            ...layer.encoding,
+            fill: { value: colors.medianColor },
+          },
+        };
+      }
+      return layer;
+    });
+  }
   return themedSpec;
 }
