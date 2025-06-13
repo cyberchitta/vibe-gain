@@ -1,4 +1,5 @@
 import { createBaseVegaSpec } from "./vega-base.js";
+import { TIME_DURATION_METRICS } from "../../core/data/bucketing.js";
 
 /**
  * Create a Vega-Lite specification for overlaid charts using natural buckets with bin edges
@@ -57,9 +58,8 @@ export function createHistogramSpec(chartData, options = {}) {
     },
   };
   if (
-    options.useLogScale &&
-    options.xLabel &&
-    options.xLabel.toLowerCase().includes("time")
+    defaultOptions.useLogScale &&
+    TIME_DURATION_METRICS.includes(options.metricId)
   ) {
     xAxisConfig.axis.labelExpr = `
       datum.value < 60 ? datum.value + ' min' : 

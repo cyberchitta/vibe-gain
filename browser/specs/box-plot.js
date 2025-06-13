@@ -1,5 +1,6 @@
 import { createBaseVegaSpec } from "./vega-base.js";
 import {
+  TIME_DURATION_METRICS,
   createNaturalBins,
   hasNaturalBuckets,
 } from "../../core/data/bucketing.js";
@@ -159,6 +160,16 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       ...(defaultOptions.useLogScale && { format: "~s" }),
     },
   };
+  if (
+    defaultOptions.useLogScale &&
+    TIME_DURATION_METRICS.includes(options.metricId)
+  ) {
+    yEncoding.axis.labelExpr = `
+    datum.value < 1 ? round(datum.value * 60) + ' sec' :
+    datum.value < 60 ? round(datum.value * 10)/10 + ' min' : 
+    round(datum.value/60 * 10)/10 + ' hr'
+  `;
+  }
   const colorEncoding = {
     field: "period",
     type: "nominal",
@@ -169,48 +180,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     legend: null,
   };
   const layers = [];
-  if (defaultOptions.showHistogram) {
-    layers.push({
-      data: { name: "histogram" },
-      mark: {
-        type: "rect",
-        opacity: 0.6,
-        stroke: "white",
-        strokeWidth: 0.5,
-      },
-      encoding: {
-        x: {
-          field: "barLeft",
-          type: "quantitative",
-          scale: {
-            domain: [-0.5, periodsData.length - 0.5],
-            range: "width",
-          },
-          axis: null,
-        },
-        x2: {
-          field: "barRight",
-          type: "quantitative",
-        },
-        y: {
-          field: "binStart",
-          type: "quantitative",
-          scale: yEncoding.scale,
-        },
-        y2: {
-          field: "binEnd",
-          type: "quantitative",
-        },
-        fill: colorEncoding,
-        tooltip: [
-          { field: "period", title: "Period" },
-          { field: "binCenter", title: "Value" },
-          { field: "count", title: "Count" },
-          { field: "percentage", title: "Percentage", format: ".1f" },
-        ],
-      },
-    });
-  }
   layers.push({
     data: { name: "values" },
     mark: {
@@ -258,6 +227,48 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           },
         },
       ],
+    });
+  }
+  if (defaultOptions.showHistogram) {
+    layers.push({
+      data: { name: "histogram" },
+      mark: {
+        type: "rect",
+        opacity: 0.6,
+        stroke: "white",
+        strokeWidth: 0.5,
+      },
+      encoding: {
+        x: {
+          field: "barLeft",
+          type: "quantitative",
+          scale: {
+            domain: [-0.5, periodsData.length - 0.5],
+            range: "width",
+          },
+          axis: null,
+        },
+        x2: {
+          field: "barRight",
+          type: "quantitative",
+        },
+        y: {
+          field: "binStart",
+          type: "quantitative",
+          scale: yEncoding.scale,
+        },
+        y2: {
+          field: "binEnd",
+          type: "quantitative",
+        },
+        fill: colorEncoding,
+        tooltip: [
+          { field: "period", title: "Period" },
+          { field: "binCenter", title: "Value" },
+          { field: "count", title: "Count" },
+          { field: "percentage", title: "Percentage", format: ".1f" },
+        ],
+      },
     });
   }
   const datasets = {
