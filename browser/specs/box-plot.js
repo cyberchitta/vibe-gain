@@ -95,12 +95,20 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   });
   const histogramData = [];
   if (defaultOptions.showHistogram) {
+    const allBins = [];
+    periodsData.forEach((periodData) => {
+      const bins = createHistogramBins(periodData.values, options.metricId);
+      allBins.push(...bins);
+    });
+    const globalMaxPercentage = Math.max(...allBins.map((b) => b.percentage));
     periodsData.forEach((periodData, periodIndex) => {
       const bins = createHistogramBins(periodData.values, options.metricId);
-      const maxPercentage = Math.max(...bins.map((b) => b.percentage));
+
       bins.forEach((bin) => {
         const normalizedWidth =
-          (bin.percentage / maxPercentage) * defaultOptions.histogramWidth;
+          (bin.percentage / globalMaxPercentage) *
+          defaultOptions.histogramWidth;
+
         histogramData.push({
           period: periodData.period,
           periodIndex: periodIndex,
