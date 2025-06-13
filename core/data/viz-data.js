@@ -34,7 +34,9 @@ export function extractCommitIntervals(commits, userConfig) {
   for (let i = 1; i < sortedCommits.length; i++) {
     const prevCommit = sortedCommits[i - 1];
     const currCommit = sortedCommits[i];
-    if (!isSameCodingDay(prevCommit.timestamp, currCommit.timestamp, userConfig)) {
+    if (
+      !isSameCodingDay(prevCommit.timestamp, currCommit.timestamp, userConfig)
+    ) {
       continue;
     }
     const prevTime = new Date(prevCommit.timestamp).getTime();
@@ -84,25 +86,27 @@ function getRepositoriesPerDay(commits, userConfig) {
   }));
 }
 
-function getHoursPerDay(commits, userConfig) {
+function getTimePerDay(commits, userConfig) {
   const commitsByDate = groupBy(commits, (commit) =>
     getLocalCodingDay(commit.timestamp, userConfig)
   );
-  const hoursPerDay = [];
+  const timePerDay = [];
   for (const [date, group] of Object.entries(commitsByDate)) {
     const utcTimestamps = group
       .map((c) => new Date(c.timestamp).getTime())
       .sort((a, b) => a - b);
-    let hours;
+    let minutes;
     if (utcTimestamps.length === 1) {
-      hours = 0.1;
+      minutes = 6;
     } else {
-      const timeDiff = (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) / (1000 * 3600);
-      hours = Math.min(timeDiff, 8);
+      const timeDiff =
+        (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) /
+        (1000 * 60);
+      minutes = timeDiff;
     }
-    hoursPerDay.push({ date, hours });
+    timePerDay.push({ date, minutes });
   }
-  return hoursPerDay;
+  return timePerDay;
 }
 
 function getHourlyCommitDistribution(commits, userConfig) {
@@ -170,7 +174,7 @@ function createEmptyVizData(type) {
     commits: [],
     loc: [],
     repos: [],
-    hours: [],
+    time: [],
     commit_intervals: [],
     hourly_commit_distribution: [],
     commits_by_hour_of_day: new Array(24).fill(0),
@@ -200,7 +204,7 @@ export function computeVizDataForType(commits, type, userConfig) {
     commits: getCommitsPerDay(commits, userConfig),
     loc: getLinesOfCodePerDay(commits, userConfig),
     repos: getRepositoriesPerDay(commits, userConfig),
-    hours: getHoursPerDay(commits, userConfig),
+    time: getTimePerDay(commits, userConfig),
     commit_intervals: extractCommitIntervals(commits, userConfig),
     hourly_commit_distribution: getHourlyCommitDistribution(
       commits,

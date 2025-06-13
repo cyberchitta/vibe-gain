@@ -57,10 +57,7 @@ export function createHistogramSpec(chartData, options = {}) {
       }),
     },
   };
-  if (
-    defaultOptions.useLogScale &&
-    TIME_DURATION_METRICS.includes(options.metricId)
-  ) {
+  if (options.useLogScale && TIME_DURATION_METRICS.includes(options.metricId)) {
     xAxisConfig.axis.labelExpr = `
       datum.value < 60 ? datum.value + ' min' : 
       datum.value < 1440 ? round(datum.value/60 * 10)/10 + ' hr' : 

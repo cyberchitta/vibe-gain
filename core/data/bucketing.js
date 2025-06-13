@@ -1,4 +1,4 @@
-export const TIME_DURATION_METRICS = ["commit_intervals", "hours", "gaps"];
+export const TIME_DURATION_METRICS = ["commit_intervals", "time", "gaps"];
 
 const NATURAL_BUCKETS = {
   commit_intervals: [
@@ -29,7 +29,7 @@ const NATURAL_BUCKETS = {
     { min: 20, max: 50, label: "20-49", logCenter: 32 },
     { min: 50, max: Infinity, label: "50+", logCenter: 75 },
   ],
-  hours: [
+  time: [
     { min: 0.1, max: 1, label: "< 1 min", logCenter: 0.5 },
     { min: 1, max: 2, label: "1-2 min", logCenter: 1.4 },
     { min: 2, max: 5, label: "2-5 min", logCenter: 3.2 },

@@ -108,7 +108,7 @@ export function extractChartData(vizData, metricType) {
   return {
     commits: typeData.commits || [],
     loc: typeData.loc || [],
-    hours: typeData.hours || [],
+    time: typeData.time || [],
     repos: typeData.repos || [],
     commits_by_hour_of_day:
       typeData.commits_by_hour_of_day || new Array(24).fill(0),
@@ -117,7 +117,7 @@ export function extractChartData(vizData, metricType) {
     ),
     commits_per_hour: deriveCommitsPerHour(
       typeData.commits || [],
-      typeData.hours || []
+      typeData.time || []
     ),
     hourly_commit_distribution: typeData.hourly_commit_distribution || [],
     metadata: typeData.metadata || {},
