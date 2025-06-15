@@ -11,13 +11,6 @@ export {
 } from "../core/data/strip-plot.js";
 
 export {
-  loadChartDataFromFiles,
-  loadChartDataFromRaw,
-  extractChartData,
-  preparePeriodDataForHistogram,
-} from "../core/data/chart-adapter.js";
-
-export {
   prepareNaturalBucketData,
   createNaturalBins,
   hasNaturalBuckets,
