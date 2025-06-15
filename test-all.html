@@ -217,6 +217,13 @@
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
+                <div>
+                    <h3>Coding Session Duration</h3>
+                    <p class="metric-description">Distribution of coding session lengths (minutes)</p>
+                    <div id="box-plot-coding-time" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="chart-section">
@@ -275,7 +282,6 @@
                     recentVizData,
                     userConfig: defaultUserConfig
                 };
-
                 return cachedData;
             } catch (error) {
                 console.error('Error loading commit data:', error);
@@ -400,8 +406,12 @@
                     id: 'box-plot-repos',
                     metricId: 'repos',
                     yLabel: 'Repositories per Day'
-                }
-            ];
+                },
+                {
+                    id: 'box-plot-coding-time',
+                    metricId: 'coding_time',
+                    yLabel: 'Coding Session Duration (minutes)'
+                }];
             for (const config of boxPlotConfigs) {
                 const container = document.getElementById(config.id);
                 if (!container) continue;

@@ -86,11 +86,11 @@ function getRepositoriesPerDay(commits, userConfig) {
   }));
 }
 
-function getTimePerDay(commits, userConfig) {
+function getCodingTime(commits, userConfig) {
   const commitsByDate = groupBy(commits, (commit) =>
     getLocalCodingDay(commit.timestamp, userConfig)
   );
-  const timePerDay = [];
+  const codingTimeData = [];
   for (const [date, group] of Object.entries(commitsByDate)) {
     const utcTimestamps = group
       .map((c) => new Date(c.timestamp).getTime())
@@ -104,9 +104,9 @@ function getTimePerDay(commits, userConfig) {
         (1000 * 60);
       minutes = timeDiff;
     }
-    timePerDay.push({ date, minutes });
+    codingTimeData.push({ date, coding_time: minutes });
   }
-  return timePerDay;
+  return codingTimeData;
 }
 
 function getHourlyCommitDistribution(commits, userConfig) {
@@ -174,7 +174,7 @@ function createEmptyVizData(type) {
     commits: [],
     loc: [],
     repos: [],
-    time: [],
+    coding_time: [],
     commit_intervals: [],
     hourly_commit_distribution: [],
     commits_by_hour_of_day: new Array(24).fill(0),
@@ -204,7 +204,7 @@ export function computeVizDataForType(commits, type, userConfig) {
     commits: getCommitsPerDay(commits, userConfig),
     loc: getLinesOfCodePerDay(commits, userConfig),
     repos: getRepositoriesPerDay(commits, userConfig),
-    time: getTimePerDay(commits, userConfig),
+    coding_time: getCodingTime(commits, userConfig),
     commit_intervals: extractCommitIntervals(commits, userConfig),
     hourly_commit_distribution: getHourlyCommitDistribution(
       commits,
