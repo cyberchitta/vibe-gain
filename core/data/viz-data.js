@@ -312,11 +312,21 @@ export function computeAggregateVizData(allCommits, userConfig) {
     const activeDays = new Set(
       commits.map((c) => getLocalCodingDay(c.timestamp, userConfig))
     ).size;
+    let medianCommitsPerDay = 0;
+    if (activeDays > 0) {
+      const sortedCounts = dailyCommitCounts.sort((a, b) => a - b);
+      medianCommitsPerDay =
+        sortedCounts.length % 2 === 0
+          ? (sortedCounts[sortedCounts.length / 2 - 1] +
+              sortedCounts[sortedCounts.length / 2]) /
+            2
+          : sortedCounts[Math.floor(sortedCounts.length / 2)];
+    }
     return {
       total_commits: commits.length,
       total_active_days: activeDays,
       total_repositories: new Set(commits.map((c) => c.repo)).size,
-      commits_per_active_day: activeDays > 0 ? commits.length / activeDays : 0,
+      commits_per_active_day: medianCommitsPerDay,
       period_range:
         commits.length > 0
           ? {
