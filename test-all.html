@@ -238,6 +238,18 @@
                 </div>
             </div>
         </div>
+        <div class="chart-section">
+            <h2>Hourly Distribution Analysis</h2>
+            <div class="chart-grid">
+                <div>
+                    <h3>Commits by Hour of Day</h3>
+                    <p class="metric-description">Distribution of commits across 24-hour periods</p>
+                    <div id="histogram-hour-of-day" class="chart-container">
+                        <div class="loading">Loading histogram...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -454,6 +466,50 @@
                 }
             }
         }
+        async function renderHistograms(data) {
+            const { preVizData, recentVizData } = data;
+            const histogramConfigs = [
+                {
+                    id: 'histogram-hour-of-day',
+                    metricId: 'commits_by_hour_of_day',
+                    xLabel: 'Hour of Day',
+                    yLabel: viewMode === 'percentage' ? 'Percentage of Commits' : 'Total Commits'
+                }
+            ];
+            for (const config of histogramConfigs) {
+                const container = document.getElementById(config.id);
+                if (!container) continue;
+                try {
+                    const rawPeriodsData = [
+                        {
+                            period: 'Pre-AI',
+                            data: preVizData[config.metricId] || [],
+                            color: '#ed8936'
+                        },
+                        {
+                            period: 'Recent-AI',
+                            data: recentVizData[config.metricId] || [],
+                            color: '#48bb78'
+                        }
+                    ];
+                    await renderHistogram(container, rawPeriodsData, {
+                        metricId: config.metricId,
+                        viewMode: viewMode,
+                        xLabel: config.xLabel,
+                        yLabel: config.yLabel,
+                        useLogScale: false,
+                        width: container.clientWidth - 40,
+                        height: 200,
+                        isDark: false,
+                        showLegend: false,
+                    });
+                    console.log(`Histogram for ${config.metricId} rendered successfully`);
+                } catch (error) {
+                    console.error(`Error rendering histogram for ${config.metricId}:`, error);
+                    container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                }
+            }
+        }
         window.renderAllCharts = async function () {
             try {
                 console.log('Loading commit data...');
@@ -464,6 +520,8 @@
                 await renderStripPlotVisualization(data);
                 console.log('Rendering box plots...');
                 await renderBoxPlots(data);
+                console.log('Rendering histograms...');
+                await renderHistograms(data);
                 console.log('All charts rendered successfully');
             } catch (error) {
                 console.error('Error rendering charts:', error);
@@ -500,8 +558,8 @@
         window.clearAllCharts = function () {
             const containers = [
                 'strip-plot-container',
-                'box-plot-hourly', 'box-plot-intervals', 'box-plot-commits', 'box-plot-loc', 'box-plot-repos',
-                'histogram-hour-of-day', 'histogram-commits', 'histogram-intervals', 'histogram-hours', 'histogram-commits-per-hour'
+                'box-plot-hourly', 'box-plot-intervals', 'box-plot-commits', 'box-plot-loc', 'box-plot-repos', 'box-plot-coding-time',
+                'histogram-hour-of-day'
             ];
             containers.forEach(id => {
                 const container = document.getElementById(id);
