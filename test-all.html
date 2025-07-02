@@ -245,16 +245,15 @@
         import { createHistogramSpec } from './browser/specs/histogram.js';
         import { renderHistogram } from './browser/renderers/histogram.js';
         import { renderBoxPlot } from './browser/renderers/box-plot.js';
-        import { renderStripPlot } from './browser/renderers/commit-strip-plot.js';
-        import { computeVizDataForType } from './core/data/viz-data.js';
+        import { renderStripPlot, cleanupStripPlot } from './browser/renderers/commit-strip-plot.js';
+        import { computeVizData, computeVizDataForType } from './core/data/viz-data.js'; // Updated data engine
         import { arrayFormatToCommits } from './core/data/formats.js';
         import { preparePeriodsForBoxPlot } from './browser/renderers/box-plot.js';
 
         let useLogScale = true;
         let showHistogram = true;
-        let viewMode = 'percentage'; // 'count' or 'percentage'
+        let viewMode = 'percentage';
         let cachedData = null;
-
         async function loadCommitData() {
             try {
                 const dataPath = './data/restlessronin/raw';
@@ -273,13 +272,22 @@
                     timezone_offset_hours: 5.5,
                     coding_day_start_hour: 4
                 };
-                const preVizData = computeVizDataForType(preCommits, 'code', defaultUserConfig);
-                const recentVizData = computeVizDataForType(recentCommits, 'code', defaultUserConfig);
+                const preVizData = computeVizData(preCommits, defaultUserConfig);
+                const recentVizData = computeVizData(recentCommits, defaultUserConfig);
+                console.log('=== DATA ENGINE RESULTS ===');
+                console.log('Pre-AI median commits/day:', preVizData.code.summary.commits_per_active_day);
+                console.log('Recent-AI median commits/day:', recentVizData.code.summary.commits_per_active_day);
+                console.log('Pre-AI total active days:', preVizData.code.summary.total_active_days);
+                console.log('Recent-AI total active days:', recentVizData.code.summary.total_active_days);
+                const preCommitsPerDay = preVizData.code.commits.map(d => d.commits);
+                const recentCommitsPerDay = recentVizData.code.commits.map(d => d.commits);
+                console.log('Pre-AI daily commits (first 10):', preCommitsPerDay.slice(0, 10));
+                console.log('Recent-AI daily commits (first 10):', recentCommitsPerDay.slice(0, 10));
                 cachedData = {
                     preCommits,
                     recentCommits,
-                    preVizData,
-                    recentVizData,
+                    preVizData: preVizData.code,
+                    recentVizData: recentVizData.code,
                     userConfig: defaultUserConfig
                 };
                 return cachedData;
@@ -295,26 +303,26 @@
             const summaryMetrics = [
                 {
                     label: 'Total Commits',
-                    preValue: preVizData.metadata.total_commits,
-                    recentValue: recentVizData.metadata.total_commits,
+                    preValue: preVizData.summary.total_commits,
+                    recentValue: recentVizData.summary.total_commits,
                     format: 'number'
                 },
                 {
                     label: 'Active Days',
-                    preValue: preVizData.metadata.active_days,
-                    recentValue: recentVizData.metadata.active_days,
+                    preValue: preVizData.summary.total_active_days,
+                    recentValue: recentVizData.summary.total_active_days,
                     format: 'number'
                 },
                 {
-                    label: 'Commits per Day',
-                    preValue: preVizData.metadata.total_commits / preVizData.metadata.active_days,
-                    recentValue: recentVizData.metadata.total_commits / recentVizData.metadata.active_days,
-                    format: 'decimal'
+                    label: 'Commits per Day (Median)',
+                    preValue: preVizData.summary.commits_per_active_day,
+                    recentValue: recentVizData.summary.commits_per_active_day,
+                    format: 'number'
                 },
                 {
                     label: 'Doc Percentage',
-                    preValue: preVizData.metadata.fork_percentage, // Using available data
-                    recentValue: recentVizData.metadata.fork_percentage,
+                    preValue: preVizData.summary.fork_percentage,
+                    recentValue: recentVizData.summary.fork_percentage,
                     format: 'percentage'
                 }
             ];
@@ -338,13 +346,13 @@
                 return `${sign}${change.toFixed(1)}%`;
             };
             tbody.innerHTML = summaryMetrics.map(metric => `
-                <tr>
-                    <td>${metric.label}</td>
-                    <td>${formatValue(metric.preValue, metric.format)}</td>
-                    <td>${formatValue(metric.recentValue, metric.format)}</td>
-                    <td>${calculateChange(metric.preValue, metric.recentValue)}</td>
-                </tr>
-            `).join('');
+      <tr>
+        <td>${metric.label}</td>
+        <td>${formatValue(metric.preValue, metric.format)}</td>
+        <td>${formatValue(metric.recentValue, metric.format)}</td>
+        <td>${calculateChange(metric.preValue, metric.recentValue)}</td>
+      </tr>
+    `).join('');
         }
 
         async function renderStripPlotVisualization(data) {
@@ -411,7 +419,8 @@
                     id: 'box-plot-coding-time',
                     metricId: 'coding_time',
                     yLabel: 'Coding Session Duration (minutes)'
-                }];
+                }
+            ];
             for (const config of boxPlotConfigs) {
                 const container = document.getElementById(config.id);
                 if (!container) continue;

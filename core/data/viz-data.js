@@ -17,12 +17,14 @@ function uniq(array) {
   return [...new Set(array)];
 }
 
-/**
- * Extract all individual time intervals between consecutive commits within same coding day
- * @param {Array} commits - Array of commit objects with timestamp property
- * @param {Object} userConfig - User configuration with timezone info
- * @returns {Array} - Array of interval objects with time differences in minutes
- */
+function calculateMedian(values) {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted.length % 2 === 0
+    ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+    : sorted[Math.floor(sorted.length / 2)];
+}
+
 export function extractCommitIntervals(commits, userConfig) {
   if (!commits || commits.length < 2) {
     return [];
@@ -56,59 +58,6 @@ export function extractCommitIntervals(commits, userConfig) {
   return intervals;
 }
 
-function getCommitsPerDay(commits, userConfig) {
-  const commitsByDate = groupBy(commits, (commit) =>
-    getLocalCodingDay(commit.timestamp, userConfig)
-  );
-  return Object.entries(commitsByDate).map(([date, group]) => ({
-    date,
-    commits: group.length,
-  }));
-}
-
-function getLinesOfCodePerDay(commits, userConfig) {
-  const commitsByDate = groupBy(commits, (commit) =>
-    getLocalCodingDay(commit.timestamp, userConfig)
-  );
-  return Object.entries(commitsByDate).map(([date, group]) => {
-    const loc = group.reduce((sum, c) => sum + c.additions + c.deletions, 0);
-    return { date, loc };
-  });
-}
-
-function getRepositoriesPerDay(commits, userConfig) {
-  const commitsByDate = groupBy(commits, (commit) =>
-    getLocalCodingDay(commit.timestamp, userConfig)
-  );
-  return Object.entries(commitsByDate).map(([date, group]) => ({
-    date,
-    repos: uniq(group.map((c) => c.repo)).length,
-  }));
-}
-
-function getCodingTime(commits, userConfig) {
-  const commitsByDate = groupBy(commits, (commit) =>
-    getLocalCodingDay(commit.timestamp, userConfig)
-  );
-  const codingTimeData = [];
-  for (const [date, group] of Object.entries(commitsByDate)) {
-    const utcTimestamps = group
-      .map((c) => new Date(c.timestamp).getTime())
-      .sort((a, b) => a - b);
-    let minutes;
-    if (utcTimestamps.length === 1) {
-      minutes = 6;
-    } else {
-      const timeDiff =
-        (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) /
-        (1000 * 60);
-      minutes = timeDiff;
-    }
-    codingTimeData.push({ date, coding_time: minutes });
-  }
-  return codingTimeData;
-}
-
 function getHourlyCommitDistribution(commits, userConfig) {
   const hourlyCommits = {};
   commits.forEach((commit) => {
@@ -137,38 +86,97 @@ function getCommitsByHourOfDay(commits, userConfig) {
   return hourCounts;
 }
 
-function calculateMetadata(commits, userConfig) {
-  if (commits.length === 0) {
-    return {
-      total_commits: 0,
-      active_days: 0,
-      private_repo_percentage: 0,
-      fork_percentage: 0,
-      date_range: { start: null, end: null },
-    };
+function processCommitSet(commits, type, userConfig) {
+  if (!commits || commits.length === 0) {
+    return createEmptyProcessedData(type);
   }
-  const commitsByDate = groupBy(commits, (commit) =>
+  const commitsByDay = groupBy(commits, (commit) =>
     getLocalCodingDay(commit.timestamp, userConfig)
   );
+  const dailyMetrics = Object.entries(commitsByDay).map(
+    ([date, dayCommits]) => {
+      const loc = dayCommits.reduce(
+        (sum, c) => sum + c.additions + c.deletions,
+        0
+      );
+      const repos = uniq(dayCommits.map((c) => c.repo)).length;
+      const utcTimestamps = dayCommits
+        .map((c) => new Date(c.timestamp).getTime())
+        .sort((a, b) => a - b);
+      const codingTime =
+        utcTimestamps.length === 1
+          ? 6
+          : (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) /
+            (1000 * 60);
+      return {
+        date,
+        commits: dayCommits.length,
+        loc,
+        repos,
+        coding_time: codingTime,
+      };
+    }
+  );
+  const commitsPerDay = dailyMetrics.map((d) => d.commits);
+  const locPerDay = dailyMetrics.map((d) => d.loc);
+  const reposPerDay = dailyMetrics.map((d) => d.repos);
+  const codingTimePerDay = dailyMetrics.map((d) => d.coding_time);
   return {
-    total_commits: commits.length,
-    active_days: Object.keys(commitsByDate).length,
-    private_repo_percentage:
-      (commits.filter((c) => c.private).length / commits.length) * 100,
-    fork_percentage:
-      (commits.filter((c) => c.isFork).length / commits.length) * 100,
-    date_range: {
-      start: new Date(
-        Math.min(...commits.map((c) => new Date(c.timestamp)))
-      ).toISOString(),
-      end: new Date(
-        Math.max(...commits.map((c) => new Date(c.timestamp)))
-      ).toISOString(),
+    type,
+    commits: dailyMetrics.map((d) => ({ date: d.date, commits: d.commits })),
+    loc: dailyMetrics.map((d) => ({ date: d.date, loc: d.loc })),
+    repos: dailyMetrics.map((d) => ({ date: d.date, repos: d.repos })),
+    coding_time: dailyMetrics.map((d) => ({
+      date: d.date,
+      coding_time: d.coding_time,
+    })),
+    commit_intervals: extractCommitIntervals(commits, userConfig),
+    hourly_commit_distribution: getHourlyCommitDistribution(
+      commits,
+      userConfig
+    ),
+    commits_by_hour_of_day: getCommitsByHourOfDay(commits, userConfig),
+    summary: {
+      total_commits: commits.length,
+      total_active_days: Object.keys(commitsByDay).length,
+      total_repositories: uniq(commits.map((c) => c.repo)).length,
+      commits_per_active_day: calculateMedian(commitsPerDay), // Now using median!
+      median_loc_per_day: calculateMedian(locPerDay),
+      median_repos_per_day: calculateMedian(reposPerDay),
+      median_coding_time_per_day: calculateMedian(codingTimePerDay),
+      private_repo_percentage:
+        (commits.filter((c) => c.private).length / commits.length) * 100,
+      fork_percentage:
+        (commits.filter((c) => c.isFork).length / commits.length) * 100,
+      date_range: {
+        start: new Date(
+          Math.min(...commits.map((c) => new Date(c.timestamp)))
+        ).toISOString(),
+        end: new Date(
+          Math.max(...commits.map((c) => new Date(c.timestamp)))
+        ).toISOString(),
+      },
+    },
+    metadata: {
+      total_commits: commits.length,
+      active_days: Object.keys(commitsByDay).length,
+      private_repo_percentage:
+        (commits.filter((c) => c.private).length / commits.length) * 100,
+      fork_percentage:
+        (commits.filter((c) => c.isFork).length / commits.length) * 100,
+      date_range: {
+        start: new Date(
+          Math.min(...commits.map((c) => new Date(c.timestamp)))
+        ).toISOString(),
+        end: new Date(
+          Math.max(...commits.map((c) => new Date(c.timestamp)))
+        ).toISOString(),
+      },
     },
   };
 }
 
-function createEmptyVizData(type) {
+function createEmptyProcessedData(type) {
   return {
     type,
     commits: [],
@@ -178,6 +186,18 @@ function createEmptyVizData(type) {
     commit_intervals: [],
     hourly_commit_distribution: [],
     commits_by_hour_of_day: new Array(24).fill(0),
+    summary: {
+      total_commits: 0,
+      total_active_days: 0,
+      total_repositories: 0,
+      commits_per_active_day: 0,
+      median_loc_per_day: 0,
+      median_repos_per_day: 0,
+      median_coding_time_per_day: 0,
+      private_repo_percentage: 0,
+      fork_percentage: 0,
+      date_range: { start: null, end: null },
+    },
     metadata: {
       total_commits: 0,
       active_days: 0,
@@ -188,86 +208,51 @@ function createEmptyVizData(type) {
   };
 }
 
-/**
- * Compute visualization data from a specific set of commit data
- * @param {Array} commits - Array of commit objects
- * @param {string} type - Type identifier ('all', 'code', or 'doc')
- * @param {Object} userConfig - User configuration with timezone info
- * @returns {Object} - Object containing various metrics for visualization
- */
-export function computeVizDataForType(commits, type, userConfig) {
+export function computeVizData(commits, userConfig, fetchStats = {}) {
   if (!commits || commits.length === 0) {
-    return createEmptyVizData(type);
-  }
-  return {
-    type,
-    commits: getCommitsPerDay(commits, userConfig),
-    loc: getLinesOfCodePerDay(commits, userConfig),
-    repos: getRepositoriesPerDay(commits, userConfig),
-    coding_time: getCodingTime(commits, userConfig),
-    commit_intervals: extractCommitIntervals(commits, userConfig),
-    hourly_commit_distribution: getHourlyCommitDistribution(
-      commits,
-      userConfig
-    ),
-    commits_by_hour_of_day: getCommitsByHourOfDay(commits, userConfig),
-    metadata: calculateMetadata(commits, userConfig),
-  };
-}
-
-/**
- * Compute visualization data for all three categories
- * @param {Array} commits - Array of commit objects
- * @param {Object} userConfig - User configuration with timezone info
- * @param {Object} fetchStats - Optional fetch statistics
- * @returns {Object} - Object containing visualization data for all three categories
- */
-export function computeVizData(commits, userConfig, fetchStats) {
-  if (!commits || commits.length === 0) {
-    return {
-      all: { type: "all", metadata: { total_commits: 0 } },
-      code: { type: "code", metadata: { total_commits: 0 } },
-      doc: { type: "doc", metadata: { total_commits: 0 } },
-      summary: {
-        total_commits: 0,
-        code_commits: 0,
-        doc_commits: 0,
-        doc_percentage: 0,
-        total_repositories: 0,
-      },
-    };
+    return createEmptyVisualizationData();
   }
   const allCommits = commits;
   const codeCommits = commits.filter((c) => !c.isDocOnly);
   const docCommits = commits.filter((c) => c.isDocOnly);
-  const allVizData = computeVizDataForType(allCommits, "all", userConfig);
-  const codeVizData = computeVizDataForType(codeCommits, "code", userConfig);
-  const docVizData = computeVizDataForType(docCommits, "doc", userConfig);
   return {
-    all: allVizData,
-    code: codeVizData,
-    doc: docVizData,
+    all: processCommitSet(allCommits, "all", userConfig),
+    code: processCommitSet(codeCommits, "code", userConfig),
+    doc: processCommitSet(docCommits, "doc", userConfig),
     summary: {
-      total_commits: commits.length,
+      total_commits: allCommits.length,
       code_commits: codeCommits.length,
       doc_commits: docCommits.length,
-      doc_percentage: (docCommits.length / commits.length) * 100,
-      total_repositories: new Set(commits.map((c) => c.repo)).size,
-      missing_commits: fetchStats?.missingCommits || 0,
-      expected_total_commits: fetchStats?.expectedTotalCount || commits.length,
-      data_completeness_percentage: fetchStats?.expectedTotalCount
-        ? (commits.length / fetchStats.expectedTotalCount) * 100
-        : 100,
+      doc_percentage:
+        allCommits.length > 0
+          ? (docCommits.length / allCommits.length) * 100
+          : 0,
+      total_repositories: uniq(allCommits.map((c) => c.repo)).length,
+      ...fetchStats,
     },
   };
 }
 
-/**
- * Compute aggregate visualization data across all periods
- * @param {Array} allCommits - Array of all commit objects from all periods
- * @param {Object} userConfig - User configuration with timezone info
- * @returns {Object} - Object containing aggregate visualization data for all three categories
- */
+export function computeVizDataForType(commits, type, userConfig) {
+  const fullData = computeVizData(commits, userConfig);
+  return fullData[type];
+}
+
+function createEmptyVisualizationData() {
+  return {
+    all: createEmptyProcessedData("all"),
+    code: createEmptyProcessedData("code"),
+    doc: createEmptyProcessedData("doc"),
+    summary: {
+      total_commits: 0,
+      code_commits: 0,
+      doc_commits: 0,
+      doc_percentage: 0,
+      total_repositories: 0,
+    },
+  };
+}
+
 export function computeAggregateVizData(allCommits, userConfig) {
   if (!allCommits || allCommits.length === 0) {
     return {
@@ -312,21 +297,11 @@ export function computeAggregateVizData(allCommits, userConfig) {
     const activeDays = new Set(
       commits.map((c) => getLocalCodingDay(c.timestamp, userConfig))
     ).size;
-    let medianCommitsPerDay = 0;
-    if (activeDays > 0) {
-      const sortedCounts = dailyCommitCounts.sort((a, b) => a - b);
-      medianCommitsPerDay =
-        sortedCounts.length % 2 === 0
-          ? (sortedCounts[sortedCounts.length / 2 - 1] +
-              sortedCounts[sortedCounts.length / 2]) /
-            2
-          : sortedCounts[Math.floor(sortedCounts.length / 2)];
-    }
     return {
       total_commits: commits.length,
       total_active_days: activeDays,
       total_repositories: new Set(commits.map((c) => c.repo)).size,
-      commits_per_active_day: medianCommitsPerDay,
+      commits_per_active_day: activeDays > 0 ? commits.length / activeDays : 0,
       period_range:
         commits.length > 0
           ? {
@@ -354,12 +329,6 @@ export function computeAggregateVizData(allCommits, userConfig) {
   };
 }
 
-/**
- * Format visualization data for export
- * @param {Object} vizData - Visualization data object from computeVizData
- * @param {string} periodName - Name of the period
- * @returns {Object} - Formatted data for export
- */
 export function formatVizDataForExport(vizData, periodName) {
   return {
     period_name: periodName,
