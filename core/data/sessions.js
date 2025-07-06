@@ -152,7 +152,6 @@ export function calculateSessionMetrics(
       sessions_per_day: [],
       session_durations: [],
       total_session_time_per_day: [],
-      session_commit_intensity: [],
       session_intervals: [],
       daily_session_metrics: [],
     };
@@ -172,9 +171,6 @@ export function calculateSessionMetrics(
       (sum, duration) => sum + duration,
       0
     );
-    const sessionIntensities = sessions
-      .filter((s) => s.duration > 0)
-      .map((s) => s.commitCount / (s.duration / 60));
     const sessionIntervals = [];
     for (let i = 1; i < sessions.length; i++) {
       const gapMinutes =
@@ -192,14 +188,8 @@ export function calculateSessionMetrics(
           : 0,
       max_session_duration:
         sessionDurations.length > 0 ? Math.max(...sessionDurations) : 0,
-      avg_session_intensity:
-        sessionIntensities.length > 0
-          ? sessionIntensities.reduce((sum, i) => sum + i, 0) /
-            sessionIntensities.length
-          : 0,
     });
     allSessionDurations.push(...sessionDurations);
-    allSessionIntensities.push(...sessionIntensities);
     allSessionIntervals.push(...sessionIntervals);
   });
   return {
@@ -212,7 +202,6 @@ export function calculateSessionMetrics(
       date: d.date,
       total_session_time: d.total_session_time,
     })),
-    session_commit_intensity: allSessionIntensities,
     session_intervals: allSessionIntervals,
     daily_session_metrics: dailySessionMetrics,
   };

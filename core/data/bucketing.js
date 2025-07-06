@@ -99,15 +99,6 @@ const NATURAL_BUCKETS = {
     { min: 6, max: Infinity, label: "6+", logCenter: 8 },
   ],
   session_time: STANDARD_TIME_BUCKETS,
-  session_commit_intensity: [
-    { min: 0.1, max: 0.5, label: "< 0.5/hr", logCenter: 0.28 },
-    { min: 0.5, max: 1, label: "0.5-1/hr", logCenter: 0.71 },
-    { min: 1, max: 2, label: "1-2/hr", logCenter: 1.41 },
-    { min: 2, max: 4, label: "2-4/hr", logCenter: 2.83 },
-    { min: 4, max: 8, label: "4-8/hr", logCenter: 5.66 },
-    { min: 8, max: 16, label: "8-16/hr", logCenter: 11.31 },
-    { min: 16, max: Infinity, label: "16+/hr", logCenter: 22.63 },
-  ],
   session_intervals: STANDARD_TIME_BUCKETS,
   intra_session_intervals: STANDARD_TIME_BUCKETS,
 };

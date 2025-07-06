@@ -141,7 +141,6 @@ function processCommitSet(commits, type, userConfig) {
     })),
     sessions_per_day: sessionMetrics.sessions_per_day,
     session_durations: sessionMetrics.session_durations,
-    session_commit_intensity: sessionMetrics.session_commit_intensity,
     session_intervals: sessionMetrics.session_intervals,
     intra_session_intervals: extractIntraSessionIntervals(
       commits,
@@ -166,9 +165,6 @@ function processCommitSet(commits, type, userConfig) {
       median_sessions_per_day: calculateMedian(sessionsPerDay),
       median_session_duration: calculateMedian(
         sessionMetrics.session_durations
-      ),
-      median_session_intensity: calculateMedian(
-        sessionMetrics.session_commit_intensity
       ),
       session_threshold_minutes: sessionThreshold,
       session_threshold_analysis: thresholdAnalysis,
@@ -216,7 +212,6 @@ function createEmptyProcessedData(type) {
     session_time: [],
     sessions_per_day: [],
     session_durations: [],
-    session_commit_intensity: [],
     session_intervals: [],
     intra_session_intervals: [],
     commit_intervals: [],
