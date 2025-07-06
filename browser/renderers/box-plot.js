@@ -10,32 +10,38 @@ import { applyDaisyUITheme } from "../themes/daisyui.js";
 export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
   return periodsRawData.map(({ period, data, color }) => {
     let values;
-    if (metricId === "hourly_commit_distribution") {
+    if (Array.isArray(data) && data.length > 0 && typeof data[0] === "number") {
+      values = data.filter((val) => val !== null && !isNaN(val) && val > 0);
+    } else if (metricId === "hourly_commit_distribution") {
       values = Array.isArray(data) ? data.filter((val) => val > 0) : [];
-    } else {
+    } else if (Array.isArray(data)) {
       values = data
         .map((item) => {
           if (
-            metricId === "commit_intervals" &&
+            (metricId === "commit_intervals" ||
+              metricId === "intra_session_intervals") &&
             item.interval_minutes !== undefined
           ) {
             return item.interval_minutes;
           } else if (
-            metricId === "commits_per_hour" &&
-            item.commits_per_hour !== undefined
+            metricId === "sessions_per_day" &&
+            item.sessions_count !== undefined
           ) {
-            return item.commits_per_hour;
+            return item.sessions_count;
           } else if (
-            metricId === "gaps" &&
-            item.avg_gap_minutes !== undefined
+            metricId === "session_time" &&
+            item.session_time !== undefined
           ) {
-            return item.avg_gap_minutes;
+            return item.session_time;
           } else if (item[metricId] !== undefined) {
             return item[metricId];
           }
           return null;
         })
         .filter((val) => val !== null && !isNaN(val) && val > 0);
+    } else {
+      console.warn(`Unexpected data structure for ${metricId}:`, data);
+      values = [];
     }
     return {
       period,
@@ -66,7 +72,7 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     yLabel: "Value",
     ...options,
   };
- const periodsData = preparePeriodsForBoxPlot(
+  const periodsData = preparePeriodsForBoxPlot(
     periodsRawData,
     options.metricId
   );

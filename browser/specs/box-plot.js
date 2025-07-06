@@ -103,7 +103,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     const globalMaxPercentage = Math.max(...allBins.map((b) => b.percentage));
     periodsData.forEach((periodData, periodIndex) => {
       const bins = createHistogramBins(periodData.values, options.metricId);
-
       bins.forEach((bin) => {
         const normalizedWidth =
           (bin.percentage / globalMaxPercentage) *
@@ -259,7 +258,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       size: 60,
       strokeWidth: 0,
       opacity: 1.0,
-      filled: true
+      filled: true,
     },
     encoding: {
       x: sharedXEncoding,
@@ -299,6 +298,108 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           },
         },
       ],
+    });
+  }
+  if (options.referenceLines && options.referenceLines.length > 0) {
+    options.referenceLines.forEach((refLine) => {
+      if (refLine.value && refLine.value > 0) {
+        const periodIndex = periodsData.findIndex(
+          (p) => p.period === refLine.period
+        );
+        if (periodIndex >= 0) {
+          layers.push({
+            data: {
+              values: [
+                {
+                  refValue: refLine.value,
+                  period: refLine.period,
+                  lineStart: periodIndex - 0.2,
+                  lineEnd: periodIndex + 0.2,
+                },
+              ],
+            },
+            mark: {
+              type: "rule",
+              color: refLine.color || "#666",
+              strokeWidth: 2,
+              strokeDash: refLine.style === "dashed" ? [5, 5] : [],
+              opacity: 0.8,
+            },
+            encoding: {
+              x: {
+                field: "lineStart",
+                type: "quantitative",
+                scale: {
+                  domain: [-0.5, periodsData.length - 0.5],
+                  range: "width",
+                },
+                axis: null,
+              },
+              x2: {
+                field: "lineEnd",
+                type: "quantitative",
+              },
+              y: {
+                field: "refValue",
+                type: "quantitative",
+                scale: {
+                  type: defaultOptions.useLogScale ? "log" : "linear",
+                  ...(defaultOptions.useLogScale && { base: 10 }),
+                  nice: !defaultOptions.useLogScale,
+                },
+              },
+              tooltip: {
+                value: refLine.label || `Reference: ${refLine.value}`,
+              },
+            },
+          });
+          layers.push({
+            data: {
+              values: [
+                {
+                  refValue: refLine.value,
+                  period: refLine.period,
+                  labelX: periodIndex + 0.25,
+                  labelText: `${refLine.value}min`,
+                },
+              ],
+            },
+            mark: {
+              type: "text",
+              align: "left",
+              baseline: "middle",
+              dx: 5,
+              fontSize: 10,
+              fontWeight: "bold",
+              color: refLine.color || "#666",
+            },
+            encoding: {
+              x: {
+                field: "labelX",
+                type: "quantitative",
+                scale: {
+                  domain: [-0.5, periodsData.length - 0.5],
+                  range: "width",
+                },
+                axis: null,
+              },
+              y: {
+                field: "refValue",
+                type: "quantitative",
+                scale: {
+                  type: defaultOptions.useLogScale ? "log" : "linear",
+                  ...(defaultOptions.useLogScale && { base: 10 }),
+                  nice: !defaultOptions.useLogScale,
+                },
+              },
+              text: {
+                field: "labelText",
+                type: "nominal",
+              },
+            },
+          });
+        }
+      }
     });
   }
   const datasets = {

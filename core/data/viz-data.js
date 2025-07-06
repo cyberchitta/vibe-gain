@@ -3,27 +3,13 @@ import {
   getLocalHour,
   isSameCodingDay,
 } from "../utils/timezone.js";
-
-function groupBy(array, keyOrFn) {
-  return array.reduce((groups, item) => {
-    const group = typeof keyOrFn === "function" ? keyOrFn(item) : item[keyOrFn];
-    groups[group] = groups[group] || [];
-    groups[group].push(item);
-    return groups;
-  }, {});
-}
-
-function uniq(array) {
-  return [...new Set(array)];
-}
-
-function calculateMedian(values) {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted.length % 2 === 0
-    ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-    : sorted[Math.floor(sorted.length / 2)];
-}
+import { groupBy, uniq, calculateMedian } from "../utils/array.js";
+import {
+  extractBasicCommitIntervals,
+  calculateSessionMetrics,
+  extractIntraSessionIntervals,
+} from "./sessions.js";
+import { determineSessionThreshold } from "./session-thresholds.js";
 
 export function extractCommitIntervals(commits, userConfig) {
   if (!commits || commits.length < 2) {
@@ -90,8 +76,15 @@ function processCommitSet(commits, type, userConfig) {
   if (!commits || commits.length === 0) {
     return createEmptyProcessedData(type);
   }
+  const thresholdAnalysis = determineSessionThreshold(commits, userConfig);
+  const sessionThreshold = thresholdAnalysis.threshold;
   const commitsByDay = groupBy(commits, (commit) =>
     getLocalCodingDay(commit.timestamp, userConfig)
+  );
+  const sessionMetrics = calculateSessionMetrics(
+    commits,
+    userConfig,
+    sessionThreshold
   );
   const dailyMetrics = Object.entries(commitsByDay).map(
     ([date, dayCommits]) => {
@@ -100,10 +93,16 @@ function processCommitSet(commits, type, userConfig) {
         0
       );
       const repos = uniq(dayCommits.map((c) => c.repo)).length;
+      const daySessionMetrics = sessionMetrics.daily_session_metrics.find(
+        (d) => d.date === date
+      );
+      const sessionBasedCodingTime = daySessionMetrics
+        ? daySessionMetrics.total_session_time
+        : 0;
       const utcTimestamps = dayCommits
         .map((c) => new Date(c.timestamp).getTime())
         .sort((a, b) => a - b);
-      const codingTime =
+      const legacyCodingTime =
         utcTimestamps.length === 1
           ? 6
           : (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) /
@@ -113,7 +112,11 @@ function processCommitSet(commits, type, userConfig) {
         commits: dayCommits.length,
         loc,
         repos,
-        coding_time: codingTime,
+        coding_time: legacyCodingTime,
+        session_time: sessionBasedCodingTime,
+        sessions_count: daySessionMetrics
+          ? daySessionMetrics.sessions_count
+          : 0,
       };
     }
   );
@@ -121,6 +124,8 @@ function processCommitSet(commits, type, userConfig) {
   const locPerDay = dailyMetrics.map((d) => d.loc);
   const reposPerDay = dailyMetrics.map((d) => d.repos);
   const codingTimePerDay = dailyMetrics.map((d) => d.coding_time);
+  const sessionTimePerDay = dailyMetrics.map((d) => d.session_time);
+  const sessionsPerDay = dailyMetrics.map((d) => d.sessions_count);
   return {
     type,
     commits: dailyMetrics.map((d) => ({ date: d.date, commits: d.commits })),
@@ -130,7 +135,20 @@ function processCommitSet(commits, type, userConfig) {
       date: d.date,
       coding_time: d.coding_time,
     })),
-    commit_intervals: extractCommitIntervals(commits, userConfig),
+    session_time: dailyMetrics.map((d) => ({
+      date: d.date,
+      session_time: d.session_time,
+    })),
+    sessions_per_day: sessionMetrics.sessions_per_day,
+    session_durations: sessionMetrics.session_durations,
+    session_commit_intensity: sessionMetrics.session_commit_intensity,
+    session_intervals: sessionMetrics.session_intervals,
+    intra_session_intervals: extractIntraSessionIntervals(
+      commits,
+      userConfig,
+      sessionThreshold
+    ),
+    commit_intervals: extractBasicCommitIntervals(commits, userConfig),
     hourly_commit_distribution: getHourlyCommitDistribution(
       commits,
       userConfig
@@ -140,10 +158,20 @@ function processCommitSet(commits, type, userConfig) {
       total_commits: commits.length,
       total_active_days: Object.keys(commitsByDay).length,
       total_repositories: uniq(commits.map((c) => c.repo)).length,
-      commits_per_active_day: calculateMedian(commitsPerDay), // Now using median!
+      commits_per_active_day: calculateMedian(commitsPerDay),
       median_loc_per_day: calculateMedian(locPerDay),
       median_repos_per_day: calculateMedian(reposPerDay),
       median_coding_time_per_day: calculateMedian(codingTimePerDay),
+      median_session_time_per_day: calculateMedian(sessionTimePerDay),
+      median_sessions_per_day: calculateMedian(sessionsPerDay),
+      median_session_duration: calculateMedian(
+        sessionMetrics.session_durations
+      ),
+      median_session_intensity: calculateMedian(
+        sessionMetrics.session_commit_intensity
+      ),
+      session_threshold_minutes: sessionThreshold,
+      session_threshold_analysis: thresholdAnalysis,
       private_repo_percentage:
         (commits.filter((c) => c.private).length / commits.length) * 100,
       fork_percentage:
@@ -160,6 +188,8 @@ function processCommitSet(commits, type, userConfig) {
     metadata: {
       total_commits: commits.length,
       active_days: Object.keys(commitsByDay).length,
+      session_threshold_minutes: sessionThreshold,
+      session_threshold_analysis: thresholdAnalysis,
       private_repo_percentage:
         (commits.filter((c) => c.private).length / commits.length) * 100,
       fork_percentage:
@@ -183,6 +213,12 @@ function createEmptyProcessedData(type) {
     loc: [],
     repos: [],
     coding_time: [],
+    session_time: [],
+    sessions_per_day: [],
+    session_durations: [],
+    session_commit_intensity: [],
+    session_intervals: [],
+    intra_session_intervals: [],
     commit_intervals: [],
     hourly_commit_distribution: [],
     commits_by_hour_of_day: new Array(24).fill(0),
@@ -194,6 +230,12 @@ function createEmptyProcessedData(type) {
       median_loc_per_day: 0,
       median_repos_per_day: 0,
       median_coding_time_per_day: 0,
+      median_session_time_per_day: 0,
+      median_sessions_per_day: 0,
+      median_session_duration: 0,
+      median_session_intensity: 0,
+      session_threshold_minutes: 45,
+      session_threshold_analysis: null,
       private_repo_percentage: 0,
       fork_percentage: 0,
       date_range: { start: null, end: null },
@@ -201,6 +243,8 @@ function createEmptyProcessedData(type) {
     metadata: {
       total_commits: 0,
       active_days: 0,
+      session_threshold_minutes: 45,
+      session_threshold_analysis: null,
       private_repo_percentage: 0,
       fork_percentage: 0,
       date_range: { start: null, end: null },

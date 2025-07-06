@@ -224,6 +224,47 @@
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
+                <div>
+                    <h3>Session Duration</h3>
+                    <p class="metric-description">Distribution of individual coding session lengths (minutes)</p>
+                    <div id="box-plot-session-durations" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Sessions per Day</h3>
+                    <p class="metric-description">Distribution of number of coding sessions per active day</p>
+                    <div id="box-plot-sessions-per-day" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Session Time per Day</h3>
+                    <p class="metric-description">Distribution of total session time per active day (minutes)</p>
+                    <div id="box-plot-session-time" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Session Commit Intensity</h3>
+                    <p class="metric-description">Distribution of commits per hour within active sessions</p>
+                    <div id="box-plot-session-intensity" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Intra-Session Intervals</h3>
+                    <p class="metric-description">Distribution of time between commits within sessions (flow rhythm)</p>
+                    <div id="box-plot-intra-session-intervals" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Session Analysis Diagnostics</h2>
+            <div id="session-diagnostics" class="bg-base-100 rounded border border-base-300 p-4">
+                <div class="loading">Loading session analysis...</div>
             </div>
         </div>
         <div class="chart-section">
@@ -336,6 +377,36 @@
                     preValue: preVizData.summary.fork_percentage,
                     recentValue: recentVizData.summary.fork_percentage,
                     format: 'percentage'
+                },
+                {
+                    label: 'Sessions per Day (Median)',
+                    preValue: preVizData.summary.median_sessions_per_day,
+                    recentValue: recentVizData.summary.median_sessions_per_day,
+                    format: 'decimal'
+                },
+                {
+                    label: 'Session Duration (Median)',
+                    preValue: preVizData.summary.median_session_duration,
+                    recentValue: recentVizData.summary.median_session_duration,
+                    format: 'number'
+                },
+                {
+                    label: 'Session Time per Day (Median)',
+                    preValue: preVizData.summary.median_session_time_per_day,
+                    recentValue: recentVizData.summary.median_session_time_per_day,
+                    format: 'number'
+                },
+                {
+                    label: 'Session Intensity (Commits/hour)',
+                    preValue: preVizData.summary.median_session_intensity,
+                    recentValue: recentVizData.summary.median_session_intensity,
+                    format: 'decimal'
+                },
+                {
+                    label: 'Session Threshold (minutes)',
+                    preValue: preVizData.summary.session_threshold_minutes,
+                    recentValue: recentVizData.summary.session_threshold_minutes,
+                    format: 'number'
                 }
             ];
             const formatValue = (value, format) => {
@@ -431,6 +502,31 @@
                     id: 'box-plot-coding-time',
                     metricId: 'coding_time',
                     yLabel: 'Coding Session Duration (minutes)'
+                },
+                {
+                    id: 'box-plot-session-durations',
+                    metricId: 'session_durations',
+                    yLabel: 'Session Duration (minutes)'
+                },
+                {
+                    id: 'box-plot-sessions-per-day',
+                    metricId: 'sessions_per_day',
+                    yLabel: 'Sessions per Day'
+                },
+                {
+                    id: 'box-plot-session-time',
+                    metricId: 'session_time',
+                    yLabel: 'Session Time per Day (minutes)'
+                },
+                {
+                    id: 'box-plot-session-intensity',
+                    metricId: 'session_commit_intensity',
+                    yLabel: 'Commits per Hour (within sessions)'
+                },
+                {
+                    id: 'box-plot-intra-session-intervals',
+                    metricId: 'intra_session_intervals',
+                    yLabel: 'Intra-Session Intervals (minutes)'
                 }
             ];
             for (const config of boxPlotConfigs) {
@@ -449,20 +545,44 @@
                             color: '#48bb78'
                         }
                     ];
-                    await renderBoxPlot(container, rawPeriodsData, {
+                    let useLogScale = false;
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_commit_intensity', 'intra_session_intervals'].includes(config.metricId)) {
+                        useLogScale = true;
+                    }
+                    const options = {
                         metricId: config.metricId,
-                        width: container.clientWidth - 40,
+                        width: container.clientWidth,
                         height: 250,
                         yLabel: config.yLabel,
                         useLogScale: useLogScale,
                         showPercentiles: true,
                         showHistogram: showHistogram,
                         histogramWidth: 0.3,
-                    });
+                    };
+                    if (config.metricId === 'commit_intervals') {
+                        options.referenceLines = [
+                            {
+                                value: preVizData.summary.session_threshold_minutes,
+                                label: `Pre-AI Session Boundary: ${preVizData.summary.session_threshold_minutes}min`,
+                                color: '#ed8936',
+                                style: 'dashed',
+                                period: 'Pre-AI'
+                            },
+                            {
+                                value: recentVizData.summary.session_threshold_minutes,
+                                label: `Recent-AI Session Boundary: ${recentVizData.summary.session_threshold_minutes}min`,
+                                color: '#48bb78',
+                                style: 'dashed',
+                                period: 'Recent-AI'
+
+                            }
+                        ];
+                    }
+                    await renderBoxPlot(container, rawPeriodsData, options);
                     console.log(`Box plot for ${config.metricId} rendered successfully`);
                 } catch (error) {
                     console.error(`Error rendering box plot for ${config.metricId}:`, error);
-                    container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                    container.innerHTML = `<div class="p-2 text-error text-sm">Error: ${error.message}</div>`;
                 }
             }
         }
@@ -510,6 +630,43 @@
                 }
             }
         }
+        async function renderSessionDiagnostics(data) {
+            const container = document.getElementById('session-diagnostics');
+            if (!container) return;
+
+            const { preVizData, recentVizData } = data;
+            const preAnalysis = preVizData.summary.session_threshold_analysis;
+            const recentAnalysis = recentVizData.summary.session_threshold_analysis;
+
+            container.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
+        <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
+        <p><strong>Method:</strong> ${preAnalysis.method}</p>
+        <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
+        ${preAnalysis.analysis ? `
+          <details class="mt-2">
+            <summary class="cursor-pointer text-sm">Detection Details</summary>
+            <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
+          </details>
+        ` : ''}
+      </div>
+      <div>
+        <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
+        <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
+        <p><strong>Method:</strong> ${recentAnalysis.method}</p>
+        <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
+        ${recentAnalysis.analysis ? `
+          <details class="mt-2">
+            <summary class="cursor-pointer text-sm">Detection Details</summary>
+            <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
+          </details>
+        ` : ''}
+      </div>
+    </div>
+  `;
+        }
         window.renderAllCharts = async function () {
             try {
                 console.log('Loading commit data...');
@@ -522,6 +679,8 @@
                 await renderBoxPlots(data);
                 console.log('Rendering histograms...');
                 await renderHistograms(data);
+                console.log('Rendering session diagnostics...');
+                await renderSessionDiagnostics(data);
                 console.log('All charts rendered successfully');
             } catch (error) {
                 console.error('Error rendering charts:', error);
