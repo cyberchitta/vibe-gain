@@ -546,7 +546,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_commit_intensity', 'intra_session_intervals'].includes(config.metricId)) {
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_commit_intensity', 'intra_session_intervals', 'session_time'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {
