@@ -4,6 +4,8 @@
 
 vibe-gain helps developers quantify how AI coding tools impact their productivity by analyzing GitHub commit data across different time periods. The project combines robust data collection with interactive visualizations to reveal changes in coding patterns, output consistency, and development rhythm.
 
+> **Note**: This project was developed through extensive vibe-coding sessions with Claude Sonnet 4 and Claude Sonnet 3.7, using the [LLM Context](https://github.com/cyberchitta/llm-context.py) tool to share code during development. The codebase represents a collaborative effort with light human curation by @restlessronin - a fitting example of the AI productivity gains that vibe-gain is designed to measure.
+
 ## Features
 
 - **Comprehensive Data Collection**: Automatically discovers and analyzes commits across your GitHub repositories
