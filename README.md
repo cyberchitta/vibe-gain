@@ -9,7 +9,7 @@ vibe-gain helps developers quantify how AI coding tools impact their productivit
 - **Comprehensive Data Collection**: Automatically discovers and analyzes commits across your GitHub repositories
 - **Period Comparison**: Compare productivity metrics between different time periods (e.g., pre-AI vs. AI-assisted)
 - **Rich Visualizations**: Interactive charts including histograms, box plots, and timeline visualizations
-- **Multiple Metrics**: Analyzes commits, lines of code, working hours, commit intervals, and repository activity
+- **Multiple Metrics**: Analyzes commits, lines of code, sessions, commit intervals, and repository activity
 - **Smart Repository Handling**: Handles private repositories, forks, and access permissions intelligently
 - **Flexible Integration**: Use standalone or integrate into static sites
 - **Themeable Interface**: Supports light/dark themes with DaisyUI integration
@@ -24,8 +24,6 @@ git clone https://github.com/cyberchitta/vibe-gain.git
 cd vibe-gain
 
 # Install dependencies
-npm install
-# or
 bun install
 ```
 
@@ -52,7 +50,7 @@ Create `data/parameters.json`:
       "end": "2022-11-30"
     },
     {
-      "name": "Recent-AI", 
+      "name": "Recent-AI",
       "start": "2024-11-01",
       "end": "2025-04-30"
     }
@@ -74,19 +72,37 @@ Create `data/parameters.json`:
 bun lib/discover-repos.js
 
 # Fetch commit data
-npm start
+bun start
 ```
 
 ### 5. View Results
 
 ```bash
 # Start local web server
-npm run serve
+bun run serve
 
-# Open http://localhost:3001 and navigate to your test files
+# Navigate to test file
+open http://localhost:3001/test-all.html
 ```
 
 ## Understanding the Metrics
+
+### Design Philosophy: Daily/Session Focus
+
+Vibe-gain emphasizes **daily and session-level metrics** rather than weekly or monthly aggregations. This granular approach serves multiple use cases:
+
+**Part-time/Pro-bono Developers** (original use case):
+
+- Daily patterns matter more than weekly totals with irregular schedules
+- Session intensity and flow are key productivity indicators in limited time windows
+- Small coding sessions require optimization at the granular level
+
+**All Developers**:
+
+- Session metrics reveal flow states and interruption patterns
+- Session-based analysis accommodates any programming schedule
+- Fine-grained metrics provide insights regardless of total time investment
+- Individual session optimization benefits everyone
 
 ### Core Productivity Metrics
 
@@ -101,6 +117,37 @@ npm run serve
 - **Hourly Distribution**: When commits happen throughout the day
 - **Repository Activity**: How many different projects you work on
 
+### Session Metrics & Time Measurement
+
+#### Session Detection & Metrics
+
+**Session Threshold**: Automatically determined using statistical analysis of commit intervals (typically 30-60 minutes). Commits closer together belong to the same session.
+
+**Key Session Metrics**:
+
+- `sessions_per_day`: Number of distinct coding sessions per active day
+- `session_durations`: Length of individual sessions in minutes (first commit to last commit)
+- `session_time`: Total focused coding time in minutes (sum of all session durations)
+- `session_intensity`: Commits per hour within sessions
+- `intra_session_intervals`: Time between commits within the same session (minutes)
+
+#### Time Measurement Nuances
+
+**Two Time Perspectives**:
+
+1. **`coding_time`**: Total engagement time (first to last commit of the day)
+2. **`session_time`**: Focused work time (sum of individual session durations)
+
+The difference reveals time spent on breaks, context switching, and planning between sessions.
+
+**Session Duration Limitations**:
+Session durations (first-to-last commit) underestimate actual work time because they don't include:
+
+- Pre-work time (thinking, reading, setup before first commit)
+- Post-work time (testing, cleanup after last commit)
+
+_Estimated correction_: Add the median intra-session interval to account for unmeasured work time per session. This correction becomes more statistically valid when aggregating across many sessions.
+
 ### Visualization Types
 
 - **Strip Plots**: Timeline view showing when commits happen (date vs. time of day)
@@ -109,41 +156,55 @@ npm run serve
 
 ## Integration Examples
 
+### Complete Working Example
+
+See **`test-all.html`** for a full working example that demonstrates:
+
+- All chart types (box plots, histograms, strip plots)
+- Complete metrics dashboard with summary table
+- Session analysis and diagnostics
+- Interactive controls and theming
+- Real data loading and processing
+
 ### Standalone HTML
 
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
-</head>
-<body>
+  </head>
+  <body>
     <div id="chart-container"></div>
     <script type="module">
-        import { renderHistogram } from './browser/renderers/histogram.js';
-        import { arrayFormatToCommits } from './core/data/formats.js';
-        
-        // Load and render charts
-        async function renderCharts() {
-            const response = await fetch('./data/restlessronin/raw/commits_Pre-AI.json');
-            const arrayFormat = await response.json();
-            const commits = arrayFormatToCommits(arrayFormat);
-            
-            const periodsData = [{
-                period: 'Pre-AI',
-                data: commits,
-                color: '#ed8936'
-            }];
-            
-            await renderHistogram(container, periodsData, {
-                metricId: 'commits',
-                width: 400,
-                height: 300
-            });
-        }
+      import { renderHistogram } from "./browser/renderers/histogram.js";
+      import { arrayFormatToCommits } from "./core/data/formats.js";
+
+      // Load and render charts
+      async function renderCharts() {
+        const response = await fetch(
+          "./data/restlessronin/raw/commits_Pre-AI.json"
+        );
+        const arrayFormat = await response.json();
+        const commits = arrayFormatToCommits(arrayFormat);
+
+        const periodsData = [
+          {
+            period: "Pre-AI",
+            data: commits,
+            color: "#ed8936",
+          },
+        ];
+
+        await renderHistogram(container, periodsData, {
+          metricId: "commits",
+          width: 400,
+          height: 300,
+        });
+      }
     </script>
-</body>
+  </body>
 </html>
 ```
 
@@ -156,18 +217,18 @@ npm run serve
   "PERIODS": [
     {
       "name": "Period Name",
-      "start": "YYYY-MM-DD", 
+      "start": "YYYY-MM-DD",
       "end": "YYYY-MM-DD"
     }
   ],
   "GITHUB_USERNAMES": [
     {
       "username": "github-username",
-      "timezone_offset_hours": 0,     // Your timezone offset from UTC
-      "coding_day_start_hour": 4      // When your "coding day" starts (default: 4 AM)
+      "timezone_offset_hours": 0, // Your timezone offset from UTC
+      "coding_day_start_hour": 4 // When your "coding day" starts (default: 4 AM)
     }
   ],
-  "CLUSTER_THRESHOLD_MINUTES": 30    // Optional: commit clustering threshold
+  "CLUSTER_THRESHOLD_MINUTES": 30 // Optional: commit clustering threshold
 }
 ```
 
@@ -182,7 +243,7 @@ metricConfig: {
     tickValues: [1, 5, 15, 60, 240, 1440, 10080],
   },
   commits: {
-    useLogScale: true, 
+    useLogScale: true,
     tickValues: [1, 2, 5, 10, 20, 50],
   }
 }
@@ -193,18 +254,45 @@ metricConfig: {
 ```
 vibe-gain/
 ├── lib/                    # Node.js data collection
+│   ├── api/
+│   │   ├── github.js      # GitHub API client
+│   │   └── queries.js     # Repository discovery queries
 │   ├── data/fetch.js      # GitHub API integration
+│   ├── export/json.js     # Data export utilities
+│   ├── utils/diagnostics.js # Diagnostics and logging
 │   ├── discover-repos.js  # Repository discovery
+│   ├── config.js          # Configuration management
 │   └── index.js           # Main CLI tool
 ├── core/                   # Shared data processing
-│   ├── data/viz-data.js   # Metrics calculation
-│   └── utils/timezone.js  # Time zone handling
+│   ├── data/
+│   │   ├── bucketing.js   # Natural bucket definitions
+│   │   ├── formats.js     # Data format conversions
+│   │   ├── sessions.js    # Session analysis (excluded)
+│   │   ├── session-thresholds.js # Session threshold detection (excluded)
+│   │   ├── strip-plot.js  # Strip plot data preparation
+│   │   └── viz-data.js    # Metrics calculation
+│   └── utils/
+│       ├── array.js       # Array utilities (excluded)
+│       ├── date.js        # Date utilities
+│       └── timezone.js    # Time zone handling
 ├── browser/                # Web visualization
+│   ├── charts/
+│   │   └── commit-strip-plot.js # Strip plot utilities
 │   ├── renderers/         # Chart rendering
-│   ├── specs/             # Vega specifications  
-│   └── themes/            # UI themes
+│   │   ├── box-plot.js
+│   │   ├── commit-strip-plot.js
+│   │   └── histogram.js
+│   ├── specs/             # Vega specifications
+│   │   ├── box-plot.js
+│   │   ├── commit-strip-plot.js
+│   │   ├── histogram.js
+│   │   └── vega-base.js
+│   ├── themes/            # UI themes
+│   │   └── daisyui.js
+│   └── index.js           # Browser module exports
 ├── test-*.html            # Example integrations
-└── package.json
+├── package.json
+└── README.md
 ```
 
 ## Key Files
@@ -212,16 +300,15 @@ vibe-gain/
 - **`lib/index.js`**: Main data collection script
 - **`browser/index.js`**: Browser module exports
 - **`core/data/viz-data.js`**: Core metrics calculation
-- **`test-boxed-overlay.html`**: Example multi-chart layout
-- **`test-strip-plot.html`**: Timeline visualization example
+- **`test-all.html`**: Complete working example with all chart types and metrics
 
 ## Development
 
 ### Running Tests
 
 ```bash
-npm run serve
-# Open test-*.html files in browser
+bun run serve
+# Open http://localhost:3001/test-all.html for complete example
 ```
 
 ### Adding New Metrics
@@ -234,8 +321,8 @@ npm run serve
 ## Real-World Usage
 
 See how vibe-gain is used in production:
-- [CyberChitta Productivity Analysis](https://www.cyberchitta.cc/articles/vg-progress.html)
-- Example integration patterns in the test HTML files
+- [CyberChitta Productivity Analysis](https://www.cyberchitta.cc/articles/os-vibe-gains.html)
+- Complete example in `test-all.html`
 
 ## Contributing
 
@@ -251,7 +338,3 @@ Apache-2.0
 ## Credits
 
 Developed by [CyberChitta](https://github.com/cyberchitta) to understand the quantitative impact of AI tools on software development productivity.
-
----
-
-*Want to measure your own AI productivity gains? Star this repo and try vibe-gain with your GitHub data!*
