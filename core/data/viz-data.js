@@ -126,6 +126,7 @@ function processCommitSet(commits, type, userConfig) {
   const codingTimePerDay = dailyMetrics.map((d) => d.coding_time);
   const sessionTimePerDay = dailyMetrics.map((d) => d.session_time);
   const sessionsPerDay = dailyMetrics.map((d) => d.sessions_count);
+  const totalActiveDays = Object.keys(commitsByDay).length;
   const totalLinesChanged = commits.reduce(
     (sum, commit) => sum + (commit.additions || 0) + (commit.deletions || 0),
     0
@@ -159,7 +160,7 @@ function processCommitSet(commits, type, userConfig) {
     commits_by_hour_of_day: getCommitsByHourOfDay(commits, userConfig),
     summary: {
       total_commits: commits.length,
-      total_active_days: Object.keys(commitsByDay).length,
+      total_active_days: totalActiveDays,
       total_repositories: uniq(commits.map((c) => c.repo)).length,
       total_lines_changed: totalLinesChanged,
       commits_per_active_day: calculateMedian(commitsPerDay),
