@@ -3,6 +3,10 @@ export {
   computeVizDataForType,
   computeAggregateVizData,
   formatVizDataForExport,
+  computeBaseMetrics,
+  computeSessionMetrics,
+  computeSessionThreshold,
+  combineMetrics,
 } from "../core/data/viz-data.js";
 
 export {
@@ -69,3 +73,11 @@ export {
   getThemeColors,
   applyDaisyUITheme,
 } from "./themes/daisyui.js";
+
+export {
+  analyzeSessionsWithThreshold,
+  extractIntraSessionIntervals,
+  calculateSessionMetrics,
+} from "../core/data/sessions.js";
+
+export { determineSessionThreshold } from "../core/data/session-thresholds.js";

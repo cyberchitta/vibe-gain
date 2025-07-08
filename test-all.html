@@ -292,14 +292,13 @@
             </div>
         </div>
     </div>
-
     <script type="module">
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { createHistogramSpec } from './browser/specs/histogram.js';
         import { renderHistogram } from './browser/renderers/histogram.js';
         import { renderBoxPlot } from './browser/renderers/box-plot.js';
         import { renderStripPlot, cleanupStripPlot } from './browser/renderers/commit-strip-plot.js';
-        import { computeVizData, computeVizDataForType } from './core/data/viz-data.js'; // Updated data engine
+        import { MetricsFactory } from './core/data/metrics-factory.js'; // NEW
         import { arrayFormatToCommits } from './core/data/formats.js';
         import { preparePeriodsForBoxPlot } from './browser/renderers/box-plot.js';
 
@@ -325,17 +324,12 @@
                     timezone_offset_hours: 5.5,
                     coding_day_start_hour: 4
                 };
-                const preVizData = computeVizData(preCommits, defaultUserConfig);
-                const recentVizData = computeVizData(recentCommits, defaultUserConfig);
-                console.log('=== DATA ENGINE RESULTS ===');
-                console.log('Pre-AI median commits/day:', preVizData.code.summary.commits_per_active_day);
-                console.log('Recent-AI median commits/day:', recentVizData.code.summary.commits_per_active_day);
-                console.log('Pre-AI total active days:', preVizData.code.summary.total_active_days);
-                console.log('Recent-AI total active days:', recentVizData.code.summary.total_active_days);
+                const preMetricsFactory = new MetricsFactory(preCommits, defaultUserConfig);
+                const recentMetricsFactory = new MetricsFactory(recentCommits, defaultUserConfig);
+                const preVizData = preMetricsFactory.withEstimatedThreshold();
+                const recentVizData = recentMetricsFactory.withEstimatedThreshold();
                 const preCommitsPerDay = preVizData.code.commits.map(d => d.commits);
                 const recentCommitsPerDay = recentVizData.code.commits.map(d => d.commits);
-                console.log('Pre-AI daily commits (first 10):', preCommitsPerDay.slice(0, 10));
-                console.log('Recent-AI daily commits (first 10):', recentCommitsPerDay.slice(0, 10));
                 cachedData = {
                     preCommits,
                     recentCommits,
@@ -464,6 +458,7 @@
                 container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
+
         async function renderBoxPlots(data) {
             const { preVizData, recentVizData } = data;
             const boxPlotConfigs = [
@@ -580,6 +575,7 @@
                 }
             }
         }
+
         async function renderHistograms(data) {
             const { preVizData, recentVizData } = data;
             const histogramConfigs = [
@@ -624,6 +620,7 @@
                 }
             }
         }
+
         async function renderSessionDiagnostics(data) {
             const container = document.getElementById('session-diagnostics');
             if (!container) return;
