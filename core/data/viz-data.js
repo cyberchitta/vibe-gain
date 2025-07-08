@@ -6,8 +6,7 @@ import {
 import { groupBy, uniq, calculateMedian } from "../utils/array.js";
 import {
   extractBasicCommitIntervals,
-  calculateSessionMetrics,
-  extractIntraSessionIntervals,
+  analyzeSessionsWithThreshold,
 } from "./sessions.js";
 import { determineSessionThreshold } from "./session-thresholds.js";
 
@@ -81,7 +80,7 @@ function processCommitSet(commits, type, userConfig) {
   const commitsByDay = groupBy(commits, (commit) =>
     getLocalCodingDay(commit.timestamp, userConfig)
   );
-  const sessionMetrics = calculateSessionMetrics(
+  const sessionAnalysis = analyzeSessionsWithThreshold(
     commits,
     userConfig,
     sessionThreshold
@@ -93,7 +92,7 @@ function processCommitSet(commits, type, userConfig) {
         0
       );
       const repos = uniq(dayCommits.map((c) => c.repo)).length;
-      const daySessionMetrics = sessionMetrics.daily_session_metrics.find(
+      const daySessionMetrics = sessionAnalysis.dailyMetrics.find(
         (d) => d.date === date
       );
       const sessionBasedCodingTime = daySessionMetrics
@@ -124,8 +123,6 @@ function processCommitSet(commits, type, userConfig) {
   const locPerDay = dailyMetrics.map((d) => d.loc);
   const reposPerDay = dailyMetrics.map((d) => d.repos);
   const codingTimePerDay = dailyMetrics.map((d) => d.coding_time);
-  const sessionTimePerDay = dailyMetrics.map((d) => d.session_time);
-  const sessionsPerDay = dailyMetrics.map((d) => d.sessions_count);
   const totalActiveDays = Object.keys(commitsByDay).length;
   const totalLinesChanged = commits.reduce(
     (sum, commit) => sum + (commit.additions || 0) + (commit.deletions || 0),
@@ -144,14 +141,10 @@ function processCommitSet(commits, type, userConfig) {
       date: d.date,
       session_time: d.session_time,
     })),
-    sessions_per_day: sessionMetrics.sessions_per_day,
-    session_durations: sessionMetrics.session_durations,
-    session_intervals: sessionMetrics.session_intervals,
-    intra_session_intervals: extractIntraSessionIntervals(
-      commits,
-      userConfig,
-      sessionThreshold
-    ),
+    sessions_per_day: sessionAnalysis.metrics.sessions_per_day,
+    session_durations: sessionAnalysis.metrics.session_durations,
+    session_intervals: sessionAnalysis.metrics.session_intervals,
+    intra_session_intervals: sessionAnalysis.metrics.intra_session_intervals,
     commit_intervals: extractBasicCommitIntervals(commits, userConfig),
     hourly_commit_distribution: getHourlyCommitDistribution(
       commits,
@@ -167,11 +160,10 @@ function processCommitSet(commits, type, userConfig) {
       median_loc_per_day: calculateMedian(locPerDay),
       median_repos_per_day: calculateMedian(reposPerDay),
       median_coding_time_per_day: calculateMedian(codingTimePerDay),
-      median_session_time_per_day: calculateMedian(sessionTimePerDay),
-      median_sessions_per_day: calculateMedian(sessionsPerDay),
-      median_session_duration: calculateMedian(
-        sessionMetrics.session_durations
-      ),
+      median_session_time_per_day:
+        sessionAnalysis.summary.median_session_time_per_day,
+      median_sessions_per_day: sessionAnalysis.summary.median_sessions_per_day,
+      median_session_duration: sessionAnalysis.summary.median_session_duration,
       session_threshold_minutes: sessionThreshold,
       session_threshold_analysis: thresholdAnalysis,
       private_repo_percentage:

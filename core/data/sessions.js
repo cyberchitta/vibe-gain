@@ -46,7 +46,7 @@ export function extractBasicCommitIntervals(commits, userConfig) {
  * @param {number} sessionThresholdMinutes - Minutes gap to consider new session
  * @returns {Array} - Array of session objects with start/end times and commits
  */
-export function detectCodingSessions(commits, sessionThresholdMinutes = 45) {
+export function detectCodingSessions(commits, sessionThresholdMinutes) {
   if (!commits || commits.length === 0) return [];
   const sortedCommits = [...commits].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -100,7 +100,7 @@ export function detectCodingSessions(commits, sessionThresholdMinutes = 45) {
 export function extractIntraSessionIntervals(
   commits,
   userConfig,
-  sessionThresholdMinutes = 45
+  sessionThresholdMinutes
 ) {
   if (!commits || commits.length < 2) return [];
   const commitsByDay = groupBy(commits, (commit) =>
@@ -136,16 +136,16 @@ export function extractIntraSessionIntervals(
 }
 
 /**
- * Calculate session-based metrics for a set of commits
+ * Calculate comprehensive session metrics using explicit threshold
  * @param {Array} commits - Array of commit objects
  * @param {Object} userConfig - User configuration
  * @param {number} sessionThresholdMinutes - Session boundary threshold
- * @returns {Object} - Session metrics
+ * @returns {Object} - Complete session metrics
  */
 export function calculateSessionMetrics(
   commits,
   userConfig,
-  sessionThresholdMinutes = 45
+  sessionThresholdMinutes
 ) {
   if (!commits || commits.length === 0) {
     return {
@@ -161,7 +161,6 @@ export function calculateSessionMetrics(
   );
   const dailySessionMetrics = [];
   const allSessionDurations = [];
-  const allSessionIntensities = [];
   const allSessionIntervals = [];
   Object.entries(commitsByDay).forEach(([date, dayCommits]) => {
     const sessions = detectCodingSessions(dayCommits, sessionThresholdMinutes);
@@ -208,51 +207,48 @@ export function calculateSessionMetrics(
 }
 
 /**
- * Validate session detection quality
- * @param {Array} sessions - Detected sessions
- * @param {number} threshold - Threshold used for detection
- * @returns {Object} - Validation metrics
+ * Comprehensive session analysis with explicit threshold
+ * @param {Array} commits - Array of commit objects
+ * @param {Object} userConfig - User configuration
+ * @param {number} sessionThresholdMinutes - Session boundary threshold
+ * @returns {Object} - Complete session analysis results
  */
-export function validateSessionDetection(sessions, threshold) {
-  if (!sessions || sessions.length === 0) {
-    return {
-      threshold,
-      totalSessions: 0,
-      quality: 0,
-      avgSessionLength: 0,
-      warnings: ["No sessions detected"],
-    };
-  }
-  const sessionLengths = sessions.map((s) => s.duration);
-  const tooShort = sessionLengths.filter((l) => l < 5).length; // < 5 minutes
-  const tooLong = sessionLengths.filter((l) => l > 480).length; // > 8 hours
-  const reasonable = sessionLengths.filter((l) => l >= 5 && l <= 480).length;
-  const warnings = [];
-  if (tooShort / sessions.length > 0.3) {
-    warnings.push(
-      `${Math.round(
-        (tooShort / sessions.length) * 100
-      )}% of sessions are very short (< 5 min)`
-    );
-  }
-  if (tooLong > 0) {
-    warnings.push(`${tooLong} sessions are unusually long (> 8 hours)`);
-  }
-  if (reasonable / sessions.length < 0.5) {
-    warnings.push(
-      "Low quality: Less than 50% of sessions are reasonable length"
-    );
-  }
+export function analyzeSessionsWithThreshold(
+  commits,
+  userConfig,
+  sessionThresholdMinutes
+) {
+  const metrics = calculateSessionMetrics(
+    commits,
+    userConfig,
+    sessionThresholdMinutes
+  );
   return {
-    threshold,
-    totalSessions: sessions.length,
-    reasonableSessions: reasonable,
-    tooShort,
-    tooLong,
-    quality: reasonable / sessions.length,
-    avgSessionLength:
-      sessionLengths.reduce((sum, l) => sum + l, 0) / sessionLengths.length,
-    medianSessionLength: calculateMedian(sessionLengths),
-    warnings,
+    threshold: sessionThresholdMinutes,
+    metrics: {
+      sessions_per_day: metrics.sessions_per_day.map((d) => d.sessions_count),
+      session_durations: metrics.session_durations,
+      session_time: metrics.total_session_time_per_day.map(
+        (d) => d.total_session_time
+      ),
+      session_intervals: metrics.session_intervals,
+      intra_session_intervals: extractIntraSessionIntervals(
+        commits,
+        userConfig,
+        sessionThresholdMinutes
+      ),
+    },
+    dailyMetrics: metrics.daily_session_metrics,
+    summary: {
+      total_sessions: metrics.session_durations.length,
+      median_session_duration: calculateMedian(metrics.session_durations),
+      median_sessions_per_day: calculateMedian(
+        metrics.sessions_per_day.map((d) => d.sessions_count)
+      ),
+      median_session_time_per_day: calculateMedian(
+        metrics.total_session_time_per_day.map((d) => d.total_session_time)
+      ),
+      median_inter_session_interval: calculateMedian(metrics.session_intervals),
+    },
   };
 }
