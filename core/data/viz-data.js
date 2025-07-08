@@ -126,6 +126,10 @@ function processCommitSet(commits, type, userConfig) {
   const codingTimePerDay = dailyMetrics.map((d) => d.coding_time);
   const sessionTimePerDay = dailyMetrics.map((d) => d.session_time);
   const sessionsPerDay = dailyMetrics.map((d) => d.sessions_count);
+  const totalLinesChanged = commits.reduce(
+    (sum, commit) => sum + (commit.additions || 0) + (commit.deletions || 0),
+    0
+  );
   return {
     type,
     commits: dailyMetrics.map((d) => ({ date: d.date, commits: d.commits })),
@@ -157,6 +161,7 @@ function processCommitSet(commits, type, userConfig) {
       total_commits: commits.length,
       total_active_days: Object.keys(commitsByDay).length,
       total_repositories: uniq(commits.map((c) => c.repo)).length,
+      total_lines_changed: totalLinesChanged,
       commits_per_active_day: calculateMedian(commitsPerDay),
       median_loc_per_day: calculateMedian(locPerDay),
       median_repos_per_day: calculateMedian(reposPerDay),
@@ -166,24 +171,6 @@ function processCommitSet(commits, type, userConfig) {
       median_session_duration: calculateMedian(
         sessionMetrics.session_durations
       ),
-      session_threshold_minutes: sessionThreshold,
-      session_threshold_analysis: thresholdAnalysis,
-      private_repo_percentage:
-        (commits.filter((c) => c.private).length / commits.length) * 100,
-      fork_percentage:
-        (commits.filter((c) => c.isFork).length / commits.length) * 100,
-      date_range: {
-        start: new Date(
-          Math.min(...commits.map((c) => new Date(c.timestamp)))
-        ).toISOString(),
-        end: new Date(
-          Math.max(...commits.map((c) => new Date(c.timestamp)))
-        ).toISOString(),
-      },
-    },
-    metadata: {
-      total_commits: commits.length,
-      active_days: Object.keys(commitsByDay).length,
       session_threshold_minutes: sessionThreshold,
       session_threshold_analysis: thresholdAnalysis,
       private_repo_percentage:
@@ -228,7 +215,6 @@ function createEmptyProcessedData(type) {
       median_session_time_per_day: 0,
       median_sessions_per_day: 0,
       median_session_duration: 0,
-      median_session_intensity: 0,
       session_threshold_minutes: 45,
       session_threshold_analysis: null,
       private_repo_percentage: 0,

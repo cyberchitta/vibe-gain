@@ -4,7 +4,7 @@
 
 vibe-gain helps developers quantify how AI coding tools impact their productivity by analyzing GitHub commit data across different time periods. The project combines robust data collection with interactive visualizations to reveal changes in coding patterns, output consistency, and development rhythm.
 
-> **Note**: This project was developed through extensive vibe-coding sessions with Claude Sonnet 4 and Claude Sonnet 3.7, using the [LLM Context](https://github.com/cyberchitta/llm-context.py) tool to share code during development. The codebase represents a collaborative effort with light human curation by [@restlessronin](https://github.com/restlessronin) - a fitting example of the AI productivity gains that vibe-gain is designed to measure.
+> **Note**: This project was developed through extensive vibe-coding sessions with Claude Sonnets 3.7 and 4, using the [LLM Context](https://github.com/cyberchitta/llm-context.py) tool to share code during development. The codebase represents a collaborative effort with light human curation by [@restlessronin](https://github.com/restlessronin) - a fitting example of the AI productivity gains that vibe-gain is designed to measure.
 
 ## Features
 
@@ -130,7 +130,6 @@ Vibe-gain emphasizes **daily and session-level metrics** rather than weekly or m
 - `sessions_per_day`: Number of distinct coding sessions per active day
 - `session_durations`: Length of individual sessions in minutes (first commit to last commit)
 - `session_time`: Total focused coding time in minutes (sum of all session durations)
-- `session_intensity`: Commits per hour within sessions
 - `intra_session_intervals`: Time between commits within the same session (minutes)
 
 #### Time Measurement Nuances
