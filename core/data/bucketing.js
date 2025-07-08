@@ -26,6 +26,7 @@ export const TIME_DURATION_METRICS = [
   "gaps",
   "session_durations",
   "session_time",
+  "session_intervals",
   "intra_session_intervals",
   "coding_time",
 ];
