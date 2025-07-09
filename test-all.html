@@ -298,7 +298,7 @@
         import { renderHistogram } from './browser/renderers/histogram.js';
         import { renderBoxPlot } from './browser/renderers/box-plot.js';
         import { renderStripPlot, cleanupStripPlot } from './browser/renderers/commit-strip-plot.js';
-        import { MetricsFactory } from './core/data/metrics-factory.js'; // NEW
+        import { MetricsBuilder } from './core/data/metrics-builder.js';
         import { arrayFormatToCommits } from './core/data/formats.js';
         import { preparePeriodsForBoxPlot } from './browser/renderers/box-plot.js';
 
@@ -306,6 +306,7 @@
         let showHistogram = true;
         let viewMode = 'percentage';
         let cachedData = null;
+
         async function loadCommitData() {
             try {
                 const dataPath = './data/restlessronin/raw';
@@ -324,17 +325,15 @@
                     timezone_offset_hours: 5.5,
                     coding_day_start_hour: 4
                 };
-                const preMetricsFactory = new MetricsFactory(preCommits, defaultUserConfig);
-                const recentMetricsFactory = new MetricsFactory(recentCommits, defaultUserConfig);
-                const preVizData = preMetricsFactory.withEstimatedThreshold();
-                const recentVizData = recentMetricsFactory.withEstimatedThreshold();
-                const preCommitsPerDay = preVizData.code.commits.map(d => d.commits);
-                const recentCommitsPerDay = recentVizData.code.commits.map(d => d.commits);
+                const preBuilder = new MetricsBuilder(preCommits, defaultUserConfig);
+                const recentBuilder = new MetricsBuilder(recentCommits, defaultUserConfig);
+                const preVizData = preBuilder.withEstimatedThreshold().build();
+                const recentVizData = recentBuilder.withEstimatedThreshold().build();
                 cachedData = {
                     preCommits,
                     recentCommits,
-                    preVizData: preVizData.code,
-                    recentVizData: recentVizData.code,
+                    preVizData: preVizData,
+                    recentVizData: recentVizData,
                     userConfig: defaultUserConfig
                 };
                 return cachedData;
@@ -367,7 +366,7 @@
                     format: 'number'
                 },
                 {
-                    label: 'Doc Percentage',
+                    label: 'Fork Percentage',
                     preValue: preVizData.summary.fork_percentage,
                     recentValue: recentVizData.summary.fork_percentage,
                     format: 'percentage'
@@ -417,13 +416,13 @@
                 return `${sign}${change.toFixed(1)}%`;
             };
             tbody.innerHTML = summaryMetrics.map(metric => `
-      <tr>
-        <td>${metric.label}</td>
-        <td>${formatValue(metric.preValue, metric.format)}</td>
-        <td>${formatValue(metric.recentValue, metric.format)}</td>
-        <td>${calculateChange(metric.preValue, metric.recentValue)}</td>
-      </tr>
-    `).join('');
+             <tr>
+               <td>${metric.label}</td>
+               <td>${formatValue(metric.preValue, metric.format)}</td>
+               <td>${formatValue(metric.recentValue, metric.format)}</td>
+               <td>${calculateChange(metric.preValue, metric.recentValue)}</td>
+             </tr>
+           `).join('');
         }
 
         async function renderStripPlotVisualization(data) {
@@ -563,7 +562,6 @@
                                 color: '#48bb78',
                                 style: 'dashed',
                                 period: 'Recent-AI'
-
                             }
                         ];
                     }
@@ -624,40 +622,39 @@
         async function renderSessionDiagnostics(data) {
             const container = document.getElementById('session-diagnostics');
             if (!container) return;
-
             const { preVizData, recentVizData } = data;
             const preAnalysis = preVizData.summary.session_threshold_analysis;
             const recentAnalysis = recentVizData.summary.session_threshold_analysis;
-
             container.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
-        <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
-        <p><strong>Method:</strong> ${preAnalysis.method}</p>
-        <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
-        ${preAnalysis.analysis ? `
-          <details class="mt-2">
-            <summary class="cursor-pointer text-sm">Detection Details</summary>
-            <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
-          </details>
-        ` : ''}
-      </div>
-      <div>
-        <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
-        <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
-        <p><strong>Method:</strong> ${recentAnalysis.method}</p>
-        <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
-        ${recentAnalysis.analysis ? `
-          <details class="mt-2">
-            <summary class="cursor-pointer text-sm">Detection Details</summary>
-            <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
-          </details>
-        ` : ''}
-      </div>
-    </div>
-  `;
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+               <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
+               <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
+               <p><strong>Method:</strong> ${preAnalysis.method}</p>
+               <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
+               ${preAnalysis.analysis ? `
+                 <details class="mt-2">
+                   <summary class="cursor-pointer text-sm">Detection Details</summary>
+                   <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
+                 </details>
+               ` : ''}
+             </div>
+             <div>
+               <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
+               <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
+               <p><strong>Method:</strong> ${recentAnalysis.method}</p>
+               <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
+               ${recentAnalysis.analysis ? `
+                 <details class="mt-2">
+                   <summary class="cursor-pointer text-sm">Detection Details</summary>
+                   <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
+                 </details>
+               ` : ''}
+             </div>
+           </div>
+         `;
         }
+
         window.renderAllCharts = async function () {
             try {
                 console.log('Loading commit data...');
@@ -678,6 +675,7 @@
                 alert(`Error rendering charts: ${error.message}`);
             }
         };
+
         window.toggleLogScale = function () {
             useLogScale = !useLogScale;
             const button = document.getElementById('logToggle');
