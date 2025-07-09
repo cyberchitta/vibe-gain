@@ -12,7 +12,17 @@ function shouldUseIntegerBinning(values, maxIntegerBins = 50) {
 }
 
 function createHistogramBins(values, metricId) {
-  if (shouldUseIntegerBinning(values)) {
+  if (hasNaturalBuckets(metricId)) {
+    const naturalBins = createNaturalBins(values, metricId);
+    return naturalBins
+      .filter((bin) => bin.count > 0)
+      .map((bin) => ({
+        ...bin,
+        binCenter:
+          bin.logCenter || bin.binCenter || (bin.binStart + bin.binEnd) / 2,
+        percentage: bin.percentageCount || (bin.count / values.length) * 100,
+      }));
+  } else if (shouldUseIntegerBinning(values)) {
     const min = Math.min(...values);
     const max = Math.max(...values);
     const bins = [];
@@ -30,39 +40,27 @@ function createHistogramBins(values, metricId) {
     }
     return bins;
   } else {
-    if (hasNaturalBuckets(metricId)) {
-      const naturalBins = createNaturalBins(values, metricId);
-      return naturalBins
-        .filter((bin) => bin.count > 0)
-        .map((bin) => ({
-          ...bin,
-          binCenter:
-            bin.logCenter || bin.binCenter || (bin.binStart + bin.binEnd) / 2,
-          percentage: bin.percentageCount || (bin.count / values.length) * 100,
-        }));
-    } else {
-      const binCount = Math.min(20, Math.ceil(Math.sqrt(values.length)));
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      const binWidth = (max - min) / binCount;
-      const bins = [];
-      for (let i = 0; i < binCount; i++) {
-        const binStart = min + i * binWidth;
-        const binEnd =
-          i === binCount - 1 ? max + 0.001 : min + (i + 1) * binWidth;
-        const count = values.filter((v) => v >= binStart && v < binEnd).length;
-        if (count > 0) {
-          bins.push({
-            binStart,
-            binEnd,
-            binCenter: (binStart + binEnd) / 2,
-            count,
-            percentage: (count / values.length) * 100,
-          });
-        }
+    const binCount = Math.min(20, Math.ceil(Math.sqrt(values.length)));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const binWidth = (max - min) / binCount;
+    const bins = [];
+    for (let i = 0; i < binCount; i++) {
+      const binStart = min + i * binWidth;
+      const binEnd =
+        i === binCount - 1 ? max + 0.001 : min + (i + 1) * binWidth;
+      const count = values.filter((v) => v >= binStart && v < binEnd).length;
+      if (count > 0) {
+        bins.push({
+          binStart,
+          binEnd,
+          binCenter: (binStart + binEnd) / 2,
+          count,
+          percentage: (count / values.length) * 100,
+        });
       }
-      return bins;
     }
+    return bins;
   }
 }
 

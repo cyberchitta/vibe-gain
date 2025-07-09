@@ -277,6 +277,13 @@
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
+                <div>
+                    <h3>Repository Commit Distribution</h3>
+                    <p class="metric-description">Distribution of total commits across all repositories</p>
+                    <div id="box-plot-repo-commit-distribution" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="chart-section">
@@ -487,6 +494,11 @@
                     yLabel: 'Repositories per Day'
                 },
                 {
+                    id: 'box-plot-repo-commit-distribution',
+                    metricId: 'repo_commit_distribution',
+                    yLabel: 'Commits per Repository'
+                },
+                {
                     id: 'box-plot-coding-time',
                     metricId: 'coding_time',
                     yLabel: 'Coding Session Duration (minutes)'
@@ -534,7 +546,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time'].includes(config.metricId)) {
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {

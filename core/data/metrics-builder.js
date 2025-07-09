@@ -156,10 +156,12 @@ export class MetricsBuilder {
       this.GLOBAL_COMMITS,
       this.USER_CONFIG
     );
+    const repoCommitDistribution = this._computeRepoCommitDistribution(); // Add this line
     return {
       repos,
       coding_time: codingTime,
       commit_intervals: commitIntervals,
+      repo_commit_distribution: repoCommitDistribution,
       summary: {
         total_repositories: uniq(this.GLOBAL_COMMITS.map((c) => c.repo)).length,
         median_repos_per_day: calculateMedian(repos.map((d) => d.repos)),
@@ -245,6 +247,13 @@ export class MetricsBuilder {
       date,
       repos: uniq(dayCommits.map((c) => c.repo)).length,
     }));
+  }
+  _computeRepoCommitDistribution() {
+    const repoCommitCounts = {};
+    this.GLOBAL_COMMITS.forEach((commit) => {
+      repoCommitCounts[commit.repo] = (repoCommitCounts[commit.repo] || 0) + 1;
+    });
+    return Object.values(repoCommitCounts);
   }
 
   _computeCodingTimeMetric() {
