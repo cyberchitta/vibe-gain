@@ -86,24 +86,17 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     labelColor: "#333",
     ...options,
   };
-
-  // Calculate box plot statistics for each period
   const boxPlotData = [];
   const histogramData = [];
-
   periodsData.forEach((periodData, periodIndex) => {
     const sortedValues = [...periodData.values].sort((a, b) => a - b);
     const n = sortedValues.length;
-
     if (n === 0) return;
-
-    // Calculate quartiles and other statistics
     const q1Index = Math.floor(0.25 * (n - 1));
     const q2Index = Math.floor(0.5 * (n - 1));
     const q3Index = Math.floor(0.75 * (n - 1));
     const p5Index = Math.floor(0.05 * (n - 1));
     const p95Index = Math.floor(0.95 * (n - 1));
-
     const q1 = sortedValues[q1Index];
     const median = sortedValues[q2Index];
     const q3 = sortedValues[q3Index];
@@ -111,11 +104,8 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     const p95 = sortedValues[p95Index];
     const min = sortedValues[0];
     const max = sortedValues[n - 1];
-
-    // Whiskers go to min and max
     const lowerWhisker = min;
     const upperWhisker = max;
-
     boxPlotData.push({
       period: periodData.period,
       periodIndex: periodIndex,
@@ -130,8 +120,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       max: max,
       color: periodData.color,
     });
-
-    // Create histogram data if enabled
     if (defaultOptions.showHistogram) {
       const bins = createHistogramBins(periodData.values, options.metricId);
       const allBins = [];
@@ -142,12 +130,10 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       });
       const globalMaxPercentage =
         allBins.length > 0 ? Math.max(...allBins.map((b) => b.percentage)) : 1;
-
       bins.forEach((bin) => {
         const normalizedWidth =
           (bin.percentage / globalMaxPercentage) *
           defaultOptions.histogramWidth;
-
         histogramData.push({
           period: periodData.period,
           periodIndex: periodIndex,
@@ -162,10 +148,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       });
     }
   });
-
   const layers = [];
-
-  // Layer 1: IQR Rectangle (background)
   layers.push({
     data: { values: boxPlotData },
     mark: {
@@ -195,9 +178,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   });
-  // Add this after Layer 1 (IQR Rectangle) and before Layer 2 (Lower whiskers):
-
-  // Layer 2: Histogram overlay (if enabled) - Original working version adapted
   if (defaultOptions.showHistogram) {
     layers.push({
       data: { values: histogramData },
@@ -243,7 +223,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     });
   } 
-  // Layer 2: Lower whiskers (q1 to min)
   layers.push({
     data: { values: boxPlotData },
     mark: {
@@ -266,8 +245,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   });
-
-  // Layer 3: Upper whiskers (q3 to max)
   layers.push({
     data: { values: boxPlotData },
     mark: {
@@ -290,8 +267,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   });
-
-  // Layer 4: Whisker end caps
   layers.push({
     data: { values: boxPlotData },
     mark: {
@@ -311,7 +286,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   });
-
   layers.push({
     data: { values: boxPlotData },
     mark: {
@@ -331,8 +305,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   });
-
-  // Layer 5: Median marker (prominent square)
   layers.push({
     data: { values: boxPlotData },
     mark: {
@@ -355,8 +327,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       fill: { value: defaultOptions.medianColor },
     },
   });
-
-  // Layer 6: 5th/95th percentile markers
   if (defaultOptions.showPercentiles) {
     layers.push({
       data: { values: boxPlotData },
@@ -381,7 +351,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         stroke: { value: defaultOptions.percentileStroke },
       },
     });
-
     layers.push({
       data: { values: boxPlotData },
       mark: {
@@ -406,8 +375,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     });
   }
-
-  // Build the final spec with shared encoding for axes
   return {
     ...baseSpec,
     width: defaultOptions.width,
@@ -424,10 +391,10 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           domain: periodsData.map((_, i) => i),
         },
         axis: {
-          labels: false, // Hide the category labels
+          labels: false,
           title: null,
-          ticks: false, // Also hide ticks since no labels
-          domain: false, // Hide the axis line too
+          ticks: false,
+          domain: false,
         },
       },
       y: {
