@@ -154,7 +154,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     mark: {
       type: "rect",
       opacity: 0.6,
-      stroke: "white",
+      stroke: { value: defaultOptions.whiskerColor },
       strokeWidth: 1,
       width: 40,
     },
@@ -222,7 +222,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         ],
       },
     });
-  } 
+  }
   layers.push({
     data: { values: boxPlotData },
     mark: {
