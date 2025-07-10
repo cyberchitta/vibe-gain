@@ -77,30 +77,72 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     height: 400,
     useLogScale: false,
     showPercentiles: true,
-    showHistogram: false,
+    showHistogram: true,
     histogramWidth: 0.3,
+    whiskerColor: "#666",
+    medianColor: "#000",
+    percentileStroke: "#666",
+    percentileFill: "white",
+    labelColor: "#333",
     ...options,
   };
-  const combinedDataWithPosition = [];
-  periodsData.forEach((periodData, periodIndex) => {
-    periodData.values.forEach((value) => {
-      combinedDataWithPosition.push({
-        period: periodData.period,
-        periodIndex: periodIndex,
-        value: value,
-      });
-    });
-  });
+
+  // Calculate box plot statistics for each period
+  const boxPlotData = [];
   const histogramData = [];
-  if (defaultOptions.showHistogram) {
-    const allBins = [];
-    periodsData.forEach((periodData) => {
-      const bins = createHistogramBins(periodData.values, options.metricId);
-      allBins.push(...bins);
+
+  periodsData.forEach((periodData, periodIndex) => {
+    const sortedValues = [...periodData.values].sort((a, b) => a - b);
+    const n = sortedValues.length;
+
+    if (n === 0) return;
+
+    // Calculate quartiles and other statistics
+    const q1Index = Math.floor(0.25 * (n - 1));
+    const q2Index = Math.floor(0.5 * (n - 1));
+    const q3Index = Math.floor(0.75 * (n - 1));
+    const p5Index = Math.floor(0.05 * (n - 1));
+    const p95Index = Math.floor(0.95 * (n - 1));
+
+    const q1 = sortedValues[q1Index];
+    const median = sortedValues[q2Index];
+    const q3 = sortedValues[q3Index];
+    const p5 = sortedValues[p5Index];
+    const p95 = sortedValues[p95Index];
+    const min = sortedValues[0];
+    const max = sortedValues[n - 1];
+
+    // Whiskers go to min and max
+    const lowerWhisker = min;
+    const upperWhisker = max;
+
+    boxPlotData.push({
+      period: periodData.period,
+      periodIndex: periodIndex,
+      q1: q1,
+      median: median,
+      q3: q3,
+      p5: p5,
+      p95: p95,
+      lowerWhisker: lowerWhisker,
+      upperWhisker: upperWhisker,
+      min: min,
+      max: max,
+      color: periodData.color,
     });
-    const globalMaxPercentage = Math.max(...allBins.map((b) => b.percentage));
-    periodsData.forEach((periodData, periodIndex) => {
+
+    // Create histogram data if enabled
+    if (defaultOptions.showHistogram) {
       const bins = createHistogramBins(periodData.values, options.metricId);
+      const allBins = [];
+      periodsData.forEach((pd) => {
+        if (pd.values.length > 0) {
+          allBins.push(...createHistogramBins(pd.values, options.metricId));
+        }
+      });
+      const globalMaxPercentage =
+        allBins.length > 0 ? Math.max(...allBins.map((b) => b.percentage)) : 1;
+
       bins.forEach((bin) => {
         const normalizedWidth =
           (bin.percentage / globalMaxPercentage) *
@@ -111,104 +153,54 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           periodIndex: periodIndex,
           binStart: bin.binStart,
           binEnd: bin.binEnd,
-          binCenter: bin.binCenter,
           percentage: bin.percentage,
           count: bin.count,
           barLeft: periodIndex - normalizedWidth / 2,
-          barRight: periodIndex,
-          side: "left",
-        });
-        histogramData.push({
-          period: periodData.period,
-          periodIndex: periodIndex,
-          binStart: bin.binStart,
-          binEnd: bin.binEnd,
-          binCenter: bin.binCenter,
-          percentage: bin.percentage,
-          count: bin.count,
-          barLeft: periodIndex,
           barRight: periodIndex + normalizedWidth / 2,
-          side: "right",
+          color: periodData.color,
         });
       });
-    });
-  }
-  const percentileData = [];
-  const medianData = [];
-  periodsData.forEach((periodData) => {
-    const sortedValues = [...periodData.values].sort((a, b) => a - b);
-    const n = sortedValues.length;
-    const p5Index = Math.floor(0.05 * (n - 1));
-    const p95Index = Math.floor(0.95 * (n - 1));
-    const medianIndex = Math.floor(0.5 * (n - 1));
-    percentileData.push({
-      period: periodData.period,
-      p5: sortedValues[p5Index],
-      p95: sortedValues[p95Index],
-    });
-    medianData.push({
-      period: periodData.period,
-      median: sortedValues[medianIndex],
-    });
+    }
   });
-  const sharedXEncoding = {
-    field: "period",
-    type: "nominal",
-    sort: periodsData.map((p) => p.period),
-    axis: null,
-  };
-  const yEncoding = {
-    field: "value",
-    type: "quantitative",
-    title: options.yLabel || "Value",
-    scale: {
-      type: defaultOptions.useLogScale ? "log" : "linear",
-      ...(defaultOptions.useLogScale && { base: 10 }),
-      nice: !defaultOptions.useLogScale,
-    },
-    axis: {
-      grid: true,
-      ...(defaultOptions.useLogScale && { format: "~s" }),
-    },
-  };
-  if (
-    defaultOptions.useLogScale &&
-    TIME_DURATION_METRICS.includes(options.metricId)
-  ) {
-    yEncoding.axis.labelExpr = `
-    datum.value < 1 ? round(datum.value * 60) + ' sec' :
-    datum.value < 60 ? round(datum.value * 10)/10 + ' min' : 
-    round(datum.value/60 * 10)/10 + ' hr'
-  `;
-  }
-  const colorEncoding = {
-    field: "period",
-    type: "nominal",
-    scale: {
-      domain: periodsData.map((p) => p.period),
-      range: periodsData.map((p) => p.color),
-    },
-    legend: null,
-  };
+
   const layers = [];
+
+  // Layer 1: IQR Rectangle (background)
   layers.push({
-    data: { name: "values" },
+    data: { values: boxPlotData },
     mark: {
-      type: "boxplot",
-      extent: "min-max",
-      outliers: false,
-      size: 40,
-      median: false,
+      type: "rect",
+      opacity: 0.6,
+      stroke: "white",
+      strokeWidth: 1,
+      width: 40,
     },
     encoding: {
-      x: sharedXEncoding,
-      y: yEncoding,
-      color: colorEncoding,
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+      },
+      y: {
+        field: "q1",
+        type: "quantitative",
+      },
+      y2: {
+        field: "q3",
+        type: "quantitative",
+      },
+      fill: {
+        field: "color",
+        type: "nominal",
+        scale: null,
+      },
     },
   });
+  // Add this after Layer 1 (IQR Rectangle) and before Layer 2 (Lower whiskers):
+
+  // Layer 2: Histogram overlay (if enabled) - Original working version adapted
   if (defaultOptions.showHistogram) {
     layers.push({
-      data: { name: "histogram" },
+      data: { values: histogramData },
       mark: {
         type: "rect",
         opacity: 0.6,
@@ -223,7 +215,6 @@ export function createBoxPlotSpec(periodsData, options = {}) {
             domain: [-0.5, periodsData.length - 0.5],
             range: "width",
           },
-          axis: null,
         },
         x2: {
           field: "barRight",
@@ -232,24 +223,118 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         y: {
           field: "binStart",
           type: "quantitative",
-          scale: yEncoding.scale,
         },
         y2: {
           field: "binEnd",
           type: "quantitative",
         },
-        fill: colorEncoding,
+        fill: {
+          field: "color",
+          type: "nominal",
+          scale: null,
+        },
         tooltip: [
           { field: "period", title: "Period" },
-          { field: "binCenter", title: "Value" },
+          { field: "binStart", title: "Range Start" },
+          { field: "binEnd", title: "Range End" },
           { field: "count", title: "Count" },
           { field: "percentage", title: "Percentage", format: ".1f" },
         ],
       },
     });
-  }
+  } 
+  // Layer 2: Lower whiskers (q1 to min)
   layers.push({
-    data: { name: "medians" },
+    data: { values: boxPlotData },
+    mark: {
+      type: "rule",
+      strokeWidth: 1,
+      color: defaultOptions.whiskerColor,
+    },
+    encoding: {
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+      },
+      y: {
+        field: "lowerWhisker",
+        type: "quantitative",
+      },
+      y2: {
+        field: "q1",
+        type: "quantitative",
+      },
+    },
+  });
+
+  // Layer 3: Upper whiskers (q3 to max)
+  layers.push({
+    data: { values: boxPlotData },
+    mark: {
+      type: "rule",
+      strokeWidth: 1,
+      color: defaultOptions.whiskerColor,
+    },
+    encoding: {
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+      },
+      y: {
+        field: "q3",
+        type: "quantitative",
+      },
+      y2: {
+        field: "upperWhisker",
+        type: "quantitative",
+      },
+    },
+  });
+
+  // Layer 4: Whisker end caps
+  layers.push({
+    data: { values: boxPlotData },
+    mark: {
+      type: "tick",
+      strokeWidth: 1,
+      color: defaultOptions.whiskerColor,
+      size: 20,
+    },
+    encoding: {
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+      },
+      y: {
+        field: "lowerWhisker",
+        type: "quantitative",
+      },
+    },
+  });
+
+  layers.push({
+    data: { values: boxPlotData },
+    mark: {
+      type: "tick",
+      strokeWidth: 1,
+      color: defaultOptions.whiskerColor,
+      size: 20,
+    },
+    encoding: {
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+      },
+      y: {
+        field: "upperWhisker",
+        type: "quantitative",
+      },
+    },
+  });
+
+  // Layer 5: Median marker (prominent square)
+  layers.push({
+    data: { values: boxPlotData },
     mark: {
       type: "point",
       shape: "square",
@@ -259,160 +344,114 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       filled: true,
     },
     encoding: {
-      x: sharedXEncoding,
-      y: { field: "median", type: "quantitative" },
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+      },
+      y: {
+        field: "median",
+        type: "quantitative",
+      },
+      fill: { value: defaultOptions.medianColor },
     },
   });
+
+  // Layer 6: 5th/95th percentile markers
   if (defaultOptions.showPercentiles) {
     layers.push({
-      data: { name: "percentiles" },
-      layer: [
-        {
-          mark: {
-            type: "point",
-            shape: "cross",
-            size: 10,
-            stroke: 1,
-            opacity: 1.0,
-          },
-          encoding: {
-            x: sharedXEncoding,
-            y: { field: "p5", type: "quantitative" },
-            stroke: colorEncoding,
-          },
+      data: { values: boxPlotData },
+      mark: {
+        type: "point",
+        shape: "cross",
+        size: 60,
+        strokeWidth: 2,
+        filled: true,
+        opacity: 1.0,
+      },
+      encoding: {
+        x: {
+          field: "periodIndex",
+          type: "ordinal",
         },
-        {
-          mark: {
-            type: "point",
-            shape: "cross",
-            size: 10,
-            stroke: 1,
-            opacity: 1.0,
-          },
-          encoding: {
-            x: sharedXEncoding,
-            y: { field: "p95", type: "quantitative" },
-            stroke: colorEncoding,
-          },
+        y: {
+          field: "p5",
+          type: "quantitative",
         },
-      ],
+        fill: { value: defaultOptions.percentileFill },
+        stroke: { value: defaultOptions.percentileStroke },
+      },
+    });
+
+    layers.push({
+      data: { values: boxPlotData },
+      mark: {
+        type: "point",
+        shape: "cross",
+        size: 60,
+        strokeWidth: 2,
+        filled: true,
+        opacity: 1.0,
+      },
+      encoding: {
+        x: {
+          field: "periodIndex",
+          type: "ordinal",
+        },
+        y: {
+          field: "p95",
+          type: "quantitative",
+        },
+        fill: { value: defaultOptions.percentileFill },
+        stroke: { value: defaultOptions.percentileStroke },
+      },
     });
   }
-  if (options.referenceLines && options.referenceLines.length > 0) {
-    options.referenceLines.forEach((refLine) => {
-      if (refLine.value && refLine.value > 0) {
-        const periodIndex = periodsData.findIndex(
-          (p) => p.period === refLine.period
-        );
-        if (periodIndex >= 0) {
-          layers.push({
-            data: {
-              values: [
-                {
-                  refValue: refLine.value,
-                  period: refLine.period,
-                  lineStart: periodIndex - 0.2,
-                  lineEnd: periodIndex + 0.2,
-                },
-              ],
-            },
-            mark: {
-              type: "rule",
-              color: refLine.color || "#666",
-              strokeWidth: 2,
-              strokeDash: refLine.style === "dashed" ? [5, 5] : [],
-              opacity: 0.8,
-            },
-            encoding: {
-              x: {
-                field: "lineStart",
-                type: "quantitative",
-                scale: {
-                  domain: [-0.5, periodsData.length - 0.5],
-                  range: "width",
-                },
-                axis: null,
-              },
-              x2: {
-                field: "lineEnd",
-                type: "quantitative",
-              },
-              y: {
-                field: "refValue",
-                type: "quantitative",
-                scale: {
-                  type: defaultOptions.useLogScale ? "log" : "linear",
-                  ...(defaultOptions.useLogScale && { base: 10 }),
-                  nice: !defaultOptions.useLogScale,
-                },
-              },
-              tooltip: {
-                value: refLine.label || `Reference: ${refLine.value}`,
-              },
-            },
-          });
-          layers.push({
-            data: {
-              values: [
-                {
-                  refValue: refLine.value,
-                  period: refLine.period,
-                  labelX: periodIndex + 0.25,
-                  labelText: `${refLine.value}min`,
-                },
-              ],
-            },
-            mark: {
-              type: "text",
-              align: "left",
-              baseline: "middle",
-              dx: 5,
-              fontSize: 10,
-              fontWeight: "bold",
-              color: refLine.color || "#666",
-            },
-            encoding: {
-              x: {
-                field: "labelX",
-                type: "quantitative",
-                scale: {
-                  domain: [-0.5, periodsData.length - 0.5],
-                  range: "width",
-                },
-                axis: null,
-              },
-              y: {
-                field: "refValue",
-                type: "quantitative",
-                scale: {
-                  type: defaultOptions.useLogScale ? "log" : "linear",
-                  ...(defaultOptions.useLogScale && { base: 10 }),
-                  nice: !defaultOptions.useLogScale,
-                },
-              },
-              text: {
-                field: "labelText",
-                type: "nominal",
-              },
-            },
-          });
-        }
-      }
-    });
-  }
-  const datasets = {
-    values: combinedDataWithPosition,
-    percentiles: percentileData,
-    medians: medianData,
-  };
-  if (defaultOptions.showHistogram) {
-    datasets.histogram = histogramData;
-  }
+
+  // Build the final spec with shared encoding for axes
   return {
     ...baseSpec,
     width: defaultOptions.width,
     height: defaultOptions.height,
-    datasets: datasets,
     layer: layers,
+    resolve: {
+      scale: { x: "shared", y: "shared" },
+    },
+    encoding: {
+      x: {
+        field: "periodIndex",
+        type: "ordinal",
+        scale: {
+          domain: periodsData.map((_, i) => i),
+        },
+        axis: {
+          labels: false, // Hide the category labels
+          title: null,
+          ticks: false, // Also hide ticks since no labels
+          domain: false, // Hide the axis line too
+        },
+      },
+      y: {
+        field: "median",
+        type: "quantitative",
+        title: options.yLabel || "Value",
+        scale: {
+          type: defaultOptions.useLogScale ? "log" : "linear",
+          ...(defaultOptions.useLogScale && { base: 10 }),
+          nice: !defaultOptions.useLogScale,
+        },
+        axis: {
+          grid: true,
+          ...(defaultOptions.useLogScale && { format: "~s" }),
+          ...(defaultOptions.useLogScale &&
+            TIME_DURATION_METRICS.includes(options.metricId) && {
+              labelExpr: `
+          datum.value < 1 ? round(datum.value * 60) + ' sec' :
+          datum.value < 60 ? round(datum.value * 10)/10 + ' min' : 
+          round(datum.value/60 * 10)/10 + ' hr'
+        `,
+            }),
+        },
+      },
+    },
   };
 }
