@@ -401,6 +401,108 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     });
   }
+  if (options.referenceLines && options.referenceLines.length > 0) {
+    options.referenceLines.forEach((refLine) => {
+      if (refLine.value && refLine.value > 0) {
+        const periodIndex = periodsData.findIndex(
+          (p) => p.period === refLine.period
+        );
+        if (periodIndex >= 0) {
+          layers.push({
+            data: {
+              values: [
+                {
+                  refValue: refLine.value,
+                  period: refLine.period,
+                  lineStart: periodIndex - 0.2,
+                  lineEnd: periodIndex + 0.2,
+                },
+              ],
+            },
+            mark: {
+              type: "rule",
+              color: refLine.color || "#666",
+              strokeWidth: 2,
+              strokeDash: refLine.style === "dashed" ? [5, 5] : [],
+              opacity: 0.8,
+            },
+            encoding: {
+              x: {
+                field: "lineStart",
+                type: "quantitative",
+                scale: {
+                  domain: [-0.5, periodsData.length - 0.5],
+                  range: "width",
+                },
+                axis: null,
+              },
+              x2: {
+                field: "lineEnd",
+                type: "quantitative",
+              },
+              y: {
+                field: "refValue",
+                type: "quantitative",
+                scale: {
+                  type: defaultOptions.useLogScale ? "log" : "linear",
+                  ...(defaultOptions.useLogScale && { base: 10 }),
+                  nice: !defaultOptions.useLogScale,
+                },
+              },
+              tooltip: {
+                value: refLine.label || `Reference: ${refLine.value}`,
+              },
+            },
+          });
+          layers.push({
+            data: {
+              values: [
+                {
+                  refValue: refLine.value,
+                  period: refLine.period,
+                  labelX: periodIndex + 0.25,
+                  labelText: `${refLine.value}min`,
+                },
+              ],
+            },
+            mark: {
+              type: "text",
+              align: "left",
+              baseline: "middle",
+              dx: 5,
+              fontSize: 10,
+              fontWeight: "bold",
+              color: refLine.color || "#666",
+            },
+            encoding: {
+              x: {
+                field: "labelX",
+                type: "quantitative",
+                scale: {
+                  domain: [-0.5, periodsData.length - 0.5],
+                  range: "width",
+                },
+                axis: null,
+              },
+              y: {
+                field: "refValue",
+                type: "quantitative",
+                scale: {
+                  type: defaultOptions.useLogScale ? "log" : "linear",
+                  ...(defaultOptions.useLogScale && { base: 10 }),
+                  nice: !defaultOptions.useLogScale,
+                },
+              },
+              text: {
+                field: "labelText",
+                type: "nominal",
+              },
+            },
+          });
+        }
+      }
+    });
+  }
   return {
     ...baseSpec,
     width: defaultOptions.width,
@@ -455,21 +557,4 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   };
-  if (defaultOptions.showHistogram) {
-    let overallMin = Infinity;
-    let overallMax = -Infinity;
-    periodsData.forEach((period) => {
-      if (period.values.length > 0) {
-        overallMin = Math.min(overallMin, Math.min(...period.values));
-        overallMax = Math.max(overallMax, Math.max(...period.values));
-      }
-    });
-    if (overallMin !== Infinity) {
-      const minDomain = defaultOptions.useLogScale
-        ? Math.max(0.1, overallMin)
-        : overallMin;
-      spec.encoding.y.scale.domain = [minDomain, overallMax];
-    }
-  }
-  return spec;
 }
