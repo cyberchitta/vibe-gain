@@ -30,8 +30,8 @@ function createHistogramBins(values, metricId) {
       const count = values.filter((v) => v === i).length;
       if (count > 0) {
         bins.push({
-          binStart: i,
-          binEnd: i + 1,
+          binStart: i - 0.5,
+          binEnd: i + 0.5,
           binCenter: i,
           count: count,
           percentage: (count / values.length) * 100,
