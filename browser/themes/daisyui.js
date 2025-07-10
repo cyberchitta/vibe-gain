@@ -5,9 +5,7 @@
 export function detectDarkMode() {
   return (
     document.documentElement.classList.contains("dark") ||
-    document.documentElement.getAttribute("data-theme") === "dark" ||
-    (window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches)
+    document.documentElement.getAttribute("data-theme") === "dark"
   );
 }
 
@@ -30,9 +28,13 @@ export function getThemeColors(isDark = null) {
       computedStyle.getPropertyValue("--primary").trim() || "#3A86FF",
     gridColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
     axisColor: isDark ? "rgba(229,231,235,0.7)" : "rgba(51,51,51,0.7)",
-    medianColor:
-      computedStyle.getPropertyValue("--base-content").trim() ||
-      (isDark ? "#E5E7EB" : "#333333"),
+    whiskerColor: isDark ? "#ffffff" : "#000000",
+    medianColor: isDark ? "#ffffff" : "#000000",
+    percentileStroke: isDark ? "#ffffff" : "#000000",
+    percentileFill: isDark
+      ? computedStyle.getPropertyValue("--base-100").trim() || "#1F2937"
+      : computedStyle.getPropertyValue("--base-100").trim() || "#ffffff",
+    labelColor: isDark ? "#E5E7EB" : "#333333",
     fontSans: (() => {
       const fontSans =
         computedStyle.getPropertyValue("--font-sans").trim() ||

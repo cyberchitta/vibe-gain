@@ -1,5 +1,5 @@
 import { createBoxPlotSpec } from "../specs/box-plot.js";
-import { applyDaisyUITheme } from "../themes/daisyui.js";
+import { applyDaisyUITheme, getThemeColors } from "../themes/daisyui.js";
 
 /**
  * Prepare raw periods data for box plot rendering
@@ -63,6 +63,7 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     throw new Error("Container element is required");
   }
   container.innerHTML = "";
+  const colors = getThemeColors(options.isDark);
   const defaultOptions = {
     width: container.clientWidth || 400,
     height: 250,
@@ -70,8 +71,14 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     showPercentiles: true,
     histogramWidth: 0.3,
     yLabel: "Value",
+    whiskerColor: colors.whiskerColor,
+    medianColor: colors.medianColor,
+    percentileStroke: colors.percentileStroke,
+    percentileFill: colors.percentileFill,
+    labelColor: colors.labelColor,
     ...options,
   };
+  console.log(defaultOptions)
   const periodsData = preparePeriodsForBoxPlot(
     periodsRawData,
     options.metricId
