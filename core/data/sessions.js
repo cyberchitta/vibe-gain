@@ -87,6 +87,10 @@ export function detectCodingSessions(commits, sessionThresholdMinutes) {
       (sum, c) => sum + c.additions + c.deletions,
       0
     ),
+    locPerSession: session.commits.reduce(
+      (sum, c) => sum + c.additions + c.deletions,
+      0
+    ),
   }));
 }
 
@@ -153,6 +157,7 @@ export function calculateSessionMetrics(
       session_durations: [],
       total_session_time_per_day: [],
       session_intervals: [],
+      loc_per_session: [],
       daily_session_metrics: [],
     };
   }
@@ -162,10 +167,12 @@ export function calculateSessionMetrics(
   const dailySessionMetrics = [];
   const allSessionDurations = [];
   const allSessionIntervals = [];
+  const allLocPerSession = [];
   Object.entries(commitsByDay).forEach(([date, dayCommits]) => {
     const sessions = detectCodingSessions(dayCommits, sessionThresholdMinutes);
     const sessionsCount = sessions.length;
     const sessionDurations = sessions.map((s) => s.duration);
+    const sessionLocCounts = sessions.map((s) => s.locPerSession); // Collect LOC per session
     const totalSessionTime = sessionDurations.reduce(
       (sum, duration) => sum + duration,
       0
@@ -190,6 +197,7 @@ export function calculateSessionMetrics(
     });
     allSessionDurations.push(...sessionDurations);
     allSessionIntervals.push(...sessionIntervals);
+    allLocPerSession.push(...sessionLocCounts);
   });
   return {
     sessions_per_day: dailySessionMetrics.map((d) => ({
@@ -202,6 +210,7 @@ export function calculateSessionMetrics(
       total_session_time: d.total_session_time,
     })),
     session_intervals: allSessionIntervals,
+    loc_per_session: allLocPerSession,
     daily_session_metrics: dailySessionMetrics,
   };
 }
@@ -232,6 +241,7 @@ export function analyzeSessionsWithThreshold(
         (d) => d.total_session_time
       ),
       session_intervals: metrics.session_intervals,
+      loc_per_session: metrics.loc_per_session,
       intra_session_intervals: extractIntraSessionIntervals(
         commits,
         userConfig,
@@ -249,6 +259,7 @@ export function analyzeSessionsWithThreshold(
         metrics.total_session_time_per_day.map((d) => d.total_session_time)
       ),
       median_inter_session_interval: calculateMedian(metrics.session_intervals),
+      median_loc_per_session: calculateMedian(metrics.loc_per_session),
     },
   };
 }

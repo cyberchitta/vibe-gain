@@ -137,6 +137,7 @@ export class MetricsBuilder {
       })),
       session_intervals: sessionAnalysis.metrics.session_intervals,
       intra_session_intervals: sessionAnalysis.metrics.intra_session_intervals,
+      loc_per_session: sessionAnalysis.metrics.loc_per_session, // ADD THIS LINE
       summary: {
         median_session_time_per_day:
           sessionAnalysis.summary.median_session_time_per_day,
@@ -144,6 +145,7 @@ export class MetricsBuilder {
           sessionAnalysis.summary.median_sessions_per_day,
         median_session_duration:
           sessionAnalysis.summary.median_session_duration,
+        median_loc_per_session: sessionAnalysis.summary.median_loc_per_session, // ADD THIS LINE
         session_threshold_minutes: this.SESSION_THRESHOLD,
       },
     };

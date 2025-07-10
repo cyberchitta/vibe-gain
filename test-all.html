@@ -239,6 +239,13 @@
                     </div>
                 </div>
                 <div>
+                    <h3>LOC per Session</h3>
+                    <p class="metric-description">Distribution of lines of code changed per coding session</p>
+                    <div id="box-plot-loc-per-session" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
                     <h3>Inter-Session Intervals</h3>
                     <p class="metric-description">Distribution of time gaps between consecutive coding sessions</p>
                     <div id="box-plot-inter-session-intervals" class="chart-container">
@@ -504,6 +511,11 @@
                     yLabel: 'Coding Session Duration (minutes)'
                 },
                 {
+                    id: 'box-plot-loc-per-session',
+                    metricId: 'loc_per_session',
+                    yLabel: 'Lines of Code per Session'
+                },
+                {
                     id: 'box-plot-session-durations',
                     metricId: 'session_durations',
                     yLabel: 'Session Duration (minutes)'
@@ -546,7 +558,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution'].includes(config.metricId)) {
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {
