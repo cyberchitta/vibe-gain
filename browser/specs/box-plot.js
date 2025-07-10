@@ -88,6 +88,8 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   };
   const boxPlotData = [];
   const histogramData = [];
+  let globalMin = Infinity;
+  let globalMax = -Infinity;
   periodsData.forEach((periodData, periodIndex) => {
     const sortedValues = [...periodData.values].sort((a, b) => a - b);
     const n = sortedValues.length;
@@ -120,32 +122,56 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       max: max,
       color: periodData.color,
     });
-    if (defaultOptions.showHistogram) {
-      const bins = createHistogramBins(periodData.values, options.metricId);
-      const allBins = [];
-      periodsData.forEach((pd) => {
-        if (pd.values.length > 0) {
-          allBins.push(...createHistogramBins(pd.values, options.metricId));
-        }
-      });
-      const globalMaxPercentage =
-        allBins.length > 0 ? Math.max(...allBins.map((b) => b.percentage)) : 1;
-      bins.forEach((bin) => {
-        const normalizedWidth =
-          (bin.percentage / globalMaxPercentage) *
-          defaultOptions.histogramWidth;
-        histogramData.push({
-          period: periodData.period,
-          periodIndex: periodIndex,
-          binStart: bin.binStart,
-          binEnd: bin.binEnd,
-          percentage: bin.percentage,
-          count: bin.count,
-          barLeft: periodIndex - normalizedWidth / 2,
-          barRight: periodIndex + normalizedWidth / 2,
-          color: periodData.color,
+    if (periodData.values.length > 0) {
+      const periodMin = Math.min(...periodData.values);
+      const periodMax = Math.max(...periodData.values);
+      globalMin = Math.min(globalMin, periodMin);
+      globalMax = Math.max(globalMax, periodMax);
+      if (defaultOptions.showHistogram) {
+        const bins = createHistogramBins(periodData.values, options.metricId);
+        const allBins = [];
+        periodsData.forEach((pd) => {
+          if (pd.values.length > 0) {
+            allBins.push(...createHistogramBins(pd.values, options.metricId));
+          }
         });
-      });
+        const globalMaxPercentage =
+          allBins.length > 0
+            ? Math.max(...allBins.map((b) => b.percentage))
+            : 1;
+        bins.forEach((bin) => {
+          let binStartClamped = bin.binStart;
+          let binEndClamped =
+            bin.binEnd === Infinity ? periodMax * 2 : bin.binEnd;
+          if (binStartClamped < periodMin) binStartClamped = periodMin;
+          if (binEndClamped > periodMax) binEndClamped = periodMax;
+          if (binStartClamped >= binEndClamped) {
+            if (periodMin === periodMax) {
+              if (defaultOptions.useLogScale) {
+                binEndClamped = binStartClamped * 1.01;
+              } else {
+                binEndClamped = binStartClamped + 1;
+              }
+            } else {
+              return;
+            }
+          }
+          const normalizedWidth =
+            (bin.percentage / globalMaxPercentage) *
+            defaultOptions.histogramWidth;
+          histogramData.push({
+            period: periodData.period,
+            periodIndex: periodIndex,
+            binStart: binStartClamped,
+            binEnd: binEndClamped,
+            percentage: bin.percentage,
+            count: bin.count,
+            barLeft: periodIndex - normalizedWidth / 2,
+            barRight: periodIndex + normalizedWidth / 2,
+            color: periodData.color,
+          });
+        });
+      }
     }
   });
   const layers = [];
@@ -404,11 +430,19 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         scale: {
           type: defaultOptions.useLogScale ? "log" : "linear",
           ...(defaultOptions.useLogScale && { base: 10 }),
-          nice: !defaultOptions.useLogScale,
+          nice: false,
+          domain:
+            globalMin === Infinity
+              ? [0, 1]
+              : defaultOptions.useLogScale
+              ? [Math.max(0.1, globalMin), globalMax]
+              : [globalMin, globalMax],
         },
         axis: {
           grid: true,
-          ...(defaultOptions.useLogScale && { format: "~s" }),
+          ...(defaultOptions.useLogScale && {
+            format: "~s",
+          }),
           ...(defaultOptions.useLogScale &&
             TIME_DURATION_METRICS.includes(options.metricId) && {
               labelExpr: `
@@ -421,4 +455,21 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       },
     },
   };
+  if (defaultOptions.showHistogram) {
+    let overallMin = Infinity;
+    let overallMax = -Infinity;
+    periodsData.forEach((period) => {
+      if (period.values.length > 0) {
+        overallMin = Math.min(overallMin, Math.min(...period.values));
+        overallMax = Math.max(overallMax, Math.max(...period.values));
+      }
+    });
+    if (overallMin !== Infinity) {
+      const minDomain = defaultOptions.useLogScale
+        ? Math.max(0.1, overallMin)
+        : overallMin;
+      spec.encoding.y.scale.domain = [minDomain, overallMax];
+    }
+  }
+  return spec;
 }
