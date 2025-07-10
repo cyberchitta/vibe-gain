@@ -78,7 +78,6 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     labelColor: colors.labelColor,
     ...options,
   };
-  console.log(defaultOptions)
   const periodsData = preparePeriodsForBoxPlot(
     periodsRawData,
     options.metricId
