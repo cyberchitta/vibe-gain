@@ -218,6 +218,28 @@
                     </div>
                 </div>
                 <div>
+                    <h3>Lines of Code per Hour</h3>
+                    <p class="metric-description">Distribution of lines of code changed per hour across active coding
+                        sessions</p>
+                    <div id="box-plot-hourly-loc" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Active Hours per Day</h3>
+                    <p class="metric-description">Distribution of distinct hours with coding activity per day</p>
+                    <div id="box-plot-active-hours" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Commits per Session</h3>
+                    <p class="metric-description">Distribution of commit count per coding session</p>
+                    <div id="box-plot-commits-per-session" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
                     <h3>Coding Session Duration</h3>
                     <p class="metric-description">Distribution of coding session lengths (minutes)</p>
                     <div id="box-plot-coding-time" class="chart-container">
@@ -408,8 +430,25 @@
                     preValue: preVizData.summary.session_threshold_minutes,
                     recentValue: recentVizData.summary.session_threshold_minutes,
                     format: 'number'
-                }
-            ];
+                },
+                {
+                    label: 'Active Hours per Day (Median)',
+                    preValue: preVizData.summary.median_active_hours_per_day,
+                    recentValue: recentVizData.summary.median_active_hours_per_day,
+                    format: 'decimal'
+                },
+                {
+                    label: 'Commits per Session (Median)',
+                    preValue: preVizData.summary.median_commits_per_session,
+                    recentValue: recentVizData.summary.median_commits_per_session,
+                    format: 'decimal'
+                },
+                {
+                    label: 'Session Threshold (minutes)',
+                    preValue: preVizData.summary.session_threshold_minutes,
+                    recentValue: recentVizData.summary.session_threshold_minutes,
+                    format: 'number'
+                }];
             const formatValue = (value, format) => {
                 if (value === null || value === undefined) return '-';
                 switch (format) {
@@ -511,6 +550,21 @@
                     yLabel: 'Coding Session Duration (minutes)'
                 },
                 {
+                    id: 'box-plot-hourly-loc',
+                    metricId: 'hourly_loc_distribution',
+                    yLabel: 'Lines of Code per Hour'
+                },
+                {
+                    id: 'box-plot-active-hours',
+                    metricId: 'active_hours',
+                    yLabel: 'Active Hours per Day'
+                },
+                {
+                    id: 'box-plot-commits-per-session',
+                    metricId: 'commits_per_session',
+                    yLabel: 'Commits per Session'
+                },
+                {
                     id: 'box-plot-loc-per-session',
                     metricId: 'loc_per_session',
                     yLabel: 'Lines of Code per Session'
@@ -558,7 +612,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session'].includes(config.metricId)) {
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session', 'hourly_loc_distribution'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {

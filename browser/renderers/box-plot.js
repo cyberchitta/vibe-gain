@@ -14,6 +14,8 @@ export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
       values = data.filter((val) => val !== null && !isNaN(val) && val > 0);
     } else if (metricId === "hourly_commit_distribution") {
       values = Array.isArray(data) ? data.filter((val) => val > 0) : [];
+    } else if (metricId === "hourly_loc_distribution") {
+      values = Array.isArray(data) ? data.filter((val) => val > 0) : [];
     } else if (Array.isArray(data)) {
       values = data
         .map((item) => {
@@ -33,6 +35,11 @@ export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
             item.session_time !== undefined
           ) {
             return item.session_time;
+          } else if (
+            metricId === "active_hours" &&
+            item.active_hours !== undefined
+          ) {
+            return item.active_hours;
           } else if (item[metricId] !== undefined) {
             return item[metricId];
           }

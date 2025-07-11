@@ -158,6 +158,7 @@ export function calculateSessionMetrics(
       total_session_time_per_day: [],
       session_intervals: [],
       loc_per_session: [],
+      commits_per_session: [],
       daily_session_metrics: [],
     };
   }
@@ -168,11 +169,13 @@ export function calculateSessionMetrics(
   const allSessionDurations = [];
   const allSessionIntervals = [];
   const allLocPerSession = [];
+  const allCommitsPerSession = [];
   Object.entries(commitsByDay).forEach(([date, dayCommits]) => {
     const sessions = detectCodingSessions(dayCommits, sessionThresholdMinutes);
     const sessionsCount = sessions.length;
     const sessionDurations = sessions.map((s) => s.duration);
     const sessionLocCounts = sessions.map((s) => s.locPerSession);
+    const sessionCommitCounts = sessions.map((s) => s.commitCount);
     const totalSessionTime = sessionDurations.reduce(
       (sum, duration) => sum + duration,
       0
@@ -198,6 +201,7 @@ export function calculateSessionMetrics(
     allSessionDurations.push(...sessionDurations);
     allSessionIntervals.push(...sessionIntervals);
     allLocPerSession.push(...sessionLocCounts);
+    allCommitsPerSession.push(...sessionCommitCounts);
   });
   return {
     sessions_per_day: dailySessionMetrics.map((d) => ({
@@ -211,6 +215,7 @@ export function calculateSessionMetrics(
     })),
     session_intervals: allSessionIntervals,
     loc_per_session: allLocPerSession,
+    commits_per_session: allCommitsPerSession,
     daily_session_metrics: dailySessionMetrics,
   };
 }
@@ -242,6 +247,7 @@ export function analyzeSessionsWithThreshold(
       ),
       session_intervals: metrics.session_intervals,
       loc_per_session: metrics.loc_per_session,
+      commits_per_session: metrics.commits_per_session,
       intra_session_intervals: extractIntraSessionIntervals(
         commits,
         userConfig,
@@ -260,6 +266,7 @@ export function analyzeSessionsWithThreshold(
       ),
       median_inter_session_interval: calculateMedian(metrics.session_intervals),
       median_loc_per_session: calculateMedian(metrics.loc_per_session),
+      median_commits_per_session: calculateMedian(metrics.commits_per_session),
     },
   };
 }
