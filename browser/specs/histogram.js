@@ -106,15 +106,7 @@ export function createHistogramSpec(chartData, options = {}) {
                 orient: "top-right",
               },
       },
-      tooltip: [
-        { field: "binLabel", title: "Range" },
-        { field: "period", title: "Period" },
-        {
-          field: yField,
-          title: options.yLabel,
-          format: yField === "percentageCount" ? ".1f" : "d",
-        },
-      ],
+      tooltip: null,
     },
     mark: {
       type: "bar",

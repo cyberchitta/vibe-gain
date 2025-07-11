@@ -107,10 +107,6 @@ export function createStripPlotSpec(data, options = {}) {
           y: yField,
           shape: { scale: "shapeScale", field: "repoShape" },
         },
-        hover: {
-          strokeWidth: { value: 2 },
-          stroke: { value: "#000000" },
-        },
       },
     },
   ];
@@ -214,20 +210,6 @@ export function createStripPlotSpec(data, options = {}) {
       {
         name: "effectiveWidth",
         update: "chartWidth - " + defaultOptions.padding?.left,
-      },
-      {
-        name: "tooltip",
-        value: {},
-        on: [
-          {
-            events: "symbol:mouseover",
-            update: "datum",
-          },
-          {
-            events: "symbol:mouseout",
-            update: "{}",
-          },
-        ],
       },
     ],
   };

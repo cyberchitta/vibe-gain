@@ -81,7 +81,6 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
       .initialize(container)
       .width(defaultOptions.width)
       .height(defaultOptions.height)
-      .hover()
       .run();
     container._vegaView = view;
     container._stripPlotData = preparedData.stripPlotData;

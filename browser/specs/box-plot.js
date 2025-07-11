@@ -239,13 +239,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           type: "nominal",
           scale: null,
         },
-        tooltip: [
-          { field: "period", title: "Period" },
-          { field: "binStart", title: "Range Start" },
-          { field: "binEnd", title: "Range End" },
-          { field: "count", title: "Count" },
-          { field: "percentage", title: "Percentage", format: ".1f" },
-        ],
+        tooltip: null,
       },
     });
   }
@@ -449,9 +443,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
                   nice: !defaultOptions.useLogScale,
                 },
               },
-              tooltip: {
-                value: refLine.label || `Reference: ${refLine.value}`,
-              },
+              tooltip: null,
             },
           });
           layers.push({

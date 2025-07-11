@@ -101,7 +101,6 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
       .initialize(container)
       .width(defaultOptions.width)
       .height(defaultOptions.height)
-      .hover()
       .run();
     container._vegaView = view;
     return view;
