@@ -172,7 +172,7 @@ export function calculateSessionMetrics(
     const sessions = detectCodingSessions(dayCommits, sessionThresholdMinutes);
     const sessionsCount = sessions.length;
     const sessionDurations = sessions.map((s) => s.duration);
-    const sessionLocCounts = sessions.map((s) => s.locPerSession); // Collect LOC per session
+    const sessionLocCounts = sessions.map((s) => s.locPerSession);
     const totalSessionTime = sessionDurations.reduce(
       (sum, duration) => sum + duration,
       0
