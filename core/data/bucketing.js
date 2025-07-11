@@ -80,6 +80,8 @@ const NATURAL_BUCKETS = {
   session_time: STANDARD_TIME_BUCKETS,
   session_intervals: STANDARD_TIME_BUCKETS,
   intra_session_intervals: STANDARD_TIME_BUCKETS,
+  loc_per_commit: LOC_BUCKETS,
+  files_per_commit: COMMIT_COUNT_BUCKETS,
 };
 
 /**

@@ -333,6 +333,26 @@
                 </div>
             </div>
         </div>
+        <div class="chart-section">
+            <h2>Commit Productivity Patterns</h2>
+            <p class="metric-description">Individual commit characteristics and patterns</p>
+            <div class="chart-grid">
+                <div>
+                    <h3>Lines per Commit</h3>
+                    <p class="metric-description">Distribution of lines changed per individual commit</p>
+                    <div id="box-plot-loc-per-commit" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Files per Commit</h3>
+                    <p class="metric-description">Distribution of files changed per individual commit</p>
+                    <div id="box-plot-files-per-commit" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script type="module">
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
@@ -466,7 +486,20 @@
                     preValue: preVizData.summary.session_threshold_minutes,
                     recentValue: recentVizData.summary.session_threshold_minutes,
                     format: 'number'
-                }];
+                },
+                {
+                    label: 'LOC per Commit (Median)',
+                    preValue: preVizData.summary.median_loc_per_commit,
+                    recentValue: recentVizData.summary.median_loc_per_commit,
+                    format: 'number'
+                },
+                {
+                    label: 'Files per Commit (Median)',
+                    preValue: preVizData.summary.median_files_per_commit,
+                    recentValue: recentVizData.summary.median_files_per_commit,
+                    format: 'decimal'
+                },
+            ];
             const formatValue = (value, format) => {
                 if (value === null || value === undefined) return '-';
                 switch (format) {
@@ -611,7 +644,17 @@
                     id: 'box-plot-coding-time',
                     metricId: 'coding_time',
                     yLabel: 'Coding Session Duration (minutes)'
-                }
+                },
+                {
+                    id: 'box-plot-loc-per-commit',
+                    metricId: 'loc_per_commit',
+                    yLabel: 'Lines of Code per Commit'
+                },
+                {
+                    id: 'box-plot-files-per-commit',
+                    metricId: 'files_per_commit',
+                    yLabel: 'Files Changed per Commit'
+                },
             ];
             for (const config of boxPlotConfigs) {
                 const container = document.getElementById(config.id);
@@ -630,7 +673,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session', 'hourly_loc_distribution'].includes(config.metricId)) {
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session', 'hourly_loc_distribution', 'loc_per_commit', 'files_per_commit'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {

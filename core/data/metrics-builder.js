@@ -66,6 +66,8 @@ export class MetricsBuilder {
   buildFilterable() {
     const commits = this._computeCommitsMetric();
     const loc = this._computeLocMetric();
+    const locPerCommit = this._computeLocPerCommitMetric();
+    const filesPerCommit = this._computeFilesPerCommitMetric();
     const hourly = this._computeHourlyCommitDistribution();
     const hourlyLoc = this._computeHourlyLocDistribution();
     const activeHours = this._computeActiveHoursMetric();
@@ -76,6 +78,8 @@ export class MetricsBuilder {
     return {
       commits,
       loc,
+      loc_per_commit: locPerCommit,
+      files_per_commit: filesPerCommit,
       hourly_commit_distribution: hourly,
       hourly_loc_distribution: hourlyLoc,
       active_hours: activeHours,
@@ -85,6 +89,12 @@ export class MetricsBuilder {
         total_active_days: Object.keys(commitsByDay).length,
         commits_per_active_day: calculateMedian(commits.map((d) => d.commits)),
         median_loc_per_day: calculateMedian(loc.map((d) => d.loc)),
+        median_loc_per_commit: calculateMedian(
+          locPerCommit.map((d) => d.loc_per_commit)
+        ),
+        median_files_per_commit: calculateMedian(
+          filesPerCommit.map((d) => d.files_per_commit)
+        ),
         median_active_hours_per_day: calculateMedian(
           activeHours.map((d) => d.active_hours)
         ),
@@ -327,5 +337,23 @@ export class MetricsBuilder {
         coding_time: legacyCodingTime,
       };
     });
+  }
+
+  _computeLocPerCommitMetric() {
+    return this.FILTERED_COMMITS.map((commit) => ({
+      sha: commit.sha,
+      repo: commit.repo,
+      timestamp: commit.timestamp,
+      loc_per_commit: (commit.additions || 0) + (commit.deletions || 0),
+    }));
+  }
+
+  _computeFilesPerCommitMetric() {
+    return this.FILTERED_COMMITS.map((commit) => ({
+      sha: commit.sha,
+      repo: commit.repo,
+      timestamp: commit.timestamp,
+      files_per_commit: commit.filesChanged || 0,
+    }));
   }
 }
