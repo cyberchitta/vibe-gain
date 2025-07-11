@@ -122,6 +122,13 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       max: max,
       color: periodData.color,
     });
+    boxPlotData.forEach((box, index) => {
+      const baseBoxWidth = 0.125;
+      const bandWidth = 1.0;
+      const boxWidth = baseBoxWidth * bandWidth;
+      box.boxLeft = index - boxWidth / 2;
+      box.boxRight = index + boxWidth / 2;
+    });
     if (periodData.values.length > 0) {
       const periodMin = Math.min(...periodData.values);
       const periodMax = Math.max(...periodData.values);
@@ -179,15 +186,22 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     data: { values: boxPlotData },
     mark: {
       type: "rect",
-      opacity: 0.6,
+      opacity: 1.0,
       stroke: { value: defaultOptions.whiskerColor },
-      strokeWidth: 1,
-      width: 40,
+      strokeWidth: 2,
     },
     encoding: {
       x: {
-        field: "periodIndex",
-        type: "ordinal",
+        field: "boxLeft",
+        type: "quantitative",
+        scale: {
+          domain: [-0.5, periodsData.length - 0.5],
+          range: "width",
+        },
+      },
+      x2: {
+        field: "boxRight",
+        type: "quantitative",
       },
       y: {
         field: "q1",
