@@ -187,22 +187,29 @@
             </div>
         </div>
         <div class="chart-section">
-            <h2>Distribution Analysis (Box Plots)</h2>
+            <h2>Repository Analysis</h2>
+            <p class="metric-description">Understanding which projects and repositories were worked on</p>
             <div class="chart-grid">
                 <div>
-                    <h3>Hourly Commit Distribution</h3>
-                    <p class="metric-description">Distribution of commits per hour across active coding sessions</p>
-                    <div id="box-plot-hourly" class="chart-container">
+                    <h3>Repository Activity</h3>
+                    <p class="metric-description">Distribution of repositories worked on per day</p>
+                    <div id="box-plot-repos" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Time Between Commits</h3>
-                    <p class="metric-description">Distribution of intervals between consecutive commits (minutes)</p>
-                    <div id="box-plot-intervals" class="chart-container">
+                    <h3>Repository Commit Distribution</h3>
+                    <p class="metric-description">Distribution of total commits across all repositories</p>
+                    <div id="box-plot-repo-commit-distribution" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Daily Productivity Patterns</h2>
+            <p class="metric-description">Day-to-day activity levels and productivity metrics</p>
+            <div class="chart-grid">
                 <div>
                     <h3>Commits per Day</h3>
                     <p class="metric-description">Distribution of daily commit counts</p>
@@ -218,14 +225,6 @@
                     </div>
                 </div>
                 <div>
-                    <h3>Lines of Code per Hour</h3>
-                    <p class="metric-description">Distribution of lines of code changed per hour across active coding
-                        sessions</p>
-                    <div id="box-plot-hourly-loc" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
                     <h3>Active Hours per Day</h3>
                     <p class="metric-description">Distribution of distinct hours with coding activity per day</p>
                     <div id="box-plot-active-hours" class="chart-container">
@@ -233,16 +232,53 @@
                     </div>
                 </div>
                 <div>
-                    <h3>Commits per Session</h3>
-                    <p class="metric-description">Distribution of commit count per coding session</p>
-                    <div id="box-plot-commits-per-session" class="chart-container">
+                    <h3>Time Between Commits</h3>
+                    <p class="metric-description">Distribution of intervals between consecutive commits (minutes)</p>
+                    <div id="box-plot-intervals" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Hourly Analysis</h2>
+            <p class="metric-description">Time-of-day patterns and hourly productivity distribution</p>
+            <div class="chart-grid">
+                <div>
+                    <h3>Commits by Hour of Day</h3>
+                    <p class="metric-description">Distribution of commits across 24-hour periods</p>
+                    <div id="histogram-hour-of-day" class="chart-container">
+                        <div class="loading">Loading histogram...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Hourly Commit Distribution</h3>
+                    <p class="metric-description">Distribution of commits per hour across active coding sessions</p>
+                    <div id="box-plot-hourly" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Coding Session Duration</h3>
-                    <p class="metric-description">Distribution of coding session lengths (minutes)</p>
-                    <div id="box-plot-coding-time" class="chart-container">
+                    <h3>Lines of Code per Hour</h3>
+                    <p class="metric-description">Distribution of lines of code changed per hour across active coding
+                        sessions</p>
+                    <div id="box-plot-hourly-loc" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Session Analysis</h2>
+            <p class="metric-description">Detailed breakdown of coding sessions and work patterns</p>
+            <div id="session-diagnostics" class="bg-base-100 rounded border border-base-300 p-4">
+                <div class="loading">Loading session analysis...</div>
+            </div>
+            <div class="chart-grid">
+                <div>
+                    <h3>Commits per Session</h3>
+                    <p class="metric-description">Distribution of commit count per coding session</p>
+                    <div id="box-plot-commits-per-session" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
@@ -268,16 +304,16 @@
                     </div>
                 </div>
                 <div>
-                    <h3>Inter-Session Intervals</h3>
-                    <p class="metric-description">Distribution of time gaps between consecutive coding sessions</p>
-                    <div id="box-plot-inter-session-intervals" class="chart-container">
+                    <h3>Session Time per Day</h3>
+                    <p class="metric-description">Distribution of total session time per active day (minutes)</p>
+                    <div id="box-plot-session-time" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Session Time per Day</h3>
-                    <p class="metric-description">Distribution of total session time per active day (minutes)</p>
-                    <div id="box-plot-session-time" class="chart-container">
+                    <h3>Inter-Session Intervals</h3>
+                    <p class="metric-description">Distribution of time gaps between consecutive coding sessions</p>
+                    <div id="box-plot-inter-session-intervals" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
@@ -288,41 +324,11 @@
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="chart-section">
-            <h2>Session Analysis Diagnostics</h2>
-            <div id="session-diagnostics" class="bg-base-100 rounded border border-base-300 p-4">
-                <div class="loading">Loading session analysis...</div>
-            </div>
-        </div>
-        <div class="chart-section">
-            <h2>Combined Metrics Analysis</h2>
-            <div class="chart-grid">
                 <div>
-                    <h3>Repository Activity</h3>
-                    <p class="metric-description">Distribution of repositories worked on per day</p>
-                    <div id="box-plot-repos" class="chart-container">
+                    <h3>Time from First to Last Commit of Day</h3>
+                    <p class="metric-description">Distribution of daily time (minutes)</p>
+                    <div id="box-plot-coding-time" class="chart-container">
                         <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Repository Commit Distribution</h3>
-                    <p class="metric-description">Distribution of total commits across all repositories</p>
-                    <div id="box-plot-repo-commit-distribution" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="chart-section">
-            <h2>Hourly Distribution Analysis</h2>
-            <div class="chart-grid">
-                <div>
-                    <h3>Commits by Hour of Day</h3>
-                    <p class="metric-description">Distribution of commits across 24-hour periods</p>
-                    <div id="histogram-hour-of-day" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
                     </div>
                 </div>
             </div>
@@ -390,10 +396,22 @@
                     format: 'number'
                 },
                 {
+                    label: 'Total Lines Changed',
+                    preValue: preVizData.summary.total_lines_changed,
+                    recentValue: recentVizData.summary.total_lines_changed,
+                    format: 'number'
+                },
+                {
                     label: 'Active Days',
                     preValue: preVizData.summary.total_active_days,
                     recentValue: recentVizData.summary.total_active_days,
                     format: 'number'
+                },
+                {
+                    label: 'Active Hours per Day (Median)',
+                    preValue: preVizData.summary.median_active_hours_per_day,
+                    recentValue: recentVizData.summary.median_active_hours_per_day,
+                    format: 'decimal'
                 },
                 {
                     label: 'Commits per Day (Median)',
@@ -402,10 +420,10 @@
                     format: 'number'
                 },
                 {
-                    label: 'Fork Percentage',
-                    preValue: preVizData.summary.fork_percentage,
-                    recentValue: recentVizData.summary.fork_percentage,
-                    format: 'percentage'
+                    label: 'LOC per Day (Median)',
+                    preValue: preVizData.summary.median_loc_per_day,
+                    recentValue: recentVizData.summary.median_loc_per_day,
+                    format: 'number'
                 },
                 {
                     label: 'Sessions per Day (Median)',
@@ -432,16 +450,16 @@
                     format: 'number'
                 },
                 {
-                    label: 'Active Hours per Day (Median)',
-                    preValue: preVizData.summary.median_active_hours_per_day,
-                    recentValue: recentVizData.summary.median_active_hours_per_day,
-                    format: 'decimal'
-                },
-                {
                     label: 'Commits per Session (Median)',
                     preValue: preVizData.summary.median_commits_per_session,
                     recentValue: recentVizData.summary.median_commits_per_session,
                     format: 'decimal'
+                },
+                {
+                    label: 'LOC per Session (Median)',
+                    preValue: preVizData.summary.median_loc_per_session,
+                    recentValue: recentVizData.summary.median_loc_per_session,
+                    format: 'number'
                 },
                 {
                     label: 'Session Threshold (minutes)',
@@ -515,14 +533,14 @@
             const { preVizData, recentVizData } = data;
             const boxPlotConfigs = [
                 {
-                    id: 'box-plot-hourly',
-                    metricId: 'hourly_commit_distribution',
-                    yLabel: 'Commits per Hour'
+                    id: 'box-plot-repos',
+                    metricId: 'repos',
+                    yLabel: 'Repositories per Day'
                 },
                 {
-                    id: 'box-plot-intervals',
-                    metricId: 'commit_intervals',
-                    yLabel: 'Time Between Commits (minutes)'
+                    id: 'box-plot-repo-commit-distribution',
+                    metricId: 'repo_commit_distribution',
+                    yLabel: 'Commits per Repository'
                 },
                 {
                     id: 'box-plot-commits',
@@ -535,19 +553,19 @@
                     yLabel: 'Lines of Code per Day'
                 },
                 {
-                    id: 'box-plot-repos',
-                    metricId: 'repos',
-                    yLabel: 'Repositories per Day'
+                    id: 'box-plot-active-hours',
+                    metricId: 'active_hours',
+                    yLabel: 'Active Hours per Day'
                 },
                 {
-                    id: 'box-plot-repo-commit-distribution',
-                    metricId: 'repo_commit_distribution',
-                    yLabel: 'Commits per Repository'
+                    id: 'box-plot-intervals',
+                    metricId: 'commit_intervals',
+                    yLabel: 'Time Between Commits (minutes)'
                 },
                 {
-                    id: 'box-plot-coding-time',
-                    metricId: 'coding_time',
-                    yLabel: 'Coding Session Duration (minutes)'
+                    id: 'box-plot-hourly',
+                    metricId: 'hourly_commit_distribution',
+                    yLabel: 'Commits per Hour'
                 },
                 {
                     id: 'box-plot-hourly-loc',
@@ -555,19 +573,9 @@
                     yLabel: 'Lines of Code per Hour'
                 },
                 {
-                    id: 'box-plot-active-hours',
-                    metricId: 'active_hours',
-                    yLabel: 'Active Hours per Day'
-                },
-                {
                     id: 'box-plot-commits-per-session',
                     metricId: 'commits_per_session',
                     yLabel: 'Commits per Session'
-                },
-                {
-                    id: 'box-plot-loc-per-session',
-                    metricId: 'loc_per_session',
-                    yLabel: 'Lines of Code per Session'
                 },
                 {
                     id: 'box-plot-session-durations',
@@ -578,6 +586,11 @@
                     id: 'box-plot-sessions-per-day',
                     metricId: 'sessions_per_day',
                     yLabel: 'Sessions per Day'
+                },
+                {
+                    id: 'box-plot-loc-per-session',
+                    metricId: 'loc_per_session',
+                    yLabel: 'Lines of Code per Session'
                 },
                 {
                     id: 'box-plot-session-time',
@@ -593,6 +606,11 @@
                     id: 'box-plot-intra-session-intervals',
                     metricId: 'intra_session_intervals',
                     yLabel: 'Intra-Session Intervals (minutes)'
+                },
+                {
+                    id: 'box-plot-coding-time',
+                    metricId: 'coding_time',
+                    yLabel: 'Coding Session Duration (minutes)'
                 }
             ];
             for (const config of boxPlotConfigs) {
