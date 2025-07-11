@@ -1,3 +1,4 @@
+import { extractValues } from "../../core/data/transforms.js";
 import { createBoxPlotSpec } from "../specs/box-plot.js";
 import { applyDaisyUITheme, getThemeColors } from "../themes/daisyui.js";
 
@@ -8,54 +9,11 @@ import { applyDaisyUITheme, getThemeColors } from "../themes/daisyui.js";
  * @returns {Array} - Array of {period, values, color} objects for createBoxPlotSpec
  */
 export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
-  return periodsRawData.map(({ period, data, color }) => {
-    let values;
-    if (Array.isArray(data) && data.length > 0 && typeof data[0] === "number") {
-      values = data.filter((val) => val !== null && !isNaN(val) && val > 0);
-    } else if (metricId === "hourly_commit_distribution") {
-      values = Array.isArray(data) ? data.filter((val) => val > 0) : [];
-    } else if (metricId === "hourly_loc_distribution") {
-      values = Array.isArray(data) ? data.filter((val) => val > 0) : [];
-    } else if (Array.isArray(data)) {
-      values = data
-        .map((item) => {
-          if (
-            (metricId === "commit_intervals" ||
-              metricId === "intra_session_intervals") &&
-            item.interval_minutes !== undefined
-          ) {
-            return item.interval_minutes;
-          } else if (
-            metricId === "sessions_per_day" &&
-            item.sessions_count !== undefined
-          ) {
-            return item.sessions_count;
-          } else if (
-            metricId === "session_time" &&
-            item.session_time !== undefined
-          ) {
-            return item.session_time;
-          } else if (
-            metricId === "active_hours" &&
-            item.active_hours !== undefined
-          ) {
-            return item.active_hours;
-          } else if (item[metricId] !== undefined) {
-            return item[metricId];
-          }
-          return null;
-        })
-        .filter((val) => val !== null && !isNaN(val) && val > 0);
-    } else {
-      console.warn(`Unexpected data structure for ${metricId}:`, data);
-      values = [];
-    }
-    return {
-      period,
-      values,
-      color,
-    };
-  });
+  return periodsRawData.map(({ period, data, color }) => ({
+    period,
+    values: extractValues(data, metricId),
+    color,
+  }));
 }
 
 /**
