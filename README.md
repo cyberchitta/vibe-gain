@@ -180,7 +180,7 @@ See **`test-all.html`** for a full working example that demonstrates:
     <div id="chart-container"></div>
     <script type="module">
       import { renderHistogram } from "./browser/renderers/histogram.js";
-      import { arrayFormatToCommits } from "./core/data/formats.js";
+      import { arrayFormatToCommits } from "./core/data/transforms.js";
 
       // Load and render charts
       async function renderCharts() {
@@ -267,7 +267,7 @@ vibe-gain/
 ├── core/                   # Shared data processing
 │   ├── data/
 │   │   ├── bucketing.js   # Natural bucket definitions
-│   │   ├── formats.js     # Data format conversions
+│   │   ├── transforms.js     # Data format conversions
 │   │   ├── sessions.js    # Session analysis (excluded)
 │   │   ├── session-thresholds.js # Session threshold detection (excluded)
 │   │   ├── strip-plot.js  # Strip plot data preparation

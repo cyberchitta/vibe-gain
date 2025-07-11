@@ -25,7 +25,7 @@ export {
 export {
   commitArrayFormat,
   arrayFormatToCommits,
-} from "../core/data/formats.js";
+} from "../core/data/transforms.js";
 
 export { createDateRange } from "../core/utils/date.js";
 
