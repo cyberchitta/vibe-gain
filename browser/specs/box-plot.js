@@ -1,3 +1,4 @@
+import { calculateBoxPlotStats } from "../../core/utils/array.js";
 import { createBaseVegaSpec } from "./vega-base.js";
 import {
   TIME_DURATION_METRICS,
@@ -91,35 +92,20 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   let globalMin = Infinity;
   let globalMax = -Infinity;
   periodsData.forEach((periodData, periodIndex) => {
-    const sortedValues = [...periodData.values].sort((a, b) => a - b);
-    const n = sortedValues.length;
-    if (n === 0) return;
-    const q1Index = Math.floor(0.25 * (n - 1));
-    const q2Index = Math.floor(0.5 * (n - 1));
-    const q3Index = Math.floor(0.75 * (n - 1));
-    const p5Index = Math.floor(0.05 * (n - 1));
-    const p95Index = Math.floor(0.95 * (n - 1));
-    const q1 = sortedValues[q1Index];
-    const median = sortedValues[q2Index];
-    const q3 = sortedValues[q3Index];
-    const p5 = sortedValues[p5Index];
-    const p95 = sortedValues[p95Index];
-    const min = sortedValues[0];
-    const max = sortedValues[n - 1];
-    const lowerWhisker = min;
-    const upperWhisker = max;
+    const stats = calculateBoxPlotStats(periodData.values);
+    if (!stats) return;
     boxPlotData.push({
       period: periodData.period,
       periodIndex: periodIndex,
-      q1: q1,
-      median: median,
-      q3: q3,
-      p5: p5,
-      p95: p95,
-      lowerWhisker: lowerWhisker,
-      upperWhisker: upperWhisker,
-      min: min,
-      max: max,
+      q1: stats.p25,
+      median: stats.median,
+      q3: stats.p75,
+      p5: stats.p5,
+      p95: stats.p95,
+      lowerWhisker: stats.min,
+      upperWhisker: stats.max,
+      min: stats.min,
+      max: stats.max,
       color: periodData.color,
     });
     boxPlotData.forEach((box, index) => {
