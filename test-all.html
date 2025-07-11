@@ -673,7 +673,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session', 'hourly_loc_distribution', 'loc_per_commit', 'files_per_commit'].includes(config.metricId)) {
+                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session', 'hourly_loc_distribution', 'loc_per_commit', 'files_per_commit', 'commits_per_session', 'hourly_commit_distribution', 'active_hours'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {
