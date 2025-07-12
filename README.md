@@ -83,8 +83,11 @@ bun start
 # Start local web server
 bun run serve
 
-# Navigate to test file
-open http://localhost:3001/test-all.html
+# View interactive dashboard
+open http://localhost:3001/all-plots.html
+
+# Generate LLM analysis report
+bun run gen-llm-report
 ```
 
 ## Understanding the Metrics
@@ -260,8 +263,10 @@ vibe-gain/
 │   ├── api/
 │   │   ├── github.js      # GitHub API client
 │   │   └── queries.js     # Repository discovery queries
+│   ├── export/
+│   │   ├── json.js        # Data export utilities
+│   │   └── gen-all-plots-llm.js # LLM analysis report generator
 │   ├── data/fetch.js      # GitHub API integration
-│   ├── export/json.js     # Data export utilities
 │   ├── utils/diagnostics.js # Diagnostics and logging
 │   ├── discover-repos.js  # Repository discovery
 │   ├── config.js          # Configuration management
@@ -302,10 +307,12 @@ vibe-gain/
 ## Key Files
 
 - **`lib/index.js`**: Main data collection script
+- **`lib/export/gen-all-plots-llm.js`**: Generate comprehensive analysis report for LLM consumption
 - **`browser/index.js`**: Browser module exports
 - **`core/data/metrics-builder.js`**: Core metrics calculation
 - **`core/data/viz-data.js`**: Visualization data preparation
-- **`test-all.html`**: Complete working example with all chart types and metrics
+- **`all-plots.html`**: Interactive dashboard with all chart types and metrics
+- **`data/{username}/all-plots-llm.md`**: Comprehensive analysis report in markdown format
 
 ## Development
 

@@ -16,7 +16,8 @@
   "scripts": {
     "start": "bun lib/index.js",
     "start:custom": "bun lib/index.js ./custom-parameters.json",
-    "serve": "bunx http-server . --cors -p 3001"
+    "serve": "bunx http-server . --cors -p 3001",
+    "gen-llm-report": "node lib/export/gen-all-plots-llm.js"
   },
   "dependencies": {
     "@octokit/graphql": "^8.2.2",
