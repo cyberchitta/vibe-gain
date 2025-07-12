@@ -237,24 +237,37 @@ export function analyzeSessionsWithThreshold(
     userConfig,
     sessionThresholdMinutes
   );
+  const intraSessionIntervals = extractIntraSessionIntervals(
+    commits,
+    userConfig,
+    sessionThresholdMinutes
+  ).map((interval) => interval.interval_minutes);
+  const medianIntraSessionInterval = calculateMedian(intraSessionIntervals);
+  const adjustedDailyMetrics = metrics.daily_session_metrics.map(
+    (dayMetric) => {
+      const currentSessionTime = dayMetric.total_session_time;
+      const adjustment = dayMetric.sessions_count * medianIntraSessionInterval;
+      const adjustedSessionTime = currentSessionTime + adjustment;
+      return {
+        ...dayMetric,
+        total_session_time: adjustedSessionTime,
+        session_time_adjustment: adjustment,
+        original_session_time: currentSessionTime,
+      };
+    }
+  );
   return {
     threshold: sessionThresholdMinutes,
     metrics: {
       sessions_per_day: metrics.sessions_per_day.map((d) => d.sessions_count),
       session_durations: metrics.session_durations,
-      session_time: metrics.total_session_time_per_day.map(
-        (d) => d.total_session_time
-      ),
+      session_time: adjustedDailyMetrics.map((d) => d.total_session_time),
       session_intervals: metrics.session_intervals,
       loc_per_session: metrics.loc_per_session,
       commits_per_session: metrics.commits_per_session,
-      intra_session_intervals: extractIntraSessionIntervals(
-        commits,
-        userConfig,
-        sessionThresholdMinutes
-      ),
+      intra_session_intervals: intraSessionIntervals,
     },
-    dailyMetrics: metrics.daily_session_metrics,
+    dailyMetrics: adjustedDailyMetrics,
     summary: {
       total_sessions: metrics.session_durations.length,
       median_session_duration: calculateMedian(metrics.session_durations),
@@ -262,11 +275,15 @@ export function analyzeSessionsWithThreshold(
         metrics.sessions_per_day.map((d) => d.sessions_count)
       ),
       median_session_time_per_day: calculateMedian(
-        metrics.total_session_time_per_day.map((d) => d.total_session_time)
+        adjustedDailyMetrics.map((d) => d.total_session_time)
       ),
       median_inter_session_interval: calculateMedian(metrics.session_intervals),
       median_loc_per_session: calculateMedian(metrics.loc_per_session),
       median_commits_per_session: calculateMedian(metrics.commits_per_session),
+      median_intra_session_interval: medianIntraSessionInterval,
+      session_time_adjustment_per_day: calculateMedian(
+        adjustedDailyMetrics.map((d) => d.session_time_adjustment)
+      ),
     },
   };
 }
