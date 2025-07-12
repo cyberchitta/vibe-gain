@@ -68,9 +68,9 @@ export class MetricsBuilder {
     const loc = this._computeLocMetric();
     const locPerCommit = this._computeLocPerCommitMetric();
     const filesPerCommit = this._computeFilesPerCommitMetric();
-    const hourly = this._computeHourlyCommitDistribution();
-    const hourlyLoc = this._computeHourlyLocDistribution();
-    const activeHours = this._computeActiveHoursMetric();
+    const commitsPerHour = this._computeHourlyCommitDistribution();
+    const locPerHour = this._computeHourlyLocDistribution();
+    const activeHoursPerDay = this._computeActiveHoursMetric();
     const byHour = this._computeCommitsByHourOfDay();
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
       getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
@@ -80,9 +80,9 @@ export class MetricsBuilder {
       loc,
       loc_per_commit: locPerCommit,
       files_per_commit: filesPerCommit,
-      hourly_commit_distribution: hourly,
-      hourly_loc_distribution: hourlyLoc,
-      active_hours: activeHours,
+      commits_per_hour: commitsPerHour,
+      loc_per_hour: locPerHour,
+      active_hours_per_day: activeHoursPerDay,
       commits_by_hour_of_day: byHour,
       summary: {
         total_commits: this.FILTERED_COMMITS.length,
@@ -96,7 +96,7 @@ export class MetricsBuilder {
           filesPerCommit.map((d) => d.files_per_commit)
         ),
         median_active_hours_per_day: calculateMedian(
-          activeHours.map((d) => d.active_hours)
+          activeHoursPerDay.map((d) => d.active_hours_per_day)
         ),
         total_lines_changed: this.FILTERED_COMMITS.reduce(
           (sum, commit) =>
@@ -150,16 +150,16 @@ export class MetricsBuilder {
       sessions_per_day: sessionAnalysis.metrics.sessions_per_day,
       commits_per_session: sessionAnalysis.metrics.commits_per_session,
 
-      session_time: sessionAnalysis.dailyMetrics.map((d) => ({
+      daily_session_minutes: sessionAnalysis.dailyMetrics.map((d) => ({
         date: d.date,
-        session_time: d.total_session_time,
+        daily_session_minutes: d.total_session_time,
       })),
-      session_intervals: sessionAnalysis.metrics.session_intervals,
-      intra_session_intervals: sessionAnalysis.metrics.intra_session_intervals,
+      inter_session_gaps: sessionAnalysis.metrics.inter_session_gaps,
+      within_session_gaps: sessionAnalysis.metrics.within_session_gaps,
       loc_per_session: sessionAnalysis.metrics.loc_per_session,
       summary: {
-        median_session_time_per_day:
-          sessionAnalysis.summary.median_session_time_per_day,
+        median_daily_session_minutes:
+          sessionAnalysis.summary.median_daily_session_minutes,
         median_sessions_per_day:
           sessionAnalysis.summary.median_sessions_per_day,
         median_commits_per_session:
@@ -174,22 +174,22 @@ export class MetricsBuilder {
 
   buildGlobal() {
     const repos = this._computeReposMetric();
-    const codingTime = this._computeCodingTimeMetric();
-    const commitIntervals = extractBasicCommitIntervals(
+    const dailySpanMinutes = this._computeDailySpanMinutesMetric();
+    const allCommitIntervals = extractBasicCommitIntervals(
       this.GLOBAL_COMMITS,
       this.USER_CONFIG
     );
     const repoCommitDistribution = this._computeRepoCommitDistribution();
     return {
       repos,
-      coding_time: codingTime,
-      commit_intervals: commitIntervals,
+      daily_span_minutes: dailySpanMinutes,
+      all_commit_intervals: allCommitIntervals,
       repo_commit_distribution: repoCommitDistribution,
       summary: {
         total_repositories: uniq(this.GLOBAL_COMMITS.map((c) => c.repo)).length,
         median_repos_per_day: calculateMedian(repos.map((d) => d.repos)),
-        median_coding_time_per_day: calculateMedian(
-          codingTime.map((d) => d.coding_time)
+        median_daily_span_minutes: calculateMedian(
+          dailySpanMinutes.map((d) => d.daily_span_minutes)
         ),
       },
     };
@@ -296,7 +296,7 @@ export class MetricsBuilder {
       );
       return {
         date,
-        active_hours: activeHours.size,
+        active_hours_per_day: activeHours.size,
       };
     });
   }
@@ -319,7 +319,7 @@ export class MetricsBuilder {
     return Object.values(repoCommitCounts);
   }
 
-  _computeCodingTimeMetric() {
+  _computeDailySpanMinutesMetric() {
     const commitsByDay = groupBy(this.GLOBAL_COMMITS, (commit) =>
       getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
     );
@@ -334,7 +334,7 @@ export class MetricsBuilder {
             (1000 * 60);
       return {
         date,
-        coding_time: legacyCodingTime,
+        daily_span_minutes: legacyCodingTime,
       };
     });
   }

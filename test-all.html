@@ -227,14 +227,22 @@
                 <div>
                     <h3>Active Hours per Day</h3>
                     <p class="metric-description">Distribution of distinct hours with coding activity per day</p>
-                    <div id="box-plot-active-hours" class="chart-container">
+                    <div id="box-plot-active-hours-per-day" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Time Between Commits</h3>
-                    <p class="metric-description">Distribution of intervals between consecutive commits (minutes)</p>
-                    <div id="box-plot-intervals" class="chart-container">
+                    <h3>Daily Time Span</h3>
+                    <p class="metric-description">Distribution of time from first to last commit of the day (minutes)
+                    </p>
+                    <div id="box-plot-daily-span-minutes" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>All Commit Intervals</h3>
+                    <p class="metric-description">Distribution of time between consecutive commits (minutes)</p>
+                    <div id="box-plot-all-commit-intervals" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
@@ -252,17 +260,17 @@
                     </div>
                 </div>
                 <div>
-                    <h3>Hourly Commit Distribution</h3>
+                    <h3>Commits per Hour Distribution</h3>
                     <p class="metric-description">Distribution of commits per hour across active coding sessions</p>
-                    <div id="box-plot-hourly" class="chart-container">
+                    <div id="box-plot-commits-per-hour" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Lines of Code per Hour</h3>
+                    <h3>Lines of Code per Hour Distribution</h3>
                     <p class="metric-description">Distribution of lines of code changed per hour across active coding
                         sessions</p>
-                    <div id="box-plot-hourly-loc" class="chart-container">
+                    <div id="box-plot-loc-per-hour" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
@@ -304,30 +312,23 @@
                     </div>
                 </div>
                 <div>
-                    <h3>Session Time per Day</h3>
+                    <h3>Daily Session Time</h3>
                     <p class="metric-description">Distribution of total session time per active day (minutes)</p>
-                    <div id="box-plot-session-time" class="chart-container">
+                    <div id="box-plot-daily-session-minutes" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Inter-Session Intervals</h3>
+                    <h3>Inter-Session Gaps</h3>
                     <p class="metric-description">Distribution of time gaps between consecutive coding sessions</p>
-                    <div id="box-plot-inter-session-intervals" class="chart-container">
+                    <div id="box-plot-inter-session-gaps" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
                 <div>
-                    <h3>Intra-Session Intervals</h3>
+                    <h3>Within-Session Gaps</h3>
                     <p class="metric-description">Distribution of time between commits within sessions (flow rhythm)</p>
-                    <div id="box-plot-intra-session-intervals" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Time from First to Last Commit of Day</h3>
-                    <p class="metric-description">Distribution of daily time (minutes)</p>
-                    <div id="box-plot-coding-time" class="chart-container">
+                    <div id="box-plot-within-session-gaps" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
@@ -458,9 +459,9 @@
                     format: 'number'
                 },
                 {
-                    label: 'Session Time per Day (Median)',
-                    preValue: preVizData.summary.median_session_time_per_day,
-                    recentValue: recentVizData.summary.median_session_time_per_day,
+                    label: 'Daily Session Time (Median)',
+                    preValue: preVizData.summary.median_daily_session_minutes,
+                    recentValue: recentVizData.summary.median_daily_session_minutes,
                     format: 'number'
                 },
                 {
@@ -482,9 +483,9 @@
                     format: 'number'
                 },
                 {
-                    label: 'Session Threshold (minutes)',
-                    preValue: preVizData.summary.session_threshold_minutes,
-                    recentValue: recentVizData.summary.session_threshold_minutes,
+                    label: 'Daily Span (Median)',
+                    preValue: preVizData.summary.median_daily_span_minutes,
+                    recentValue: recentVizData.summary.median_daily_span_minutes,
                     format: 'number'
                 },
                 {
@@ -586,23 +587,23 @@
                     yLabel: 'Lines of Code per Day'
                 },
                 {
-                    id: 'box-plot-active-hours',
-                    metricId: 'active_hours',
+                    id: 'box-plot-active-hours-per-day',
+                    metricId: 'active_hours_per_day',
                     yLabel: 'Active Hours per Day'
                 },
                 {
-                    id: 'box-plot-intervals',
-                    metricId: 'commit_intervals',
+                    id: 'box-plot-all-commit-intervals',
+                    metricId: 'all_commit_intervals',
                     yLabel: 'Time Between Commits (minutes)'
                 },
                 {
-                    id: 'box-plot-hourly',
-                    metricId: 'hourly_commit_distribution',
+                    id: 'box-plot-commits-per-hour',
+                    metricId: 'commits_per_hour',
                     yLabel: 'Commits per Hour'
                 },
                 {
-                    id: 'box-plot-hourly-loc',
-                    metricId: 'hourly_loc_distribution',
+                    id: 'box-plot-loc-per-hour',
+                    metricId: 'loc_per_hour',
                     yLabel: 'Lines of Code per Hour'
                 },
                 {
@@ -626,24 +627,24 @@
                     yLabel: 'Lines of Code per Session'
                 },
                 {
-                    id: 'box-plot-session-time',
-                    metricId: 'session_time',
-                    yLabel: 'Session Time per Day (minutes)'
+                    id: 'box-plot-daily-session-minutes',
+                    metricId: 'daily_session_minutes',
+                    yLabel: 'Daily Session Time (minutes)'
                 },
                 {
-                    id: 'box-plot-inter-session-intervals',
-                    metricId: 'session_intervals',
-                    yLabel: 'Inter-Session Intervals (minutes)'
+                    id: 'box-plot-inter-session-gaps',
+                    metricId: 'inter_session_gaps',
+                    yLabel: 'Inter-Session Gaps (minutes)'
                 },
                 {
-                    id: 'box-plot-intra-session-intervals',
-                    metricId: 'intra_session_intervals',
-                    yLabel: 'Intra-Session Intervals (minutes)'
+                    id: 'box-plot-within-session-gaps',
+                    metricId: 'within_session_gaps',
+                    yLabel: 'Within-Session Gaps (minutes)'
                 },
                 {
-                    id: 'box-plot-coding-time',
-                    metricId: 'coding_time',
-                    yLabel: 'Coding Session Duration (minutes)'
+                    id: 'box-plot-daily-span-minutes',
+                    metricId: 'daily_span_minutes',
+                    yLabel: 'Daily Span (minutes)'
                 },
                 {
                     id: 'box-plot-loc-per-commit',
@@ -673,7 +674,7 @@
                         }
                     ];
                     let useLogScale = false;
-                    if (['commit_intervals', 'commits', 'loc', 'coding_time', 'session_durations', 'session_intervals', 'intra_session_intervals', 'session_time', 'repo_commit_distribution', 'loc_per_session', 'hourly_loc_distribution', 'loc_per_commit', 'files_per_commit', 'commits_per_session', 'hourly_commit_distribution', 'active_hours'].includes(config.metricId)) {
+                    if (['all_commit_intervals', 'commits', 'loc', 'daily_span_minutes', 'session_durations', 'inter_session_gaps', 'within_session_gaps', 'daily_session_minutes', 'repo_commit_distribution', 'loc_per_session', 'loc_per_hour', 'loc_per_commit', 'files_per_commit', 'commits_per_session', 'commits_per_hour', 'active_hours_per_day'].includes(config.metricId)) {
                         useLogScale = true;
                     }
                     const options = {
@@ -686,7 +687,7 @@
                         showHistogram: showHistogram,
                         histogramWidth: 0.3,
                     };
-                    if (config.metricId === 'commit_intervals') {
+                    if (config.metricId === 'all_commit_intervals') {
                         options.referenceLines = [
                             {
                                 value: preVizData.summary.session_threshold_minutes,
@@ -765,33 +766,33 @@
             const preAnalysis = preVizData.summary.session_threshold_analysis;
             const recentAnalysis = recentVizData.summary.session_threshold_analysis;
             container.innerHTML = `
-           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
-               <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
-               <p><strong>Method:</strong> ${preAnalysis.method}</p>
-               <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
-               ${preAnalysis.analysis ? `
-                 <details class="mt-2">
-                   <summary class="cursor-pointer text-sm">Detection Details</summary>
-                   <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
-                 </details>
-               ` : ''}
-             </div>
-             <div>
-               <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
-               <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
-               <p><strong>Method:</strong> ${recentAnalysis.method}</p>
-               <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
-               ${recentAnalysis.analysis ? `
-                 <details class="mt-2">
-                   <summary class="cursor-pointer text-sm">Detection Details</summary>
-                   <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
-                 </details>
-               ` : ''}
-             </div>
-           </div>
-         `;
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
+              <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
+              <p><strong>Method:</strong> ${preAnalysis.method}</p>
+              <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
+              ${preAnalysis.analysis ? `
+                <details class="mt-2">
+                  <summary class="cursor-pointer text-sm">Detection Details</summary>
+                  <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
+                </details>
+              ` : ''}
+            </div>
+            <div>
+              <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
+              <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
+              <p><strong>Method:</strong> ${recentAnalysis.method}</p>
+              <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
+              ${recentAnalysis.analysis ? `
+                <details class="mt-2">
+                  <summary class="cursor-pointer text-sm">Detection Details</summary>
+                  <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
+                </details>
+              ` : ''}
+            </div>
+          </div>
+        `;
         }
 
         window.renderAllCharts = async function () {
@@ -845,7 +846,7 @@
         window.clearAllCharts = function () {
             const containers = [
                 'strip-plot-container',
-                'box-plot-hourly', 'box-plot-intervals', 'box-plot-commits', 'box-plot-loc', 'box-plot-repos', 'box-plot-coding-time',
+                'box-plot-commits-per-hour', 'box-plot-all-commit-intervals', 'box-plot-commits', 'box-plot-loc', 'box-plot-repos', 'box-plot-daily-span-minutes',
                 'histogram-hour-of-day'
             ];
             containers.forEach(id => {

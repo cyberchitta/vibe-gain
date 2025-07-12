@@ -156,7 +156,7 @@ export function calculateSessionMetrics(
       sessions_per_day: [],
       session_durations: [],
       total_session_time_per_day: [],
-      session_intervals: [],
+      inter_session_gaps: [],
       loc_per_session: [],
       commits_per_session: [],
       daily_session_metrics: [],
@@ -167,7 +167,7 @@ export function calculateSessionMetrics(
   );
   const dailySessionMetrics = [];
   const allSessionDurations = [];
-  const allSessionIntervals = [];
+  const allInterSessionGaps = [];
   const allLocPerSession = [];
   const allCommitsPerSession = [];
   Object.entries(commitsByDay).forEach(([date, dayCommits]) => {
@@ -199,7 +199,7 @@ export function calculateSessionMetrics(
         sessionDurations.length > 0 ? Math.max(...sessionDurations) : 0,
     });
     allSessionDurations.push(...sessionDurations);
-    allSessionIntervals.push(...sessionIntervals);
+    allInterSessionGaps.push(...sessionIntervals);
     allLocPerSession.push(...sessionLocCounts);
     allCommitsPerSession.push(...sessionCommitCounts);
   });
@@ -213,7 +213,7 @@ export function calculateSessionMetrics(
       date: d.date,
       total_session_time: d.total_session_time,
     })),
-    session_intervals: allSessionIntervals,
+    inter_session_gaps: allInterSessionGaps,
     loc_per_session: allLocPerSession,
     commits_per_session: allCommitsPerSession,
     daily_session_metrics: dailySessionMetrics,
@@ -237,16 +237,16 @@ export function analyzeSessionsWithThreshold(
     userConfig,
     sessionThresholdMinutes
   );
-  const intraSessionIntervals = extractIntraSessionIntervals(
+  const withinSessionIntervals = extractIntraSessionIntervals(
     commits,
     userConfig,
     sessionThresholdMinutes
   ).map((interval) => interval.interval_minutes);
-  const medianIntraSessionInterval = calculateMedian(intraSessionIntervals);
+  const medianWithinSessionInterval = calculateMedian(withinSessionIntervals);
   const adjustedDailyMetrics = metrics.daily_session_metrics.map(
     (dayMetric) => {
       const currentSessionTime = dayMetric.total_session_time;
-      const adjustment = dayMetric.sessions_count * medianIntraSessionInterval;
+      const adjustment = dayMetric.sessions_count * medianWithinSessionInterval;
       const adjustedSessionTime = currentSessionTime + adjustment;
       return {
         ...dayMetric,
@@ -261,11 +261,13 @@ export function analyzeSessionsWithThreshold(
     metrics: {
       sessions_per_day: metrics.sessions_per_day.map((d) => d.sessions_count),
       session_durations: metrics.session_durations,
-      session_time: adjustedDailyMetrics.map((d) => d.total_session_time),
-      session_intervals: metrics.session_intervals,
+      daily_session_minutes: adjustedDailyMetrics.map(
+        (d) => d.total_session_time
+      ),
+      inter_session_gaps: metrics.inter_session_gaps,
       loc_per_session: metrics.loc_per_session,
       commits_per_session: metrics.commits_per_session,
-      intra_session_intervals: intraSessionIntervals,
+      within_session_gaps: withinSessionIntervals,
     },
     dailyMetrics: adjustedDailyMetrics,
     summary: {
@@ -274,13 +276,13 @@ export function analyzeSessionsWithThreshold(
       median_sessions_per_day: calculateMedian(
         metrics.sessions_per_day.map((d) => d.sessions_count)
       ),
-      median_session_time_per_day: calculateMedian(
+      median_daily_session_minutes: calculateMedian(
         adjustedDailyMetrics.map((d) => d.total_session_time)
       ),
-      median_inter_session_interval: calculateMedian(metrics.session_intervals),
+      median_inter_session_gap: calculateMedian(metrics.inter_session_gaps),
       median_loc_per_session: calculateMedian(metrics.loc_per_session),
       median_commits_per_session: calculateMedian(metrics.commits_per_session),
-      median_intra_session_interval: medianIntraSessionInterval,
+      median_within_session_gap: medianWithinSessionInterval,
       session_time_adjustment_per_day: calculateMedian(
         adjustedDailyMetrics.map((d) => d.session_time_adjustment)
       ),

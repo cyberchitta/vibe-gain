@@ -65,8 +65,8 @@ export function extractValues(metricData, metricId) {
   metricData.forEach((item) => {
     let value = null;
     if (
-      (metricId === "commit_intervals" ||
-        metricId === "intra_session_intervals") &&
+      (metricId === "all_commit_intervals" ||
+        metricId === "within_session_gaps") &&
       item.interval_minutes !== undefined
     ) {
       value = item.interval_minutes;
@@ -75,10 +75,16 @@ export function extractValues(metricData, metricId) {
       item.sessions_count !== undefined
     ) {
       value = item.sessions_count;
-    } else if (metricId === "session_time" && item.session_time !== undefined) {
-      value = item.session_time;
-    } else if (metricId === "active_hours" && item.active_hours !== undefined) {
-      value = item.active_hours;
+    } else if (
+      metricId === "daily_session_minutes" &&
+      item.daily_session_minutes !== undefined
+    ) {
+      value = item.daily_session_minutes;
+    } else if (
+      metricId === "active_hours_per_day" &&
+      item.active_hours_per_day !== undefined
+    ) {
+      value = item.active_hours_per_day;
     } else if (
       metricId === "commits_per_hour" &&
       item.commits_per_hour !== undefined
@@ -86,6 +92,11 @@ export function extractValues(metricData, metricId) {
       value = item.commits_per_hour;
     } else if (metricId === "gaps" && item.avg_gap_minutes !== undefined) {
       value = item.avg_gap_minutes;
+    } else if (
+      metricId === "daily_span_minutes" &&
+      item.daily_span_minutes !== undefined
+    ) {
+      value = item.daily_span_minutes;
     } else if (item[metricId] !== undefined) {
       value = item[metricId];
     }

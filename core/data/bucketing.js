@@ -47,20 +47,20 @@ const COMMIT_COUNT_BUCKETS = [
 ];
 
 export const TIME_DURATION_METRICS = [
-  "commit_intervals",
+  "all_commit_intervals",
   "time",
   "gaps",
   "session_durations",
-  "session_time",
-  "session_intervals",
-  "intra_session_intervals",
-  "coding_time",
+  "daily_session_minutes",
+  "inter_session_gaps",
+  "within_session_gaps",
+  "daily_span_minutes",
 ];
 
 const NATURAL_BUCKETS = {
-  commit_intervals: STANDARD_TIME_BUCKETS,
+  all_commit_intervals: STANDARD_TIME_BUCKETS,
   commits: COMMIT_COUNT_BUCKETS,
-  coding_time: STANDARD_TIME_BUCKETS,
+  daily_span_minutes: STANDARD_TIME_BUCKETS,
   loc: LOC_BUCKETS,
   repo_commit_distribution: [
     { min: 1, max: 2, label: "1", logCenter: 1 },
@@ -72,14 +72,14 @@ const NATURAL_BUCKETS = {
     { min: 41, max: 101, label: "41-100", logCenter: 64 },
     { min: 101, max: Infinity, label: "100+", logCenter: 150 },
   ],
-  hourly_loc_distribution: LOC_BUCKETS,
-  hourly_commit_distribution: COMMIT_COUNT_BUCKETS,
+  loc_per_hour: LOC_BUCKETS,
+  commits_per_hour: COMMIT_COUNT_BUCKETS,
   loc_per_session: LOC_BUCKETS,
   commits_per_session: COMMIT_COUNT_BUCKETS,
   session_durations: STANDARD_TIME_BUCKETS,
-  session_time: STANDARD_TIME_BUCKETS,
-  session_intervals: STANDARD_TIME_BUCKETS,
-  intra_session_intervals: STANDARD_TIME_BUCKETS,
+  daily_session_minutes: STANDARD_TIME_BUCKETS,
+  inter_session_gaps: STANDARD_TIME_BUCKETS,
+  within_session_gaps: STANDARD_TIME_BUCKETS,
   loc_per_commit: LOC_BUCKETS,
   files_per_commit: COMMIT_COUNT_BUCKETS,
 };
@@ -96,7 +96,7 @@ export function extractValues(metricData, metricId) {
   metricData.forEach((item) => {
     let value = null;
     if (
-      metricId === "commit_intervals" &&
+      metricId === "all_commit_intervals" &&
       item["interval_minutes"] !== undefined
     ) {
       value = item["interval_minutes"];
@@ -108,10 +108,15 @@ export function extractValues(metricData, metricId) {
     } else if (metricId === "gaps" && item["avg_gap_minutes"] !== undefined) {
       value = item["avg_gap_minutes"];
     } else if (
-      metricId === "active_hours" &&
-      item["active_hours"] !== undefined
+      metricId === "active_hours_per_day" &&
+      item["active_hours_per_day"] !== undefined
     ) {
-      value = item["active_hours"];
+      value = item["active_hours_per_day"];
+    } else if (
+      metricId === "daily_session_minutes" &&
+      item["daily_session_minutes"] !== undefined
+    ) {
+      value = item["daily_session_minutes"];
     } else if (item[metricId] !== undefined) {
       value = item[metricId];
     }

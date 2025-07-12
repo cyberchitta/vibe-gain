@@ -540,10 +540,10 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           ...(defaultOptions.useLogScale &&
             TIME_DURATION_METRICS.includes(options.metricId) && {
               labelExpr: `
-          datum.value < 1 ? round(datum.value * 60) + ' sec' :
-          datum.value < 60 ? round(datum.value * 10)/10 + ' min' : 
-          round(datum.value/60 * 10)/10 + ' hr'
-        `,
+         datum.value < 1 ? round(datum.value * 60) + ' sec' :
+         datum.value < 60 ? round(datum.value * 10)/10 + ' min' : 
+         round(datum.value/60 * 10)/10 + ' hr'
+       `,
             }),
         },
       },

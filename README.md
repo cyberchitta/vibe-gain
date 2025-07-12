@@ -110,13 +110,14 @@ Vibe-gain emphasizes **daily and session-level metrics** rather than weekly or m
 
 - **Commits per Day**: Daily commit frequency showing productivity consistency
 - **Lines of Code**: Daily code changes indicating development scope
-- **Working Hours**: Estimated coding time based on commit timestamps
+- **Active Hours per Day**: Number of distinct hours with coding activity per day
+- **Daily Span**: Time from first to last commit of the day (indicates work engagement)
 - **Active Days**: Number of days with commits in each period
 
 ### Development Rhythm Metrics
 
-- **Commit Intervals**: Time between consecutive commits revealing development flow
-- **Hourly Distribution**: When commits happen throughout the day
+- **All Commit Intervals**: Time between consecutive commits revealing development flow
+- **Commits by Hour of Day**: When commits happen throughout the day
 - **Repository Activity**: How many different projects you work on
 
 ### Session Metrics & Time Measurement
@@ -129,15 +130,16 @@ Vibe-gain emphasizes **daily and session-level metrics** rather than weekly or m
 
 - `sessions_per_day`: Number of distinct coding sessions per active day
 - `session_durations`: Length of individual sessions in minutes (first commit to last commit)
-- `session_time`: Total focused coding time in minutes (sum of all session durations)
-- `intra_session_intervals`: Time between commits within the same session (minutes)
+- `daily_session_minutes`: Total focused coding time per day (sum of all session durations)
+- `within_session_gaps`: Time between commits within the same session (minutes)
+- `inter_session_gaps`: Time gaps between consecutive coding sessions (minutes)
 
 #### Time Measurement Nuances
 
 **Two Time Perspectives**:
 
-1. **`coding_time`**: Total engagement time (first to last commit of the day)
-2. **`session_time`**: Focused work time (sum of individual session durations)
+1. **`daily_span_minutes`**: Total engagement time (first to last commit of the day)
+2. **`daily_session_minutes`**: Focused work time (sum of individual session durations)
 
 The difference reveals time spent on breaks, context switching, and planning between sessions.
 
@@ -147,7 +149,7 @@ Session durations (first-to-last commit) underestimate actual work time because 
 - Pre-work time (thinking, reading, setup before first commit)
 - Post-work time (testing, cleanup after last commit)
 
-_Estimated correction_: Add the median intra-session interval to account for unmeasured work time per session. This correction becomes more statistically valid when aggregating across many sessions.
+_Estimated correction_: Add the median within-session gap to account for unmeasured work time per session. This correction becomes more statistically valid when aggregating across many sessions.
 
 ### Visualization Types
 
@@ -239,7 +241,7 @@ Charts are configured in the browser JavaScript. Key settings:
 
 ```javascript
 metricConfig: {
-  commit_intervals: {
+  all_commit_intervals: {
     useLogScale: true,
     tickValues: [1, 5, 15, 60, 240, 1440, 10080],
   },
@@ -267,16 +269,17 @@ vibe-gain/
 ├── core/                   # Shared data processing
 │   ├── data/
 │   │   ├── bucketing.js   # Natural bucket definitions
-│   │   ├── transforms.js     # Data format conversions
-│   │   ├── sessions.js    # Session analysis (excluded)
-│   │   ├── session-thresholds.js # Session threshold detection (excluded)
+│   │   ├── transforms.js  # Data format conversions
+│   │   ├── sessions.js    # Session analysis
+│   │   ├── session-thresholds.js # Session threshold detection
 │   │   ├── strip-plot.js  # Strip plot data preparation
-│   │   └── viz-data.js    # Metrics calculation
+│   │   ├── metrics-builder.js # Metrics calculation
+│   │   └── viz-data.js    # Visualization data preparation
 │   └── utils/
-│       ├── array.js       # Array utilities (excluded)
+│       ├── array.js       # Array utilities
 │       ├── date.js        # Date utilities
 │       └── timezone.js    # Time zone handling
-├── browser/                # Web visualization
+├── browser/               # Web visualization
 │   ├── charts/
 │   │   └── commit-strip-plot.js # Strip plot utilities
 │   ├── renderers/         # Chart rendering
@@ -300,7 +303,8 @@ vibe-gain/
 
 - **`lib/index.js`**: Main data collection script
 - **`browser/index.js`**: Browser module exports
-- **`core/data/viz-data.js`**: Core metrics calculation
+- **`core/data/metrics-builder.js`**: Core metrics calculation
+- **`core/data/viz-data.js`**: Visualization data preparation
 - **`test-all.html`**: Complete working example with all chart types and metrics
 
 ## Development
@@ -314,7 +318,7 @@ bun run serve
 
 ### Adding New Metrics
 
-1. Add calculation logic in `core/data/viz-data.js`
+1. Add calculation logic in `core/data/metrics-builder.js`
 2. Add chart configuration in `browser/renderers/`
 3. Update chart specs in `browser/specs/`
 4. Test with example HTML files
@@ -322,6 +326,7 @@ bun run serve
 ## Real-World Usage
 
 See how vibe-gain is used in production:
+
 - [CyberChitta Productivity Analysis](https://www.cyberchitta.cc/articles/os-vibe-gains.html)
 - Complete example in `test-all.html`
 
