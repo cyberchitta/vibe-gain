@@ -520,7 +520,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       y: {
         field: "median",
         type: "quantitative",
-        title: options.yLabel || "Value",
+        title: options.yLabel,
         scale: {
           type: defaultOptions.useLogScale ? "log" : "linear",
           ...(defaultOptions.useLogScale && { base: 10 }),
