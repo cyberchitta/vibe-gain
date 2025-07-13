@@ -17,11 +17,23 @@ export function createStripPlotSpec(data, options = {}) {
     groupCount: 4,
     showDocOnlyIndicators: true,
     orientation: "landscape", // 'landscape' | 'portrait'
+    xLabel: undefined,
+    yLabel: undefined,
     ...options,
   };
   const colors = generateGroupColors(defaultOptions.groupCount);
   const shapes = generateShapeDefinitions();
   const isPortrait = defaultOptions.orientation === "portrait";
+  const getXLabel = () => {
+    if (defaultOptions.xLabel === null) return null;
+    if (defaultOptions.xLabel !== undefined) return defaultOptions.xLabel;
+    return isPortrait ? "Hour of Day" : "Date";
+  };
+  const getYLabel = () => {
+    if (defaultOptions.yLabel === null) return null;
+    if (defaultOptions.yLabel !== undefined) return defaultOptions.yLabel;
+    return isPortrait ? "Date" : "Hour of Day";
+  };
   const timeDomain = [
     {
       signal: `datetime(${data.metadata.periodRange.start.getFullYear()}, ${data.metadata.periodRange.start.getMonth()}, ${data.metadata.periodRange.start.getDate()})`,
@@ -34,16 +46,26 @@ export function createStripPlotSpec(data, options = {}) {
     ? {
         type: "linear",
         domain: [0, 24],
-        title: "Hour of Day",
+        title: getXLabel(),
         timeField: false,
       }
-    : { type: "time", domain: timeDomain, title: "Date", timeField: true };
+    : {
+        type: "time",
+        domain: timeDomain,
+        title: getXLabel(),
+        timeField: true,
+      };
   const yConfig = isPortrait
-    ? { type: "time", domain: timeDomain, title: "Date", timeField: true }
+    ? {
+        type: "time",
+        domain: timeDomain,
+        title: getYLabel(),
+        timeField: true,
+      }
     : {
         type: "linear",
         domain: [0, 24],
-        title: "Hour of Day",
+        title: getYLabel(),
         timeField: false,
       };
   const scales = [
