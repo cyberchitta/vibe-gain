@@ -1,6 +1,6 @@
 import { extractValues } from "../../core/data/transforms.js";
 import { createBoxPlotSpec } from "../specs/box-plot.js";
-import { applyDaisyUITheme, getThemeColors } from "../themes/daisyui.js";
+import { applyDaisyUIThemeVegaLite, getThemeColors } from "../themes/daisyui.js";
 
 /**
  * Prepare raw periods data for box plot rendering
@@ -49,7 +49,7 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
   );
   try {
     const spec = createBoxPlotSpec(periodsData, defaultOptions);
-    const themedSpec = applyDaisyUITheme(spec, {
+    const themedSpec = applyDaisyUIThemeVegaLite(spec, {
       isDark: options.isDark || false,
     });
     const vegaSpec = vegaLite.compile(themedSpec).spec;

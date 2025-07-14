@@ -26,6 +26,9 @@ export function getThemeColors(isDark = null) {
       : computedStyle.getPropertyValue("--tw-prose-body").trim() || "#333333",
     primaryColor:
       computedStyle.getPropertyValue("--primary").trim() || "#3A86FF",
+    backgroundColor: isDark
+      ? computedStyle.getPropertyValue("--base-100").trim() || "#1F2937"
+      : computedStyle.getPropertyValue("--base-100").trim() || "#ffffff",
     gridColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
     axisColor: isDark ? "rgba(229,231,235,0.7)" : "rgba(51,51,51,0.7)",
     whiskerColor: isDark ? "#ffffff" : "#000000",
@@ -47,7 +50,13 @@ export function getThemeColors(isDark = null) {
   };
 }
 
-export function applyDaisyUITheme(spec, options = {}) {
+/**
+ * Apply DaisyUI theme to Vega-Lite specifications
+ * @param {Object} spec - Vega-Lite specification
+ * @param {Object} options - Theming options
+ * @returns {Object} - Themed Vega-Lite specification
+ */
+export function applyDaisyUIThemeVegaLite(spec, options = {}) {
   const colors = getThemeColors(options.isDark);
   const themedSpec = {
     ...spec,
@@ -148,4 +157,80 @@ export function applyDaisyUITheme(spec, options = {}) {
     });
   }
   return themedSpec;
+}
+
+/**
+ * Apply DaisyUI theme to raw Vega specifications
+ * @param {Object} spec - Vega specification
+ * @param {Object} options - Theming options
+ * @returns {Object} - Themed Vega specification
+ */
+export function applyDaisyUIThemeVega(spec, options = {}) {
+  const colors = getThemeColors(options.isDark);
+
+  const themedSpec = {
+    ...spec,
+    background: colors.backgroundColor,
+    config: {
+      ...(spec.config || {}),
+      axis: {
+        gridColor: colors.gridColor,
+        gridOpacity: 1,
+        domainColor: colors.axisColor,
+        tickColor: colors.axisColor,
+        labelColor: colors.baseTextColor,
+        titleColor: colors.baseTextColor,
+        labelFont: colors.fontSans,
+        titleFont: colors.fontSans,
+        labelFontSize: 10,
+        titleFontSize: 12,
+      },
+      style: {
+        "guide-label": {
+          fill: colors.baseTextColor,
+          font: colors.fontSans,
+          fontSize: 10,
+        },
+        "guide-title": {
+          fill: colors.baseTextColor,
+          font: colors.fontSans,
+          fontSize: 12,
+        },
+      },
+    },
+  };
+  if (spec.axes && Array.isArray(spec.axes)) {
+    themedSpec.axes = spec.axes.map((axis) => ({
+      ...axis,
+      gridColor: colors.gridColor,
+      gridOpacity: 1,
+      domainColor: colors.axisColor,
+      tickColor: colors.axisColor,
+      labelColor: colors.baseTextColor,
+      titleColor: colors.baseTextColor,
+      labelFont: colors.fontSans,
+      titleFont: colors.fontSans,
+    }));
+  }
+  return themedSpec;
+}
+
+/**
+ * Auto-detect spec type and apply appropriate theming
+ * @param {Object} spec - Vega or Vega-Lite specification
+ * @param {Object} options - Theming options
+ * @returns {Object} - Themed specification
+ */
+export function applyDaisyUITheme(spec, options = {}) {
+  if (spec.encoding || spec.mark || spec.layer) {
+    return applyDaisyUIThemeVegaLite(spec, options);
+  } else if (
+    spec.scales ||
+    (spec.marks && Array.isArray(spec.marks)) ||
+    spec.axes
+  ) {
+    return applyDaisyUIThemeVega(spec, options);
+  }
+  console.warn("Unknown spec type, applying Vega-Lite theming as fallback");
+  return applyDaisyUIThemeVegaLite(spec, options);
 }

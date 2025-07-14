@@ -1,5 +1,5 @@
 import { createStripPlotSpec } from "../specs/commit-strip-plot.js";
-import { applyDaisyUITheme } from "../themes/daisyui.js";
+import { applyDaisyUIThemeVega } from "../themes/daisyui.js"; // Add this import
 import { prepareStripPlotData } from "../../core/data/strip-plot.js";
 
 /**
@@ -72,7 +72,7 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
       preparedData.stripPlotData,
       defaultOptions
     );
-    const themedSpec = applyDaisyUITheme(spec, {
+    const themedSpec = applyDaisyUIThemeVega(spec, {
       isDark: defaultOptions.isDark,
     });
     const runtime = vega.parse(themedSpec);

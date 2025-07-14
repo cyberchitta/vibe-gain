@@ -3,7 +3,7 @@ import {
   prepareNaturalBucketData,
   hasNaturalBuckets,
 } from "../../core/data/bucketing.js";
-import { applyDaisyUITheme } from "../themes/daisyui.js";
+import { applyDaisyUIThemeVegaLite } from "../themes/daisyui.js";
 
 /**
  * Prepare raw periods data for histogram rendering by structuring it correctly
@@ -168,7 +168,7 @@ export async function renderHistogram(container, periodsRawData, options = {}) {
     ...options,
   };
   const spec = createHistogramSpec(chartData, finalOptions);
-  const themedSpec = applyDaisyUITheme(spec, finalOptions);
+  const themedSpec = applyDaisyUIThemeVegaLite(spec, finalOptions);
   try {
     const view = new vega.View(vega.parse(vegaLite.compile(themedSpec).spec))
       .renderer("canvas")

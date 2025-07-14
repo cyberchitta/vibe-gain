@@ -13,7 +13,6 @@ export function createStripPlotSpec(data, options = {}) {
   const defaultOptions = {
     width: 800,
     height: 400,
-    padding: { left: 60, right: 20, top: 20, bottom: 60 },
     groupCount: 4,
     showDocOnlyIndicators: true,
     orientation: "landscape", // 'landscape' | 'portrait'
@@ -73,7 +72,7 @@ export function createStripPlotSpec(data, options = {}) {
       name: "xScale",
       type: xConfig.type,
       domain: xConfig.domain,
-      range: [0, { signal: "effectiveWidth" }],
+      range: [0, { signal: "width" }],
       nice: false,
       zero: xConfig.type === "linear" ? false : undefined,
     },
@@ -81,7 +80,8 @@ export function createStripPlotSpec(data, options = {}) {
       name: "yScale",
       type: yConfig.type,
       domain: yConfig.domain,
-      range: [0, defaultOptions.height],
+      range: "height",
+      reverse: true,
       nice: false,
       zero: yConfig.type === "linear" ? false : undefined,
     },
@@ -158,7 +158,7 @@ export function createStripPlotSpec(data, options = {}) {
       title: xConfig.title,
       titlePadding: 10,
       grid: true,
-      gridOpacity: 0.2,
+      gridOpacity: 1,
       ...(xConfig.timeField
         ? {
             labelAngle: -45,
@@ -180,7 +180,7 @@ export function createStripPlotSpec(data, options = {}) {
       title: yConfig.title,
       titlePadding: 10,
       grid: true,
-      gridOpacity: 0.2,
+      gridOpacity: 1,
       ...(yConfig.timeField
         ? {
             labelAngle: 0,
@@ -197,15 +197,13 @@ export function createStripPlotSpec(data, options = {}) {
           }),
     },
   ];
-
   return {
     $schema: "https://vega.github.io/schema/vega/v6.json",
     description:
       "Commit activity strip plot with clustering and repository encoding",
     width: defaultOptions.width,
     height: defaultOptions.height,
-    padding: defaultOptions.padding,
-    autosize: "none",
+    background: null,
     data: [
       {
         name: "commits",
@@ -227,11 +225,7 @@ export function createStripPlotSpec(data, options = {}) {
     signals: [
       {
         name: "chartWidth",
-        value: defaultOptions.width,
-      },
-      {
-        name: "effectiveWidth",
-        update: "chartWidth - " + defaultOptions.padding?.left,
+        update: "width",
       },
     ],
   };
