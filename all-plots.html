@@ -388,10 +388,22 @@
                     timezone_offset_hours: 5.5,
                     coding_day_start_hour: 4
                 };
+                const codeOnlyFilter = (commit) => {
+                    const isWebsiteDocCommit = commit.isDocOnly &&
+                        commit.repo &&
+                        commit.repo.endsWith("/www.cyberchitta.cc");
+                    return !isWebsiteDocCommit;
+                };
                 const preBuilder = new MetricsBuilder(preCommits, defaultUserConfig);
                 const recentBuilder = new MetricsBuilder(recentCommits, defaultUserConfig);
-                const preVizData = preBuilder.withEstimatedThreshold().build();
-                const recentVizData = recentBuilder.withEstimatedThreshold().build();
+                const preVizData = preBuilder
+                    .withFilter(codeOnlyFilter)
+                    .withEstimatedThreshold()
+                    .build();
+                const recentVizData = recentBuilder
+                    .withFilter(codeOnlyFilter)
+                    .withEstimatedThreshold()
+                    .build();
                 cachedData = {
                     preCommits,
                     recentCommits,
@@ -661,15 +673,15 @@
                 const container = document.getElementById(config.id);
                 if (!container) continue;
                 try {
-                    const rawPeriodsData = [
+                    const periodsMetricsData = [
                         {
                             period: 'Pre-AI',
-                            data: preVizData[config.metricId] || [],
+                            metrics: preVizData,
                             color: '#ed8936'
                         },
                         {
                             period: 'Recent-AI',
-                            data: recentVizData[config.metricId] || [],
+                            metrics: recentVizData,
                             color: '#48bb78'
                         }
                     ];
@@ -705,7 +717,7 @@
                             }
                         ];
                     }
-                    await renderBoxPlot(container, rawPeriodsData, options);
+                    await renderBoxPlot(container, periodsMetricsData, options);
                     console.log(`Box plot for ${config.metricId} rendered successfully`);
                 } catch (error) {
                     console.error(`Error rendering box plot for ${config.metricId}:`, error);
@@ -728,19 +740,19 @@
                 const container = document.getElementById(config.id);
                 if (!container) continue;
                 try {
-                    const rawPeriodsData = [
+                    const periodsMetricsData = [
                         {
                             period: 'Pre-AI',
-                            data: preVizData[config.metricId] || [],
+                            metrics: preVizData,
                             color: '#ed8936'
                         },
                         {
                             period: 'Recent-AI',
-                            data: recentVizData[config.metricId] || [],
+                            metrics: recentVizData,
                             color: '#48bb78'
                         }
                     ];
-                    await renderHistogram(container, rawPeriodsData, {
+                    await renderHistogram(container, periodsMetricsData, {
                         metricId: config.metricId,
                         viewMode: viewMode,
                         xLabel: config.xLabel,

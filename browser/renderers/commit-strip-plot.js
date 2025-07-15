@@ -3,8 +3,8 @@ import { applyDaisyUIThemeVega } from "../themes/daisyui.js"; // Add this import
 import { prepareStripPlotData } from "../../core/data/strip-plot.js";
 
 /**
- * Prepare raw periods data for strip plot rendering
- * @param {Array} periodsRawData - Array of {period, data, color} objects where data is commits array
+ * Prepare periods data with raw commits for strip plot rendering
+ * @param {Array} periodsRawData - Array of {period, commits, color} objects where commits is raw commit array
  * @param {string} targetPeriod - Name of the period to render
  * @param {Object} options - Options including periodConfigs
  * @returns {Object} - Prepared strip plot data for the target period
@@ -20,7 +20,7 @@ export function preparePeriodsForStripPlot(
     throw new Error(`Period "${targetPeriod}" not found in provided data`);
   }
   const config = periodConfigs[targetPeriod] || {};
-  const stripPlotData = prepareStripPlotData(periodData.data, targetPeriod, {
+  const stripPlotData = prepareStripPlotData(periodData.commits, targetPeriod, {
     clusterThreshold: 30,
     groupCount: 4,
     periodStart: config.start,

@@ -6,17 +6,17 @@ import {
 import { applyDaisyUIThemeVegaLite } from "../themes/daisyui.js";
 
 /**
- * Prepare raw periods data for histogram rendering by structuring it correctly
- * @param {Array} periodsRawData - Array of {period, data, color} objects
+ * Prepare periods data with processed metrics for histogram rendering
+ * @param {Array} periodsMetricsData - Array of {period, metrics, color} objects
  * @param {string} metricId - Metric identifier
  * @returns {Array} - Properly structured periods data for prepareHistogramData
  */
-export function preparePeriodsForHistogram(periodsRawData, metricId) {
-  return periodsRawData.map(({ period, data, color }) => {
+export function preparePeriodsForHistogram(periodsMetricsData, metricId) {
+  return periodsMetricsData.map(({ period, metrics, color }) => {
     if (metricId === "commits_by_hour_of_day") {
-      return { period, hourlyData: data, color };
+      return { period, hourlyData: metrics[metricId] || [], color };
     } else {
-      return { period, metricData: data, color };
+      return { period, metricData: metrics[metricId] || [], color };
     }
   });
 }
@@ -79,10 +79,7 @@ export function prepareHourOfDayData(periodsData, options = {}) {
     });
     return {
       period: periodData.period,
-      bucketData: {
-        bins: bins,
-        metricId: "hour_of_day",
-      },
+      bucketData: { bins: bins, metricId: "hour_of_day" },
       color: periodData.color,
       metricId: "hour_of_day",
     };
@@ -120,19 +117,23 @@ function prepareNaturalBucketsData(periodsData, metricId, options = {}) {
 }
 
 /**
- * Unified histogram renderer - handles both natural buckets and hour-of-day data
+ * Unified histogram renderer - handles processed metrics
  * @param {HTMLElement} container - Container element
- * @param {Array} periodsData - Array of period data objects
+ * @param {Array} periodsMetricsData - Array of {period, metrics, color} objects
  * @param {Object} options - Rendering options
  * @returns {Promise<Object>} - Vega view instance
  */
-export async function renderHistogram(container, periodsRawData, options = {}) {
+export async function renderHistogram(
+  container,
+  periodsMetricsData,
+  options = {}
+) {
   if (!container) {
     throw new Error("Container element is required");
   }
   container.innerHTML = "";
   const periodsData = preparePeriodsForHistogram(
-    periodsRawData,
+    periodsMetricsData,
     options.metricId
   );
   const chartData = prepareHistogramData(periodsData, options);
@@ -149,11 +150,6 @@ export async function renderHistogram(container, periodsRawData, options = {}) {
     const range = maxPercentage - 0;
     const padding = Math.max(range * 0.1, 1);
     yDomain = [0, maxPercentage + padding];
-    console.log(
-      `Percentage range: 0% to ${maxPercentage.toFixed(
-        1
-      )}%, setting domain to [0, ${(maxPercentage + padding).toFixed(1)}]`
-    );
   }
   const isHourOfDay =
     chartData.length > 0 && chartData[0].metricId === "hour_of_day";
@@ -183,10 +179,6 @@ export async function renderHistogram(container, periodsRawData, options = {}) {
   }
 }
 
-/**
- * Cleanup histogram resources
- * @param {HTMLElement} container - Container element
- */
 export function cleanupHistogram(container) {
   if (!container) return;
   if (container._vegaView) {

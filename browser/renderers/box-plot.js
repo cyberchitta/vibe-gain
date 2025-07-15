@@ -1,29 +1,36 @@
 import { extractValues } from "../../core/data/transforms.js";
 import { createBoxPlotSpec } from "../specs/box-plot.js";
-import { applyDaisyUIThemeVegaLite, getThemeColors } from "../themes/daisyui.js";
+import {
+  applyDaisyUIThemeVegaLite,
+  getThemeColors,
+} from "../themes/daisyui.js";
 
 /**
- * Prepare raw periods data for box plot rendering
- * @param {Array} periodsRawData - Array of {period, data, color} objects
+ * Prepare periods data with processed metrics for box plot rendering
+ * @param {Array} periodsMetricsData - Array of {period, metrics, color} objects
  * @param {string} metricId - Metric identifier
  * @returns {Array} - Array of {period, values, color} objects for createBoxPlotSpec
  */
-export function preparePeriodsForBoxPlot(periodsRawData, metricId) {
-  return periodsRawData.map(({ period, data, color }) => ({
+export function preparePeriodsForBoxPlot(periodsMetricsData, metricId) {
+  return periodsMetricsData.map(({ period, metrics, color }) => ({
     period,
-    values: extractValues(data, metricId),
+    values: extractValues(metrics[metricId], metricId),
     color,
   }));
 }
 
 /**
- * Render box plot visualization with optional dot overlay
+ * Render box plot visualization with processed metrics
  * @param {HTMLElement} container - Container element
- * @param {Array} periodsRawData - Array of {period, data, color} objects
+ * @param {Array} periodsMetricsData - Array of {period, metrics, color} objects
  * @param {Object} options - Rendering options
  * @returns {Promise<Object>} - Vega view instance
  */
-export async function renderBoxPlot(container, periodsRawData, options = {}) {
+export async function renderBoxPlot(
+  container,
+  periodsMetricsData,
+  options = {}
+) {
   if (!container) {
     throw new Error("Container element is required");
   }
@@ -44,7 +51,7 @@ export async function renderBoxPlot(container, periodsRawData, options = {}) {
     ...options,
   };
   const periodsData = preparePeriodsForBoxPlot(
-    periodsRawData,
+    periodsMetricsData,
     options.metricId
   );
   try {
