@@ -18,6 +18,7 @@ export function createStripPlotSpec(data, options = {}) {
     orientation: "landscape", // 'landscape' | 'portrait'
     xLabel: undefined,
     yLabel: undefined,
+    dateFormat: "%b %d",
     ...options,
   };
   const colors = generateGroupColors(defaultOptions.groupCount);
@@ -166,7 +167,7 @@ export function createStripPlotSpec(data, options = {}) {
             labelBaseline: "middle",
             labelPadding: 5,
             tickCount: 10,
-            format: "%b %d",
+            format: defaultOptions.dateFormat,
           }
         : {
             tickCount: 12,
@@ -188,7 +189,7 @@ export function createStripPlotSpec(data, options = {}) {
             labelBaseline: "middle",
             labelPadding: 5,
             tickCount: 10,
-            format: "%b %d",
+            format: defaultOptions.dateFormat,
           }
         : {
             tickCount: 12,
