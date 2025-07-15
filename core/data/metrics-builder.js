@@ -1,10 +1,8 @@
 import { getLocalCodingDay, getLocalHour } from "../utils/timezone.js";
 import { groupBy, uniq, calculateMedian } from "../utils/array.js";
-import {
-  extractBasicCommitIntervals,
-  analyzeSessionsWithThreshold,
-} from "./sessions.js";
+import { extractBasicCommitIntervals } from "./sessions.js";
 import { determineSessionThreshold } from "./session-thresholds.js";
+import { SessionBuilder } from "./session-builder.js";
 
 export class MetricsBuilder {
   constructor(
@@ -140,36 +138,13 @@ export class MetricsBuilder {
         "Session threshold must be set. Use withThreshold() or withEstimatedThreshold()"
       );
     }
-    const sessionAnalysis = analyzeSessionsWithThreshold(
+    const sessionBuilder = new SessionBuilder(
       this.GLOBAL_COMMITS,
+      this.FILTERED_COMMITS,
       this.USER_CONFIG,
       this.SESSION_THRESHOLD
     );
-    return {
-      session_durations: sessionAnalysis.metrics.session_durations,
-      sessions_per_day: sessionAnalysis.metrics.sessions_per_day,
-      commits_per_session: sessionAnalysis.metrics.commits_per_session,
-
-      daily_session_minutes: sessionAnalysis.dailyMetrics.map((d) => ({
-        date: d.date,
-        daily_session_minutes: d.total_session_time,
-      })),
-      inter_session_gaps: sessionAnalysis.metrics.inter_session_gaps,
-      within_session_gaps: sessionAnalysis.metrics.within_session_gaps,
-      loc_per_session: sessionAnalysis.metrics.loc_per_session,
-      summary: {
-        median_daily_session_minutes:
-          sessionAnalysis.summary.median_daily_session_minutes,
-        median_sessions_per_day:
-          sessionAnalysis.summary.median_sessions_per_day,
-        median_commits_per_session:
-          sessionAnalysis.summary.median_commits_per_session,
-        median_session_duration:
-          sessionAnalysis.summary.median_session_duration,
-        median_loc_per_session: sessionAnalysis.summary.median_loc_per_session,
-        session_threshold_minutes: this.SESSION_THRESHOLD,
-      },
-    };
+    return sessionBuilder.build();
   }
 
   buildGlobal() {
