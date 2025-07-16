@@ -1,3 +1,4 @@
+import { formatNumber } from "../../core/utils/format.js";
 import { calculateBoxPlotStats } from "../../core/utils/array.js";
 import { createBaseVegaSpec } from "./vega-base.js";
 import {
@@ -85,6 +86,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     percentileStroke: "#666",
     percentileFill: "white",
     labelColor: "#333",
+    showLegend: true,
     ...options,
   };
   const boxPlotData = [];
@@ -493,6 +495,88 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           });
         }
       }
+    });
+  }
+  if (defaultOptions.showLegend) {
+    const referenceLineData = [];
+    boxPlotData.forEach((box, periodIndex) => {
+      const values = [
+        box.min,
+        box.p5,
+        box.q1,
+        box.median,
+        box.q3,
+        box.p95,
+        box.max,
+      ].filter((val) => val !== null && val !== undefined);
+      const uniqueValues = [...new Set(values)];
+      uniqueValues.forEach((value) => {
+        referenceLineData.push({
+          periodIndex,
+          value: value,
+          label: formatNumber(value),
+          lineStart: periodIndex - 0.4,
+          lineEnd: periodIndex + 0.4,
+        });
+      });
+    });
+    layers.push({
+      data: { values: referenceLineData },
+      mark: {
+        type: "rule",
+        strokeWidth: 1,
+        strokeDash: [2, 2],
+        opacity: 0.7,
+        color: defaultOptions.labelColor || "#666",
+      },
+      encoding: {
+        x: {
+          field: "lineStart",
+          type: "quantitative",
+          scale: {
+            domain: [-0.5, periodsData.length - 0.5],
+            range: "width",
+          },
+        },
+        x2: {
+          field: "lineEnd",
+          type: "quantitative",
+        },
+        y: {
+          field: "value",
+          type: "quantitative",
+        },
+      },
+    });
+    layers.push({
+      data: { values: referenceLineData },
+      mark: {
+        type: "text",
+        align: "left",
+        baseline: "middle",
+        dx: 5,
+        fontSize: 9,
+        fontWeight: "normal",
+        color: defaultOptions.labelColor || "#666",
+      },
+      encoding: {
+        x: {
+          field: "lineEnd",
+          type: "quantitative",
+          scale: {
+            domain: [-0.5, periodsData.length - 0.5],
+            range: "width",
+          },
+        },
+        y: {
+          field: "value",
+          type: "quantitative",
+        },
+        text: {
+          field: "label",
+          type: "nominal",
+        },
+      },
     });
   }
   return {
