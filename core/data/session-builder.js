@@ -1,5 +1,9 @@
 import { getLocalCodingDay, isSameCodingDay } from "../utils/timezone.js";
-import { groupBy, calculateMedian } from "../utils/array.js";
+import {
+  groupBy,
+  calculateMedian,
+  calculateBoxPlotStats,
+} from "../utils/array.js";
 import { detectCodingSessions } from "./sessions.js";
 
 export class SessionBuilder {
@@ -146,19 +150,36 @@ export class SessionBuilder {
         );
       }
     );
+    const sessionDurationsStats = calculateBoxPlotStats(
+      timingMetrics.session_durations
+    );
+    const sessionsPerDayStats = calculateBoxPlotStats(
+      timingMetrics.sessions_per_day.map((spd) => spd.sessions_count)
+    );
+    const commitsPerSessionStats = calculateBoxPlotStats(
+      contentMetrics.commits_per_session
+    );
+    const dailySessionMinutesStats = calculateBoxPlotStats(
+      adjustedDailySessionMinutes
+    );
+    const interSessionGapsStats = calculateBoxPlotStats(
+      timingMetrics.inter_session_gaps
+    );
+    const withinSessionGapsStats = calculateBoxPlotStats(
+      timingMetrics.within_session_gaps
+    );
+    const locPerSessionStats = calculateBoxPlotStats(
+      contentMetrics.loc_per_session
+    );
     return {
-      median_daily_session_minutes: calculateMedian(
-        adjustedDailySessionMinutes
-      ),
-      median_sessions_per_day: calculateMedian(
-        timingMetrics.sessions_per_day.map((spd) => spd.sessions_count)
-      ),
-      median_commits_per_session: calculateMedian(
-        contentMetrics.commits_per_session
-      ),
-      median_session_duration: calculateMedian(timingMetrics.session_durations),
-      median_loc_per_session: calculateMedian(contentMetrics.loc_per_session),
       session_threshold_minutes: this.sessionThreshold,
+      session_durations_stats: sessionDurationsStats,
+      sessions_per_day_stats: sessionsPerDayStats,
+      commits_per_session_stats: commitsPerSessionStats,
+      daily_session_minutes_stats: dailySessionMinutesStats,
+      inter_session_gaps_stats: interSessionGapsStats,
+      within_session_gaps_stats: withinSessionGapsStats,
+      loc_per_session_stats: locPerSessionStats,
     };
   }
 
@@ -172,12 +193,14 @@ export class SessionBuilder {
       within_session_gaps: [],
       loc_per_session: [],
       summary: {
-        median_daily_session_minutes: 0,
-        median_sessions_per_day: 0,
-        median_commits_per_session: 0,
-        median_session_duration: 0,
-        median_loc_per_session: 0,
         session_threshold_minutes: this.sessionThreshold || 45,
+        session_durations_stats: null,
+        sessions_per_day_stats: null,
+        commits_per_session_stats: null,
+        daily_session_minutes_stats: null,
+        inter_session_gaps_stats: null,
+        within_session_gaps_stats: null,
+        loc_per_session_stats: null,
       },
     };
   }

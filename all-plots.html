@@ -442,38 +442,38 @@
                 },
                 {
                     label: 'Active Hours per Day (Median)',
-                    preValue: preVizData.summary.median_active_hours_per_day,
-                    recentValue: recentVizData.summary.median_active_hours_per_day,
+                    preValue: preVizData.summary.active_hours_per_day_stats?.median,
+                    recentValue: recentVizData.summary.active_hours_per_day_stats?.median,
                     format: 'decimal'
                 },
                 {
                     label: 'Commits per Day (Median)',
-                    preValue: preVizData.summary.commits_per_active_day,
-                    recentValue: recentVizData.summary.commits_per_active_day,
+                    preValue: preVizData.summary.commits_stats?.median,
+                    recentValue: recentVizData.summary.commits_stats?.median,
                     format: 'number'
                 },
                 {
                     label: 'LOC per Day (Median)',
-                    preValue: preVizData.summary.median_loc_per_day,
-                    recentValue: recentVizData.summary.median_loc_per_day,
+                    preValue: preVizData.summary.loc_stats?.median,
+                    recentValue: recentVizData.summary.loc_stats?.median,
                     format: 'number'
                 },
                 {
                     label: 'Sessions per Day (Median)',
-                    preValue: preVizData.summary.median_sessions_per_day,
-                    recentValue: recentVizData.summary.median_sessions_per_day,
+                    preValue: preVizData.summary.sessions_per_day_stats?.median,
+                    recentValue: recentVizData.summary.sessions_per_day_stats?.median,
                     format: 'decimal'
                 },
                 {
                     label: 'Session Duration (Median)',
-                    preValue: preVizData.summary.median_session_duration,
-                    recentValue: recentVizData.summary.median_session_duration,
+                    preValue: preVizData.summary.session_durations_stats?.median,
+                    recentValue: recentVizData.summary.session_durations_stats?.median,
                     format: 'number'
                 },
                 {
                     label: 'Daily Session Time (Median)',
-                    preValue: preVizData.summary.median_daily_session_minutes,
-                    recentValue: recentVizData.summary.median_daily_session_minutes,
+                    preValue: preVizData.summary.daily_session_minutes_stats?.median,
+                    recentValue: recentVizData.summary.daily_session_minutes_stats?.median,
                     format: 'number'
                 },
                 {
@@ -484,32 +484,32 @@
                 },
                 {
                     label: 'Commits per Session (Median)',
-                    preValue: preVizData.summary.median_commits_per_session,
-                    recentValue: recentVizData.summary.median_commits_per_session,
+                    preValue: preVizData.summary.commits_per_session_stats?.median,
+                    recentValue: recentVizData.summary.commits_per_session_stats?.median,
                     format: 'decimal'
                 },
                 {
                     label: 'LOC per Session (Median)',
-                    preValue: preVizData.summary.median_loc_per_session,
-                    recentValue: recentVizData.summary.median_loc_per_session,
+                    preValue: preVizData.summary.loc_per_session_stats?.median,
+                    recentValue: recentVizData.summary.loc_per_session_stats?.median,
                     format: 'number'
                 },
                 {
                     label: 'Daily Span (Median)',
-                    preValue: preVizData.summary.median_daily_span_minutes,
-                    recentValue: recentVizData.summary.median_daily_span_minutes,
+                    preValue: preVizData.summary.daily_span_minutes_stats?.median,
+                    recentValue: recentVizData.summary.daily_span_minutes_stats?.median,
                     format: 'number'
                 },
                 {
                     label: 'LOC per Commit (Median)',
-                    preValue: preVizData.summary.median_loc_per_commit,
-                    recentValue: recentVizData.summary.median_loc_per_commit,
+                    preValue: preVizData.summary.loc_per_commit_stats?.median,
+                    recentValue: recentVizData.summary.loc_per_commit_stats?.median,
                     format: 'number'
                 },
                 {
                     label: 'Files per Commit (Median)',
-                    preValue: preVizData.summary.median_files_per_commit,
-                    recentValue: recentVizData.summary.median_files_per_commit,
+                    preValue: preVizData.summary.files_per_commit_stats?.median,
+                    recentValue: recentVizData.summary.files_per_commit_stats?.median,
                     format: 'decimal'
                 },
             ];
@@ -778,33 +778,33 @@
             const preAnalysis = preVizData.summary.session_threshold_analysis;
             const recentAnalysis = recentVizData.summary.session_threshold_analysis;
             container.innerHTML = `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
-              <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
-              <p><strong>Method:</strong> ${preAnalysis.method}</p>
-              <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
-              ${preAnalysis.analysis ? `
-                <details class="mt-2">
-                  <summary class="cursor-pointer text-sm">Detection Details</summary>
-                  <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
-                </details>
-              ` : ''}
-            </div>
-            <div>
-              <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
-              <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
-              <p><strong>Method:</strong> ${recentAnalysis.method}</p>
-              <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
-              ${recentAnalysis.analysis ? `
-                <details class="mt-2">
-                  <summary class="cursor-pointer text-sm">Detection Details</summary>
-                  <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
-                </details>
-              ` : ''}
-            </div>
-          </div>
-        `;
+         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div>
+             <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
+             <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
+             <p><strong>Method:</strong> ${preAnalysis.method}</p>
+             <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
+             ${preAnalysis.analysis ? `
+               <details class="mt-2">
+                 <summary class="cursor-pointer text-sm">Detection Details</summary>
+                 <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
+               </details>
+             ` : ''}
+           </div>
+           <div>
+             <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
+             <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
+             <p><strong>Method:</strong> ${recentAnalysis.method}</p>
+             <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
+             ${recentAnalysis.analysis ? `
+               <details class="mt-2">
+                 <summary class="cursor-pointer text-sm">Detection Details</summary>
+                 <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
+               </details>
+             ` : ''}
+           </div>
+         </div>
+       `;
         }
 
         window.renderAllCharts = async function () {

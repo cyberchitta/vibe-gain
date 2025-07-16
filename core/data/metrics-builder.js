@@ -1,5 +1,5 @@
 import { getLocalCodingDay, getLocalHour } from "../utils/timezone.js";
-import { groupBy, uniq, calculateMedian } from "../utils/array.js";
+import { groupBy, uniq, calculateBoxPlotStats } from "../utils/array.js";
 import { extractBasicCommitIntervals } from "./sessions.js";
 import { determineSessionThreshold } from "./session-thresholds.js";
 import { SessionBuilder } from "./session-builder.js";
@@ -73,6 +73,19 @@ export class MetricsBuilder {
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
       getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
     );
+    const commitsStats = calculateBoxPlotStats(commits.map((d) => d.commits));
+    const locStats = calculateBoxPlotStats(loc.map((d) => d.loc));
+    const locPerCommitStats = calculateBoxPlotStats(
+      locPerCommit.map((d) => d.loc_per_commit)
+    );
+    const filesPerCommitStats = calculateBoxPlotStats(
+      filesPerCommit.map((d) => d.files_per_commit)
+    );
+    const activeHoursStats = calculateBoxPlotStats(
+      activeHoursPerDay.map((d) => d.active_hours_per_day)
+    );
+    const commitsPerHourStats = calculateBoxPlotStats(commitsPerHour);
+    const locPerHourStats = calculateBoxPlotStats(locPerHour);
     return {
       commits,
       loc,
@@ -85,17 +98,6 @@ export class MetricsBuilder {
       summary: {
         total_commits: this.FILTERED_COMMITS.length,
         total_active_days: Object.keys(commitsByDay).length,
-        commits_per_active_day: calculateMedian(commits.map((d) => d.commits)),
-        median_loc_per_day: calculateMedian(loc.map((d) => d.loc)),
-        median_loc_per_commit: calculateMedian(
-          locPerCommit.map((d) => d.loc_per_commit)
-        ),
-        median_files_per_commit: calculateMedian(
-          filesPerCommit.map((d) => d.files_per_commit)
-        ),
-        median_active_hours_per_day: calculateMedian(
-          activeHoursPerDay.map((d) => d.active_hours_per_day)
-        ),
         total_lines_changed: this.FILTERED_COMMITS.reduce(
           (sum, commit) =>
             sum + (commit.additions || 0) + (commit.deletions || 0),
@@ -128,6 +130,13 @@ export class MetricsBuilder {
                 ).toISOString(),
               }
             : { start: null, end: null },
+        commits_stats: commitsStats,
+        loc_stats: locStats,
+        loc_per_commit_stats: locPerCommitStats,
+        files_per_commit_stats: filesPerCommitStats,
+        active_hours_per_day_stats: activeHoursStats,
+        commits_per_hour_stats: commitsPerHourStats,
+        loc_per_hour_stats: locPerHourStats,
       },
     };
   }
@@ -155,6 +164,16 @@ export class MetricsBuilder {
       this.USER_CONFIG
     );
     const repoCommitDistribution = this._computeRepoCommitDistribution();
+    const reposStats = calculateBoxPlotStats(repos.map((d) => d.repos));
+    const dailySpanStats = calculateBoxPlotStats(
+      dailySpanMinutes.map((d) => d.daily_span_minutes)
+    );
+    const allCommitIntervalsStats = calculateBoxPlotStats(
+      allCommitIntervals.map((i) => i.interval_minutes)
+    );
+    const repoCommitDistributionStats = calculateBoxPlotStats(
+      repoCommitDistribution
+    );
     return {
       repos,
       daily_span_minutes: dailySpanMinutes,
@@ -162,10 +181,10 @@ export class MetricsBuilder {
       repo_commit_distribution: repoCommitDistribution,
       summary: {
         total_repositories: uniq(this.GLOBAL_COMMITS.map((c) => c.repo)).length,
-        median_repos_per_day: calculateMedian(repos.map((d) => d.repos)),
-        median_daily_span_minutes: calculateMedian(
-          dailySpanMinutes.map((d) => d.daily_span_minutes)
-        ),
+        repos_stats: reposStats,
+        daily_span_minutes_stats: dailySpanStats,
+        all_commit_intervals_stats: allCommitIntervalsStats,
+        repo_commit_distribution_stats: repoCommitDistributionStats,
       },
     };
   }
