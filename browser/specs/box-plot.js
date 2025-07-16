@@ -515,8 +515,8 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           periodIndex,
           value: value,
           label: formatNumber(value),
-          lineStart: periodIndex - 0.4,
-          lineEnd: periodIndex + 0.4,
+          lineStart: periodIndex,
+          lineEnd: periodIndex + 0.2,
         });
       });
     });
