@@ -87,6 +87,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     percentileFill: "white",
     labelColor: "#333",
     showStats: true,
+    showValues: true,
     ...options,
   };
   const boxPlotData = [];
@@ -576,6 +577,56 @@ export function createBoxPlotSpec(periodsData, options = {}) {
           field: "label",
           type: "nominal",
         },
+      },
+    });
+  }
+  if (defaultOptions.showValues && defaultOptions.showHistogram) {
+    const histogramValueData = histogramData
+      .filter((bin) => bin.count > 0)
+      .map((bin) => ({
+        ...bin,
+        labelValue:
+          bin.percentage > 0
+            ? bin.percentage.toFixed(1) + "%"
+            : bin.count.toString(),
+        labelX: bin.periodIndex + 0.18,
+        labelY: defaultOptions.useLogScale
+          ? Math.sqrt(bin.binStart * bin.binEnd)
+          : (bin.binStart + bin.binEnd) / 2,
+      }));
+    layers.push({
+      data: { values: histogramValueData },
+      mark: {
+        type: "text",
+        align: "left",
+        baseline: "middle",
+        fontSize: 9,
+        fontWeight: "normal",
+        color: defaultOptions.labelColor || "#666",
+      },
+      encoding: {
+        x: {
+          field: "labelX",
+          type: "quantitative",
+          scale: {
+            domain: [-0.5, periodsData.length - 0.5],
+            range: "width",
+          },
+        },
+        y: {
+          field: "labelY",
+          type: "quantitative",
+          scale: {
+            type: defaultOptions.useLogScale ? "log" : "linear",
+            ...(defaultOptions.useLogScale && { base: 10 }),
+            nice: !defaultOptions.useLogScale,
+          },
+        },
+        text: {
+          field: "labelValue",
+          type: "nominal",
+        },
+        tooltip: null,
       },
     });
   }
