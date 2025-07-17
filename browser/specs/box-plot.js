@@ -86,7 +86,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     percentileStroke: "#666",
     percentileFill: "white",
     labelColor: "#333",
-    showLegend: true,
+    showStats: true,
     ...options,
   };
   const boxPlotData = [];
@@ -497,7 +497,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
       }
     });
   }
-  if (defaultOptions.showLegend) {
+  if (defaultOptions.showStats) {
     const referenceLineData = [];
     boxPlotData.forEach((box, periodIndex) => {
       const values = [
