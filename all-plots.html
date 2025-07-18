@@ -156,6 +156,9 @@
         <h1>Vibe-Gain: Complete Chart Test Suite</h1>
         <p>Testing all chart types used in the indie-vibe-gains analysis with real commit data.</p>
         <div class="controls">
+            <select id="user-selector" onchange="onUserChange()">
+                <option value="">Loading users...</option>
+            </select>
             <button onclick="renderAllCharts()">Render All Charts</button>
             <button onclick="toggleLogScale()" id="logToggle" class="active">Linear Scale</button>
             <button onclick="toggleHistogram()" id="histogramToggle" class="active">Hide Histogram</button>
@@ -426,33 +429,81 @@
         let showHistogram = true;
         let viewMode = 'percentage';
         let cachedData = null;
+        let parametersData = null;
 
-        async function loadCommitData() {
+        async function loadParameters() {
             try {
-                const dataPath = './data/restlessronin/raw';
+                const response = await fetch('./data/parameters.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load parameters.json');
+                }
+                parametersData = await response.json();
+                console.log('Loaded parameters:', parametersData);
+                return parametersData;
+            } catch (error) {
+                console.error('Error loading parameters:', error);
+                return {
+                    PERIODS: [
+                        { name: "Pre-AI", start: "2022-06-01", end: "2022-11-30" },
+                        { name: "Recent-AI", start: "2024-11-01", end: "2025-04-30" }
+                    ],
+                    GITHUB_USERNAMES: [
+                        {
+                            username: "restlessronin",
+                            timezone_offset_hours: 5.5,
+                            coding_day_start_hour: 4
+                        }
+                    ]
+                };
+            }
+        }
+
+        function populateUserSelector() {
+            if (!parametersData) return;
+            const userSelect = document.getElementById('user-selector');
+            if (!userSelect) return;
+            userSelect.innerHTML = '';
+            parametersData.GITHUB_USERNAMES.forEach(userConfig => {
+                const option = document.createElement('option');
+                option.value = userConfig.username;
+                option.textContent = userConfig.username;
+                userSelect.appendChild(option);
+            });
+            if (parametersData.GITHUB_USERNAMES.length > 0) {
+                userSelect.value = parametersData.GITHUB_USERNAMES[0].username;
+            }
+        }
+
+        async function loadCommitData(selectedUsername = null) {
+            try {
+                if (!parametersData) {
+                    parametersData = await loadParameters();
+                }
+                const username = selectedUsername || parametersData.GITHUB_USERNAMES[0].username;
+                const userConfig = parametersData.GITHUB_USERNAMES.find(u => u.username === username);
+                if (!userConfig) {
+                    throw new Error(`User ${username} not found in parameters`);
+                }
+                const dataPath = `./data/${username}/raw`;
                 const [preResponse, recentResponse] = await Promise.all([
                     fetch(`${dataPath}/commits_Pre-AI.json`),
                     fetch(`${dataPath}/commits_Recent-AI.json`)
                 ]);
                 if (!preResponse.ok || !recentResponse.ok) {
-                    throw new Error('Failed to load commit data');
+                    throw new Error(`Failed to load commit data for ${username}`);
                 }
                 const preArrayFormat = await preResponse.json();
                 const recentArrayFormat = await recentResponse.json();
                 const preCommits = arrayFormatToCommits(preArrayFormat);
                 const recentCommits = arrayFormatToCommits(recentArrayFormat);
-                const defaultUserConfig = {
-                    timezone_offset_hours: 5.5,
-                    coding_day_start_hour: 4
-                };
                 const codeOnlyFilter = (commit) => {
                     const isWebsiteDocCommit = commit.isDocOnly &&
                         commit.repo &&
                         commit.repo.endsWith("/www.cyberchitta.cc");
                     return !isWebsiteDocCommit;
                 };
-                const preBuilder = new MetricsBuilder(preCommits, defaultUserConfig);
-                const recentBuilder = new MetricsBuilder(recentCommits, defaultUserConfig);
+                const preBuilder = new MetricsBuilder(preCommits, userConfig);
+                const recentBuilder = new MetricsBuilder(recentCommits, userConfig);
                 const preVizData = preBuilder
                     .withFilter(codeOnlyFilter)
                     .withEstimatedThreshold()
@@ -466,7 +517,9 @@
                     recentCommits,
                     preVizData: preVizData,
                     recentVizData: recentVizData,
-                    userConfig: defaultUserConfig
+                    userConfig: userConfig,
+                    username: username,
+                    periods: parametersData.PERIODS
                 };
                 return cachedData;
             } catch (error) {
@@ -936,7 +989,18 @@
                 summaryTbody.innerHTML = '<tr><td colspan="4" class="loading">Summary cleared. Click "Render All Charts" to reload data.</td></tr>';
             }
         };
-        document.addEventListener('DOMContentLoaded', () => {
+        window.onUserChange = async function () {
+            const userSelect = document.getElementById('user-selector');
+            const selectedUsername = userSelect.value;
+            if (selectedUsername) {
+                cachedData = null; // Clear cache
+                console.log(`Loading data for user: ${selectedUsername}`);
+                await window.renderAllCharts();
+            }
+        };
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadParameters();
+            populateUserSelector();
             setTimeout(() => window.renderAllCharts(), 1000);
         });
         let resizeTimeout;
