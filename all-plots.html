@@ -137,6 +137,17 @@
             font-style: italic;
             margin-top: 5px;
         }
+
+        .subsection {
+            margin: 30px 0;
+            padding: 15px 0;
+            border-top: 1px solid #eee;
+        }
+
+        .subsection h4 {
+            color: #34495e;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
@@ -182,8 +193,34 @@
             <h2>Commit Activity Timeline</h2>
             <p class="metric-description">Visual timeline showing when commits were made, with repository and cluster
                 information</p>
-            <div id="strip-plot-container" class="chart-container">
-                <div class="loading">Loading strip plot...</div>
+            <div class="chart-grid">
+                <div>
+                    <h3>Pre-AI Period (Jun-Nov 2022)</h3>
+                    <p class="metric-description">Bursts of activity with irregular gaps between productive days</p>
+                    <div id="strip-plot-container-pre-ai" class="chart-container">
+                        <div class="loading">Loading Pre-AI strip plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Recent-AI Period (Nov 2024-Apr 2025)</h3>
+                    <p class="metric-description">Dense, regular commits across all working hours indicate sustained
+                        productivity</p>
+                    <div id="strip-plot-container-recent-ai" class="chart-container">
+                        <div class="loading">Loading Recent-AI strip plot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Temporal Patterns</h2>
+            <p class="metric-description">How work spread across the day reveals the transformation from irregular peaks
+                to consistent productivity</p>
+            <div>
+                <h3>Commits by Hour of Day</h3>
+                <p class="metric-description">Distribution of commits across 24-hour periods</p>
+                <div id="histogram-hour-of-day" class="chart-container">
+                    <div class="loading">Loading histogram...</div>
+                </div>
             </div>
         </div>
         <div class="chart-section">
@@ -224,118 +261,10 @@
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
-                <div>
-                    <h3>Active Hours per Day</h3>
-                    <p class="metric-description">Distribution of distinct hours with coding activity per day</p>
-                    <div id="box-plot-active-hours-per-day" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Daily Time Span</h3>
-                    <p class="metric-description">Distribution of time from first to last commit of the day (minutes)
-                    </p>
-                    <div id="box-plot-daily-span-minutes" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>All Commit Intervals</h3>
-                    <p class="metric-description">Distribution of time between consecutive commits (minutes)</p>
-                    <div id="box-plot-all-commit-intervals" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
             </div>
         </div>
         <div class="chart-section">
-            <h2>Hourly Analysis</h2>
-            <p class="metric-description">Time-of-day patterns and hourly productivity distribution</p>
-            <div class="chart-grid">
-                <div>
-                    <h3>Commits by Hour of Day</h3>
-                    <p class="metric-description">Distribution of commits across 24-hour periods</p>
-                    <div id="histogram-hour-of-day" class="chart-container">
-                        <div class="loading">Loading histogram...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Commits per Hour Distribution</h3>
-                    <p class="metric-description">Distribution of commits per hour across active coding sessions</p>
-                    <div id="box-plot-commits-per-hour" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Lines of Code per Hour Distribution</h3>
-                    <p class="metric-description">Distribution of lines of code changed per hour across active coding
-                        sessions</p>
-                    <div id="box-plot-loc-per-hour" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="chart-section">
-            <h2>Session Analysis</h2>
-            <p class="metric-description">Detailed breakdown of coding sessions and work patterns</p>
-            <div id="session-diagnostics" class="bg-base-100 rounded border border-base-300 p-4">
-                <div class="loading">Loading session analysis...</div>
-            </div>
-            <div class="chart-grid">
-                <div>
-                    <h3>Commits per Session</h3>
-                    <p class="metric-description">Distribution of commit count per coding session</p>
-                    <div id="box-plot-commits-per-session" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Session Duration</h3>
-                    <p class="metric-description">Distribution of individual coding session lengths (minutes)</p>
-                    <div id="box-plot-session-durations" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Sessions per Day</h3>
-                    <p class="metric-description">Distribution of number of coding sessions per active day</p>
-                    <div id="box-plot-sessions-per-day" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>LOC per Session</h3>
-                    <p class="metric-description">Distribution of lines of code changed per coding session</p>
-                    <div id="box-plot-loc-per-session" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Daily Session Time</h3>
-                    <p class="metric-description">Distribution of total session time per active day (minutes)</p>
-                    <div id="box-plot-daily-session-minutes" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Inter-Session Gaps</h3>
-                    <p class="metric-description">Distribution of time gaps between consecutive coding sessions</p>
-                    <div id="box-plot-inter-session-gaps" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-                <div>
-                    <h3>Within-Session Gaps</h3>
-                    <p class="metric-description">Distribution of time between commits within sessions (flow rhythm)</p>
-                    <div id="box-plot-within-session-gaps" class="chart-container">
-                        <div class="loading">Loading box plot...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="chart-section">
-            <h2>Commit Productivity Patterns</h2>
+            <h2>Commit Characteristics</h2>
             <p class="metric-description">Individual commit characteristics and patterns</p>
             <div class="chart-grid">
                 <div>
@@ -349,6 +278,134 @@
                     <h3>Files per Commit</h3>
                     <p class="metric-description">Distribution of files changed per individual commit</p>
                     <div id="box-plot-files-per-commit" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Session Analysis</h2>
+            <p class="metric-description">How these gains actually manifested in the coding process</p>
+            <div class="subsection">
+                <h4>Hourly Analysis</h4>
+                <div class="chart-grid">
+                    <div>
+                        <h3>Active Hours per Day</h3>
+                        <p class="metric-description">Distribution of distinct hours with coding activity per day</p>
+                        <div id="box-plot-active-hours-per-day" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Commits per Hour Distribution</h3>
+                        <p class="metric-description">Distribution of commits per hour across active coding sessions</p>
+                        <div id="box-plot-commits-per-hour" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Lines of Code per Hour Distribution</h3>
+                        <p class="metric-description">Distribution of lines of code changed per hour across active
+                            coding
+                            sessions</p>
+                        <div id="box-plot-loc-per-hour" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="subsection">
+                <h4>Session Frequency</h4>
+                <div class="chart-grid">
+                    <div>
+                        <h3>All Commit Intervals</h3>
+                        <p class="metric-description">Distribution of time between consecutive commits (minutes)</p>
+                        <div id="box-plot-all-commit-intervals" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Sessions per Day</h3>
+                        <p class="metric-description">Distribution of number of coding sessions per active day</p>
+                        <div id="box-plot-sessions-per-day" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="subsection">
+                <h4>Session Duration</h4>
+                <div class="chart-grid">
+                    <div>
+                        <h3>Session Duration</h3>
+                        <p class="metric-description">Distribution of individual coding session lengths (minutes)</p>
+                        <div id="box-plot-session-durations" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Inter-Session Gaps</h3>
+                        <p class="metric-description">Distribution of time gaps between consecutive coding sessions</p>
+                        <div id="box-plot-inter-session-gaps" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="subsection">
+                <h4>Session Productivity</h4>
+                <div class="chart-grid">
+                    <div>
+                        <h3>Within-Session Gaps</h3>
+                        <p class="metric-description">Distribution of time between commits within sessions (flow rhythm)
+                        </p>
+                        <div id="box-plot-within-session-gaps" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Commits per Session</h3>
+                        <p class="metric-description">Distribution of commit count per coding session</p>
+                        <div id="box-plot-commits-per-session" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-grid">
+                    <div>
+                        <h3>LOC per Session</h3>
+                        <p class="metric-description">Distribution of lines of code changed per coding session</p>
+                        <div id="box-plot-loc-per-session" class="chart-container">
+                            <div class="loading">Loading box plot...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="subsection">
+                <h4>Session Detection</h4>
+                <p class="metric-description">Detailed breakdown of coding sessions and work patterns</p>
+                <div id="session-diagnostics" class="bg-base-100 rounded border border-base-300 p-4">
+                    <div class="loading">Loading session analysis...</div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h2>Additional Metrics</h2>
+            <p class="metric-description">Additional productivity and timing metrics not featured in the main analysis
+            </p>
+            <div class="chart-grid">
+                <div>
+                    <h3>Daily Time Span</h3>
+                    <p class="metric-description">Distribution of time from first to last commit of the day (minutes)
+                    </p>
+                    <div id="box-plot-daily-span-minutes" class="chart-container">
+                        <div class="loading">Loading box plot...</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Daily Session Time</h3>
+                    <p class="metric-description">Distribution of total session time per active day (minutes)</p>
+                    <div id="box-plot-daily-session-minutes" class="chart-container">
                         <div class="loading">Loading box plot...</div>
                     </div>
                 </div>
@@ -542,35 +599,37 @@
            `).join('');
         }
 
-        async function renderStripPlotVisualization(data) {
-            const container = document.getElementById('strip-plot-container');
+        async function renderStripPlotVisualization(data, period, containerId) {
+            const container = document.getElementById(containerId);
             if (!container) return;
             try {
-                const { preCommits, userConfig } = data;
+                const { preCommits, recentCommits, userConfig } = data;
+                const commits = period === 'Pre-AI' ? preCommits : recentCommits;
+                const color = period === 'Pre-AI' ? '#ed8936' : '#48bb78';
                 const rawPeriodsData = [{
-                    period: 'Pre-AI',
-                    commits: preCommits,
-                    color: '#ed8936'
+                    period: period,
+                    commits: commits,
+                    color: color
                 }];
-                const periodConfigs = {
-                    'Pre-AI': { start: '2022-06-01', end: '2022-11-30' }
-                };
+                const periodConfigs = period === 'Pre-AI'
+                    ? { 'Pre-AI': { start: '2022-06-01', end: '2022-11-30' } }
+                    : { 'Recent-AI': { start: '2024-11-01', end: '2025-04-30' } };
                 const usePortrait = window.innerWidth < 768;
                 const dimensions = usePortrait
                     ? { width: Math.min(container.clientWidth - 40, 400), height: 600 }
-                    : { width: Math.min(container.clientWidth - 40, 1000), height: 400 };
+                    : { width: Math.min(container.clientWidth - 40, 500), height: 300 };
                 await renderStripPlot(container, rawPeriodsData, {
                     ...dimensions,
                     orientation: usePortrait ? 'portrait' : 'landscape',
                     showTooltips: false,
                     isDark: false,
-                    targetPeriod: 'Pre-AI',
+                    targetPeriod: period,
                     periodConfigs: periodConfigs,
                     userConfig: userConfig
                 });
-                console.log('Strip plot rendered successfully');
+                console.log(`${period} strip plot rendered successfully`);
             } catch (error) {
-                console.error('Error rendering strip plot:', error);
+                console.error(`Error rendering ${period} strip plot:`, error);
                 container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
@@ -761,7 +820,7 @@
                         width: container.clientWidth - 40,
                         height: 200,
                         isDark: false,
-                        showStats: false,
+                        showLegend: false,
                     });
                     console.log(`Histogram for ${config.metricId} rendered successfully`);
                 } catch (error) {
@@ -778,33 +837,33 @@
             const preAnalysis = preVizData.summary.session_threshold_analysis;
             const recentAnalysis = recentVizData.summary.session_threshold_analysis;
             container.innerHTML = `
-         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div>
-             <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
-             <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
-             <p><strong>Method:</strong> ${preAnalysis.method}</p>
-             <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
-             ${preAnalysis.analysis ? `
-               <details class="mt-2">
-                 <summary class="cursor-pointer text-sm">Detection Details</summary>
-                 <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
-               </details>
-             ` : ''}
-           </div>
-           <div>
-             <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
-             <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
-             <p><strong>Method:</strong> ${recentAnalysis.method}</p>
-             <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
-             ${recentAnalysis.analysis ? `
-               <details class="mt-2">
-                 <summary class="cursor-pointer text-sm">Detection Details</summary>
-                 <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
-               </details>
-             ` : ''}
-           </div>
-         </div>
-       `;
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h3 class="font-bold mb-2">Pre-AI Session Analysis</h3>
+            <p><strong>Threshold:</strong> ${preAnalysis.threshold} minutes</p>
+            <p><strong>Method:</strong> ${preAnalysis.method}</p>
+            <p><strong>Confidence:</strong> ${preAnalysis.confidence}</p>
+            ${preAnalysis.analysis ? `
+              <details class="mt-2">
+                <summary class="cursor-pointer text-sm">Detection Details</summary>
+                <pre class="text-xs mt-1">${JSON.stringify(preAnalysis.analysis.dataStats, null, 2)}</pre>
+              </details>
+            ` : ''}
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">Recent-AI Session Analysis</h3>
+            <p><strong>Threshold:</strong> ${recentAnalysis.threshold} minutes</p>
+            <p><strong>Method:</strong> ${recentAnalysis.method}</p>
+            <p><strong>Confidence:</strong> ${recentAnalysis.confidence}</p>
+            ${recentAnalysis.analysis ? `
+              <details class="mt-2">
+                <summary class="cursor-pointer text-sm">Detection Details</summary>
+                <pre class="text-xs mt-1">${JSON.stringify(recentAnalysis.analysis.dataStats, null, 2)}</pre>
+              </details>
+            ` : ''}
+          </div>
+        </div>
+      `;
         }
 
         window.renderAllCharts = async function () {
@@ -813,8 +872,9 @@
                 const data = cachedData || await loadCommitData();
                 console.log('Rendering summary table...');
                 await renderSummaryTable(data);
-                console.log('Rendering strip plot...');
-                await renderStripPlotVisualization(data);
+                console.log('Rendering strip plots...');
+                await renderStripPlotVisualization(data, 'Pre-AI', 'strip-plot-container-pre-ai');
+                await renderStripPlotVisualization(data, 'Recent-AI', 'strip-plot-container-recent-ai');
                 console.log('Rendering box plots...');
                 await renderBoxPlots(data);
                 console.log('Rendering histograms...');
