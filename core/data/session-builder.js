@@ -22,6 +22,10 @@ export class SessionBuilder {
     const timingMetrics = this._buildTimingMetrics(sessionsByDay);
     const contentMetrics = this._buildContentMetrics(sessionsByDay);
     const summary = this._buildSummary(timingMetrics, contentMetrics);
+    const rawSessions = [];
+    Object.entries(sessionsByDay).forEach(([date, sessions]) => {
+      rawSessions.push(...sessions);
+    });
     const medianWithinSessionGap = calculateMedian(
       timingMetrics.within_session_gaps
     );
@@ -39,7 +43,8 @@ export class SessionBuilder {
     return {
       ...timingMetrics,
       ...contentMetrics,
-      daily_session_minutes: adjustedDailySessionMinutes, // Return adjusted values
+      daily_session_minutes: adjustedDailySessionMinutes,
+      raw_sessions: rawSessions,
       summary,
     };
   }
@@ -192,6 +197,7 @@ export class SessionBuilder {
       inter_session_gaps: [],
       within_session_gaps: [],
       loc_per_session: [],
+      raw_sessions: [],
       summary: {
         session_threshold_minutes: this.sessionThreshold || 45,
         session_durations_stats: null,

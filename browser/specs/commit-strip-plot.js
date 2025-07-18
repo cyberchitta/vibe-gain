@@ -15,12 +15,17 @@ export function createStripPlotSpec(data, options = {}) {
     height: 400,
     groupCount: 4,
     showDocOnlyIndicators: true,
+    showSessionLines: true,
+    sessionLineWidth: 2,
+    sessionLineOpacity: 0.8,
     orientation: "landscape", // 'landscape' | 'portrait'
     xLabel: undefined,
     yLabel: undefined,
     dateFormat: "%b %d",
+    isDark: false,
     ...options,
   };
+  const sessionLineColor = defaultOptions.isDark ? "#ffffff" : "#000000";
   const colors = generateGroupColors(defaultOptions.groupCount);
   const shapes = generateShapeDefinitions();
   const isPortrait = defaultOptions.orientation === "portrait";
@@ -133,6 +138,46 @@ export function createStripPlotSpec(data, options = {}) {
       },
     },
   ];
+  if (
+    defaultOptions.showSessionLines &&
+    data.sessionMarkers &&
+    data.sessionMarkers.length > 0
+  ) {
+    marks.push({
+      name: "multiCommitSessionLines",
+      type: "rule",
+      from: {
+        data: "sessionMarkers",
+        transform: [
+          {
+            type: "filter",
+            expr: "datum.isMultiCommit",
+          },
+        ],
+      },
+      encode: {
+        enter: {
+          stroke: { value: sessionLineColor },
+          strokeWidth: { value: defaultOptions.sessionLineWidth },
+          opacity: { value: defaultOptions.sessionLineOpacity },
+        },
+        update: {
+          x: isPortrait
+            ? { scale: "xScale", field: "startHour" }
+            : { scale: "xScale", field: "dayTimestamp" },
+          x2: isPortrait
+            ? { scale: "xScale", field: "endHour" }
+            : { scale: "xScale", field: "dayTimestamp" },
+          y: isPortrait
+            ? { scale: "yScale", field: "dayTimestamp" }
+            : { scale: "yScale", field: "startHour" },
+          y2: isPortrait
+            ? { scale: "yScale", field: "dayTimestamp" }
+            : { scale: "yScale", field: "endHour" },
+        },
+      },
+    });
+  }
   if (defaultOptions.showDocOnlyIndicators) {
     marks.push({
       name: "docOnlyIndicators",
@@ -209,6 +254,10 @@ export function createStripPlotSpec(data, options = {}) {
       {
         name: "commits",
         values: data.commits || [],
+      },
+      {
+        name: "sessionMarkers",
+        values: data.sessionMarkers || [],
       },
       {
         name: "docOnlyCommits",

@@ -573,17 +573,21 @@
             const container = document.getElementById(containerId);
             if (!container) return;
             try {
-                const { preCommits, recentCommits, userConfig } = data;
+                const { preCommits, recentCommits, preVizData, recentVizData, userConfig } = data;
                 const commits = period === 'Pre-AI' ? preCommits : recentCommits;
+                const vizData = period === 'Pre-AI' ? preVizData : recentVizData;
                 const color = period === 'Pre-AI' ? '#ed8936' : '#48bb78';
+                const sessions = vizData.raw_sessions || [];
                 const rawPeriodsData = [{
                     period: period,
                     commits: commits,
+                    sessions: sessions,
                     color: color
                 }];
-                const periodConfigs = period === 'Pre-AI'
-                    ? { 'Pre-AI': { start: '2022-06-01', end: '2022-11-30' } }
-                    : { 'Recent-AI': { start: '2024-11-01', end: '2025-04-30' } };
+                const periodConfigs = {};
+                parametersData.PERIODS.forEach(p => {
+                    periodConfigs[p.name] = { start: p.start, end: p.end };
+                });
                 const usePortrait = window.innerWidth < 768;
                 const dimensions = usePortrait
                     ? { width: Math.min(container.clientWidth - 40, 400), height: 600 }
@@ -592,12 +596,13 @@
                     ...dimensions,
                     orientation: usePortrait ? 'portrait' : 'landscape',
                     showTooltips: false,
+                    showSessionLines: true,
                     isDark: false,
                     targetPeriod: period,
                     periodConfigs: periodConfigs,
                     userConfig: userConfig
                 });
-                console.log(`${period} strip plot rendered successfully`);
+                console.log(`${period} strip plot rendered successfully with ${sessions.length} sessions`);
             } catch (error) {
                 console.error(`Error rendering ${period} strip plot:`, error);
                 container.innerHTML = `<div class="error">Error: ${error.message}</div>`;

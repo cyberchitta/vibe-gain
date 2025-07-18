@@ -21,6 +21,7 @@ export function preparePeriodsForStripPlot(
   }
   const config = periodConfigs[targetPeriod] || {};
   const stripPlotData = prepareStripPlotData(periodData.commits, targetPeriod, {
+    sessions: periodData.sessions || [],
     clusterThreshold: 30,
     groupCount: 4,
     periodStart: config.start,
@@ -50,6 +51,7 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
     width: container.clientWidth || 800,
     height: options.height || 400,
     showTooltips: false,
+    showSessionLines: false,
     isDark: false,
     targetPeriod: null,
     periodConfigs: {},

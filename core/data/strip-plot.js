@@ -1,4 +1,8 @@
-import { getLocalCodingDay, getLocalHourDecimal, toLocalTime } from "../utils/timezone.js";
+import {
+  getLocalCodingDay,
+  getLocalHourDecimal,
+  toLocalTime,
+} from "../utils/timezone.js";
 
 /**
  * Assign repositories to visual groups using commit rank order
@@ -52,6 +56,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
   const groupCount = options.groupCount || 4;
   const periodStart = options.periodStart;
   const periodEnd = options.periodEnd;
+  const sessions = options.sessions;
   const userConfig = options.userConfig || {
     timezone_offset_hours: 0,
     coding_day_start_hour: 4,
@@ -60,7 +65,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
     return {
       commits: [],
       repositories: [],
-      connections: [],
+      sessionMarkers: [],
       period: period,
       metadata: {
         totalCommits: 0,
@@ -113,6 +118,74 @@ export function prepareStripPlotData(commits, period, options = {}) {
       commitSize: (commit.additions || 0) + (commit.deletions || 0),
     };
   });
+  const sessionMarkers = [];
+  sessions.forEach((session, index) => {
+    const startHour = getLocalHourDecimal(
+      session.startTime,
+      userConfig.timezone_offset_hours
+    );
+    const endHour = getLocalHourDecimal(
+      session.endTime,
+      userConfig.timezone_offset_hours
+    );
+    if (endHour < startHour) {
+      console.log(
+        `Session ${index} crosses midnight: ${startHour.toFixed(
+          2
+        )} -> ${endHour.toFixed(2)}`
+      );
+      const startDay = new Date(
+        getLocalCodingDay(session.startTime, userConfig) + "T00:00:00Z"
+      );
+      const endDay = new Date(
+        getLocalCodingDay(session.endTime, userConfig) + "T00:00:00Z"
+      );
+      sessionMarkers.push({
+        sessionId: `${period}-${index}-part1`,
+        isMultiCommit: true,
+        startTime: session.startTime,
+        endTime: new Date(startDay.getTime() + 24 * 60 * 60 * 1000),
+        startHour: startHour,
+        endHour: 24,
+        dayTimestamp: startDay,
+        commitCount: session.commitCount,
+        duration: session.duration,
+        period: period,
+        isSplit: true,
+        splitPart: 1,
+      });
+      sessionMarkers.push({
+        sessionId: `${period}-${index}-part2`,
+        isMultiCommit: true,
+        startTime: endDay,
+        endTime: session.endTime,
+        startHour: 0,
+        endHour: endHour,
+        dayTimestamp: endDay,
+        commitCount: session.commitCount,
+        duration: session.duration,
+        period: period,
+        isSplit: true,
+        splitPart: 2,
+      });
+    } else {
+      sessionMarkers.push({
+        sessionId: `${period}-${index}`,
+        isMultiCommit: session.commitCount > 1,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        startHour: startHour,
+        endHour: endHour,
+        dayTimestamp: new Date(
+          getLocalCodingDay(session.startTime, userConfig) + "T00:00:00Z"
+        ),
+        commitCount: session.commitCount,
+        duration: session.duration,
+        period: period,
+        isSplit: false,
+      });
+    }
+  });
   const repositoryMetadata = uniqueRepos.map((repo) => ({
     repo: repo,
     ...repoGroupings[repo],
@@ -122,6 +195,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
   return {
     commits: enhancedCommits,
     repositories: repositoryMetadata,
+    sessionMarkers: sessionMarkers,
     period: period,
     metadata: {
       totalCommits: commits.length,
