@@ -659,7 +659,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         scale: {
           type: defaultOptions.useLogScale ? "log" : "linear",
           ...(defaultOptions.useLogScale && { base: 10 }),
-          nice: false,
+          nice: !defaultOptions.useLogScale,
           domain:
             globalMin === Infinity
               ? [0, 1]
