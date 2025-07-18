@@ -419,6 +419,7 @@
         import { renderHistogram } from './browser/renderers/histogram.js';
         import { renderBoxPlot } from './browser/renderers/box-plot.js';
         import { renderStripPlot, cleanupStripPlot } from './browser/renderers/commit-strip-plot.js';
+        import { formatNumber } from './core/utils/format.js';
         import { MetricsBuilder } from './core/data/metrics-builder.js';
         import { arrayFormatToCommits } from './core/data/transforms.js';
         import { preparePeriodsForBoxPlot } from './browser/renderers/box-plot.js';
@@ -529,125 +530,43 @@
         async function renderSummaryTable(data) {
             const tbody = document.querySelector('#summary-table tbody');
             const { preVizData, recentVizData } = data;
+            const preStartDate = new Date(cachedData.periods.find(p => p.name === 'Pre-AI').start);
+            const preEndDate = new Date(cachedData.periods.find(p => p.name === 'Pre-AI').end);
+            const recentStartDate = new Date(cachedData.periods.find(p => p.name === 'Recent-AI').start);
+            const recentEndDate = new Date(cachedData.periods.find(p => p.name === 'Recent-AI').end);
+            const preTotalDays = Math.ceil((preEndDate - preStartDate) / (1000 * 60 * 60 * 24)) + 1;
+            const recentTotalDays = Math.ceil((recentEndDate - recentStartDate) / (1000 * 60 * 60 * 24)) + 1;
             const summaryMetrics = [
                 {
-                    label: 'Total Commits',
-                    preValue: preVizData.summary.total_commits,
-                    recentValue: recentVizData.summary.total_commits,
-                    format: 'number'
-                },
-                {
-                    label: 'Total Lines Changed',
-                    preValue: preVizData.summary.total_lines_changed,
-                    recentValue: recentVizData.summary.total_lines_changed,
-                    format: 'number'
+                    label: 'Total Days',
+                    preValue: preTotalDays,
+                    recentValue: recentTotalDays
                 },
                 {
                     label: 'Active Days',
                     preValue: preVizData.summary.total_active_days,
-                    recentValue: recentVizData.summary.total_active_days,
-                    format: 'number'
+                    recentValue: recentVizData.summary.total_active_days
                 },
                 {
-                    label: 'Active Hours per Day (Median)',
-                    preValue: preVizData.summary.active_hours_per_day_stats?.median,
-                    recentValue: recentVizData.summary.active_hours_per_day_stats?.median,
-                    format: 'decimal'
-                },
-                {
-                    label: 'Commits per Day (Median)',
-                    preValue: preVizData.summary.commits_stats?.median,
-                    recentValue: recentVizData.summary.commits_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'LOC per Day (Median)',
-                    preValue: preVizData.summary.loc_stats?.median,
-                    recentValue: recentVizData.summary.loc_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'Sessions per Day (Median)',
-                    preValue: preVizData.summary.sessions_per_day_stats?.median,
-                    recentValue: recentVizData.summary.sessions_per_day_stats?.median,
-                    format: 'decimal'
-                },
-                {
-                    label: 'Session Duration (Median)',
-                    preValue: preVizData.summary.session_durations_stats?.median,
-                    recentValue: recentVizData.summary.session_durations_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'Daily Session Time (Median)',
-                    preValue: preVizData.summary.daily_session_minutes_stats?.median,
-                    recentValue: recentVizData.summary.daily_session_minutes_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'Session Threshold (minutes)',
-                    preValue: preVizData.summary.session_threshold_minutes,
-                    recentValue: recentVizData.summary.session_threshold_minutes,
-                    format: 'number'
-                },
-                {
-                    label: 'Commits per Session (Median)',
-                    preValue: preVizData.summary.commits_per_session_stats?.median,
-                    recentValue: recentVizData.summary.commits_per_session_stats?.median,
-                    format: 'decimal'
-                },
-                {
-                    label: 'LOC per Session (Median)',
-                    preValue: preVizData.summary.loc_per_session_stats?.median,
-                    recentValue: recentVizData.summary.loc_per_session_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'Daily Span (Median)',
-                    preValue: preVizData.summary.daily_span_minutes_stats?.median,
-                    recentValue: recentVizData.summary.daily_span_minutes_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'LOC per Commit (Median)',
-                    preValue: preVizData.summary.loc_per_commit_stats?.median,
-                    recentValue: recentVizData.summary.loc_per_commit_stats?.median,
-                    format: 'number'
-                },
-                {
-                    label: 'Files per Commit (Median)',
-                    preValue: preVizData.summary.files_per_commit_stats?.median,
-                    recentValue: recentVizData.summary.files_per_commit_stats?.median,
-                    format: 'decimal'
-                },
-            ];
-            const formatValue = (value, format) => {
-                if (value === null || value === undefined) return '-';
-                switch (format) {
-                    case 'number':
-                        return Math.round(value).toLocaleString();
-                    case 'decimal':
-                        return value.toFixed(2);
-                    case 'percentage':
-                        return value.toFixed(1) + '%';
-                    default:
-                        return value.toString();
+                    label: 'Total Commits',
+                    preValue: preVizData.summary.total_commits,
+                    recentValue: recentVizData.summary.total_commits
                 }
-            };
+            ];
             const calculateChange = (preValue, recentValue) => {
                 if (!preValue || !recentValue) return '-';
                 const change = ((recentValue - preValue) / preValue) * 100;
                 const sign = change >= 0 ? '+' : '';
-                return `${sign}${change.toFixed(1)}%`;
+                return `${sign}${formatNumber(change)}%`;
             };
             tbody.innerHTML = summaryMetrics.map(metric => `
-             <tr>
-               <td>${metric.label}</td>
-               <td>${formatValue(metric.preValue, metric.format)}</td>
-               <td>${formatValue(metric.recentValue, metric.format)}</td>
-               <td>${calculateChange(metric.preValue, metric.recentValue)}</td>
-             </tr>
-           `).join('');
+     <tr>
+       <td>${metric.label}</td>
+       <td>${formatNumber(metric.preValue)}</td>
+       <td>${formatNumber(metric.recentValue)}</td>
+       <td>${calculateChange(metric.preValue, metric.recentValue)}</td>
+     </tr>
+   `).join('');
         }
 
         async function renderStripPlotVisualization(data, period, containerId) {
