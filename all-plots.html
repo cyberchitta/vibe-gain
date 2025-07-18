@@ -156,13 +156,11 @@
         <h1>Vibe-Gain: Complete Chart Test Suite</h1>
         <p>Testing all chart types used in the indie-vibe-gains analysis with real commit data.</p>
         <div class="controls">
-            <select id="user-selector" onchange="onUserChange()">
+            <label for="user-selector">GitHub User:</label>
+            <select id="user-selector" onchange="onUserChange()"
+                style="padding: 8px 12px; font-size: 16px; min-width: 200px; border: 2px solid #3498db; border-radius: 4px;">
                 <option value="">Loading users...</option>
             </select>
-            <button onclick="renderAllCharts()">Render All Charts</button>
-            <button onclick="toggleLogScale()" id="logToggle" class="active">Linear Scale</button>
-            <button onclick="toggleHistogram()" id="histogramToggle" class="active">Hide Histogram</button>
-            <button onclick="clearAllCharts()">Clear All</button>
         </div>
         <div class="legend">
             <div class="legend-item">
@@ -940,16 +938,6 @@
                 alert(`Error rendering charts: ${error.message}`);
             }
         };
-
-        window.toggleLogScale = function () {
-            useLogScale = !useLogScale;
-            const button = document.getElementById('logToggle');
-            button.textContent = useLogScale ? 'Linear Scale' : 'Toggle Log Scale';
-            button.classList.toggle('active', useLogScale);
-            if (cachedData) {
-                renderBoxPlots(cachedData);
-            }
-        };
         window.toggleHistogram = function () {
             showHistogram = !showHistogram;
             const button = document.getElementById('histogramToggle');
@@ -957,36 +945,6 @@
             button.classList.toggle('active', showHistogram);
             if (cachedData) {
                 renderBoxPlots(cachedData);
-            }
-        };
-        window.toggleViewMode = function () {
-            viewMode = viewMode === 'count' ? 'percentage' : 'count';
-            const button = document.getElementById('viewToggle');
-            button.textContent = viewMode === 'count' ? 'Percentage View' : 'Count View';
-            button.classList.toggle('active', viewMode === 'percentage');
-            if (cachedData) {
-                renderHistograms(cachedData);
-            }
-        };
-        window.clearAllCharts = function () {
-            const containers = [
-                'strip-plot-container',
-                'box-plot-commits-per-hour', 'box-plot-all-commit-intervals', 'box-plot-commits', 'box-plot-loc', 'box-plot-repos', 'box-plot-daily-span-minutes',
-                'histogram-hour-of-day'
-            ];
-            containers.forEach(id => {
-                const container = document.getElementById(id);
-                if (container) {
-                    if (container._vegaView) {
-                        container._vegaView.finalize();
-                        container._vegaView = null;
-                    }
-                    container.innerHTML = '<div class="loading">Chart cleared. Click "Render All Charts" to visualize data.</div>';
-                }
-            });
-            const summaryTbody = document.querySelector('#summary-table tbody');
-            if (summaryTbody) {
-                summaryTbody.innerHTML = '<tr><td colspan="4" class="loading">Summary cleared. Click "Render All Charts" to reload data.</td></tr>';
             }
         };
         window.onUserChange = async function () {
