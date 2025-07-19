@@ -272,12 +272,6 @@ export function createStripPlotSpec(data, options = {}) {
     scales,
     marks,
     axes,
-    signals: [
-      {
-        name: "chartWidth",
-        update: "width",
-      },
-    ],
   };
 }
 
