@@ -138,6 +138,25 @@ export function createStripPlotSpec(data, options = {}) {
       },
     },
   ];
+  if (defaultOptions.showDocOnlyIndicators) {
+    marks.push({
+      name: "docOnlyIndicators",
+      type: "symbol",
+      from: { data: "docOnlyCommits" },
+      encode: {
+        enter: {
+          fill: { value: "black" },
+          size: { value: 10 },
+          shape: { value: "circle" },
+          strokeWidth: { value: 0 },
+        },
+        update: {
+          x: xField,
+          y: yField,
+        },
+      },
+    });
+  }
   if (
     defaultOptions.showSessionLines &&
     data.sessionMarkers &&
@@ -174,25 +193,6 @@ export function createStripPlotSpec(data, options = {}) {
           y2: isPortrait
             ? { scale: "yScale", field: "dayTimestamp" }
             : { scale: "yScale", field: "endHour" },
-        },
-      },
-    });
-  }
-  if (defaultOptions.showDocOnlyIndicators) {
-    marks.push({
-      name: "docOnlyIndicators",
-      type: "symbol",
-      from: { data: "docOnlyCommits" },
-      encode: {
-        enter: {
-          fill: { value: "black" },
-          size: { value: 10 },
-          shape: { value: "circle" },
-          strokeWidth: { value: 0 },
-        },
-        update: {
-          x: xField,
-          y: yField,
         },
       },
     });
