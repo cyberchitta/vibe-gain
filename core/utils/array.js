@@ -42,6 +42,7 @@ export function calculateBoxPlotStats(values) {
     p5: sorted[Math.floor(0.05 * (n - 1))],
     p25: sorted[Math.floor(0.25 * (n - 1))],
     median: sorted[Math.floor(0.5 * (n - 1))],
+    pPhi: sorted[Math.floor(0.68 * (n - 1))],
     p75: sorted[Math.floor(0.75 * (n - 1))],
     p95: sorted[Math.floor(0.95 * (n - 1))],
     max: sorted[n - 1],

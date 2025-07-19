@@ -26,17 +26,14 @@ export class SessionBuilder {
     Object.entries(sessionsByDay).forEach(([date, sessions]) => {
       rawSessions.push(...sessions);
     });
-    const medianWithinSessionGap = calculateMedian(
-      timingMetrics.within_session_gaps
-    );
     const adjustedDailySessionMinutes = timingMetrics.daily_session_minutes.map(
       (dayMetric) => {
         const sessionsCount = dayMetric.sessions_count || 0;
+        const phiGap = summary.within_session_gaps_stats?.pPhi || 0;
         return {
           date: dayMetric.date,
           daily_session_minutes:
-            dayMetric.daily_session_minutes +
-            sessionsCount * medianWithinSessionGap,
+            dayMetric.daily_session_minutes + sessionsCount * phiGap,
         };
       }
     );
@@ -143,18 +140,6 @@ export class SessionBuilder {
   }
 
   _buildSummary(timingMetrics, contentMetrics) {
-    const medianWithinSessionGap = calculateMedian(
-      timingMetrics.within_session_gaps
-    );
-    const adjustedDailySessionMinutes = timingMetrics.daily_session_minutes.map(
-      (dayMetric) => {
-        const sessionsCount = dayMetric.sessions_count || 0;
-        return (
-          dayMetric.daily_session_minutes +
-          sessionsCount * medianWithinSessionGap
-        );
-      }
-    );
     const sessionDurationsStats = calculateBoxPlotStats(
       timingMetrics.session_durations
     );
@@ -164,17 +149,26 @@ export class SessionBuilder {
     const commitsPerSessionStats = calculateBoxPlotStats(
       contentMetrics.commits_per_session
     );
-    const dailySessionMinutesStats = calculateBoxPlotStats(
-      adjustedDailySessionMinutes
-    );
     const interSessionGapsStats = calculateBoxPlotStats(
       timingMetrics.inter_session_gaps
+    );
+    const locPerSessionStats = calculateBoxPlotStats(
+      contentMetrics.loc_per_session
     );
     const withinSessionGapsStats = calculateBoxPlotStats(
       timingMetrics.within_session_gaps
     );
-    const locPerSessionStats = calculateBoxPlotStats(
-      contentMetrics.loc_per_session
+    const phiWithinSessionGap = withinSessionGapsStats?.pPhi || 0;
+    const adjustedDailySessionMinutes = timingMetrics.daily_session_minutes.map(
+      (dayMetric) => {
+        const sessionsCount = dayMetric.sessions_count || 0;
+        return (
+          dayMetric.daily_session_minutes + sessionsCount * phiWithinSessionGap
+        );
+      }
+    );
+    const dailySessionMinutesStats = calculateBoxPlotStats(
+      adjustedDailySessionMinutes
     );
     return {
       session_threshold_minutes: this.sessionThreshold,
