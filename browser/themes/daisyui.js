@@ -38,6 +38,9 @@ export function getThemeColors(isDark = null) {
       ? computedStyle.getPropertyValue("--base-100").trim() || "#1F2937"
       : computedStyle.getPropertyValue("--base-100").trim() || "#ffffff",
     labelColor: isDark ? "#E5E7EB" : "#333333",
+    sessionLineColor: isDark ? "#ffffff" : "#000000",
+    sessionLineOpacity: 0.8,
+    sessionLineWidth: 1,
     fontSans: (() => {
       const fontSans =
         computedStyle.getPropertyValue("--font-sans").trim() ||
@@ -167,7 +170,6 @@ export function applyDaisyUIThemeVegaLite(spec, options = {}) {
  */
 export function applyDaisyUIThemeVega(spec, options = {}) {
   const colors = getThemeColors(options.isDark);
-
   const themedSpec = {
     ...spec,
     background: colors.backgroundColor,
@@ -211,6 +213,25 @@ export function applyDaisyUIThemeVega(spec, options = {}) {
       labelFont: colors.fontSans,
       titleFont: colors.fontSans,
     }));
+  }
+  if (spec.marks && Array.isArray(spec.marks)) {
+    themedSpec.marks = spec.marks.map((mark) => {
+      if (mark.name === "multiCommitSessionLines") {
+        return {
+          ...mark,
+          encode: {
+            ...mark.encode,
+            enter: {
+              ...mark.encode.enter,
+              stroke: { value: colors.sessionLineColor },
+              strokeWidth: { value: colors.sessionLineWidth },
+              opacity: { value: colors.sessionLineOpacity },
+            },
+          },
+        };
+      }
+      return mark;
+    });
   }
   return themedSpec;
 }
