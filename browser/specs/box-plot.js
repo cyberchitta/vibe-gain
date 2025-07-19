@@ -1,6 +1,6 @@
 import { formatNumber } from "../../core/utils/format.js";
 import { calculateBoxPlotStats } from "../../core/utils/array.js";
-import { createBaseVegaSpec } from "./vega-base.js";
+import { getBaseVegaLiteSpec } from "./vega-base.js";
 import {
   TIME_DURATION_METRICS,
   createNaturalBins,
@@ -73,7 +73,7 @@ function createHistogramBins(values, metricId) {
  * @returns {Object} - Vega-Lite specification with box plots and optional histogram bars
  */
 export function createBoxPlotSpec(periodsData, options = {}) {
-  const baseSpec = createBaseVegaSpec();
+  const baseSpec = getBaseVegaLiteSpec();
   const defaultOptions = {
     width: "container",
     height: 400,

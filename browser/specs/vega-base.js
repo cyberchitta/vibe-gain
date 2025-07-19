@@ -1,15 +1,22 @@
-/**
- * Create a base Vega-Lite specification
- * @returns {Object} - Base Vega-Lite specification
- */
-export function createBaseVegaSpec() {
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+export function getBaseSpec(schema = "vega-lite") {
+  const baseProps = {
     background: null,
     autosize: {
-      type: 'fit-x',
-      contains: 'padding'
+      type: "fit-x",
+      contains: "padding",
     },
-    padding: { left: 10, right: 10, top: 10, bottom: 10 }
+    padding: { left: 5, right: 5, top: 10, bottom: 10 },
   };
+  return {
+    $schema: schema,
+    ...baseProps,
+  };
+}
+
+export function getBaseVegaLiteSpec() {
+  return getBaseSpec("https://vega.github.io/schema/vega-lite/v6.json");
+}
+
+export function getBaseVegaSpec() {
+  return getBaseSpec("https://vega.github.io/schema/vega/v6.json");
 }

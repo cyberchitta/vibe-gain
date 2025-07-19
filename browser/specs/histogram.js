@@ -1,4 +1,4 @@
-import { createBaseVegaSpec } from "./vega-base.js";
+import { getBaseVegaLiteSpec } from "./vega-base.js";
 import { TIME_DURATION_METRICS } from "../../core/data/bucketing.js";
 
 /**
@@ -8,7 +8,7 @@ import { TIME_DURATION_METRICS } from "../../core/data/bucketing.js";
  * @returns {Object} - Vega-Lite specification for overlaid charts
  */
 export function createHistogramSpec(chartData, options = {}) {
-  const baseSpec = createBaseVegaSpec();
+  const baseSpec = getBaseVegaLiteSpec();
   const yField =
     options.viewMode === "percentage" ? "percentageCount" : "count";
   const combinedData = [];

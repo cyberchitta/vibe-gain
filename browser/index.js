@@ -51,7 +51,6 @@ export {
   refreshVisualization,
 } from "./renderers/strip-plot.js";
 
-export { createBaseVegaSpec } from "./specs/vega-base.js";
 export { createBoxPlotSpec } from "./specs/box-plot.js";
 export { createHistogramSpec } from "./specs/histogram.js";
 

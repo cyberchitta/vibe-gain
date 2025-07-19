@@ -2,6 +2,7 @@ import {
   generateGroupColors,
   generateShapeDefinitions,
 } from "../charts/strip-plot.js";
+import { getBaseVegaSpec } from "./vega-base.js";
 
 /**
  * Create complete Vega specification for commit strip plot
@@ -25,6 +26,7 @@ export function createStripPlotSpec(data, options = {}) {
     isDark: false,
     ...options,
   };
+  const baseSpec = getBaseVegaSpec();
   const sessionLineColor = defaultOptions.isDark ? "#ffffff" : "#000000";
   const colors = generateGroupColors(defaultOptions.groupCount);
   const shapes = generateShapeDefinitions();
@@ -244,17 +246,11 @@ export function createStripPlotSpec(data, options = {}) {
     },
   ];
   return {
-    $schema: "https://vega.github.io/schema/vega/v6.json",
+    ...baseSpec,
     description:
       "Commit activity strip plot with clustering and repository encoding",
     width: defaultOptions.width,
     height: defaultOptions.height,
-    autosize: {
-      type: "fit-x",
-      contains: "padding",
-    },
-    padding: { left: 10, right: 10, top: 10, bottom: 10 },
-    background: null,
     data: [
       {
         name: "commits",
