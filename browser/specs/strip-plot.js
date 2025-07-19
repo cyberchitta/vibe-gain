@@ -216,7 +216,7 @@ export function createStripPlotSpec(data, options = {}) {
           }
         : {
             tickCount: 12,
-            values: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
+            values: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24],
             format: ".0f",
           }),
     },
@@ -238,7 +238,7 @@ export function createStripPlotSpec(data, options = {}) {
           }
         : {
             tickCount: 12,
-            values: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
+            values: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24],
             format: ".0f",
           }),
     },
@@ -249,6 +249,11 @@ export function createStripPlotSpec(data, options = {}) {
       "Commit activity strip plot with clustering and repository encoding",
     width: defaultOptions.width,
     height: defaultOptions.height,
+    autosize: {
+      type: "fit-x",
+      contains: "padding",
+    },
+    padding: { left: 10, right: 10, top: 10, bottom: 10 },
     background: null,
     data: [
       {
