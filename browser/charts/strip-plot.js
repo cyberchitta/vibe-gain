@@ -127,7 +127,7 @@ export function filterCommitsByTimeRange(commits, startTime, endTime) {
  * @returns {string} - Color hex code
  */
 function getColorForGroup(groupId) {
-  const colors = generateGroupColors(4); // Use the same function from commit-strip-plot.js
+  const colors = generateGroupColors(4);
   const groupIndex = parseInt(groupId.replace("group", "")) || 0;
   return colors[groupIndex] || colors[0];
 }

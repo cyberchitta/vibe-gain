@@ -35,13 +35,13 @@ export {
   generateGroupColors,
   generateShapeDefinitions,
   prepareLegendData,
-} from "./charts/commit-strip-plot.js";
+} from "./charts/strip-plot.js";
 
 export {
   createStripPlotSpec,
   getShapeDefinitions,
   getColorScale,
-} from "./specs/commit-strip-plot.js";
+} from "./specs/strip-plot.js";
 
 export {
   renderStripPlot,
@@ -49,7 +49,7 @@ export {
   addInteractivity,
   cleanup,
   refreshVisualization,
-} from "./renderers/commit-strip-plot.js";
+} from "./renderers/strip-plot.js";
 
 export { createBaseVegaSpec } from "./specs/vega-base.js";
 export { createBoxPlotSpec } from "./specs/box-plot.js";

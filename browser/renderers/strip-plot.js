@@ -1,4 +1,4 @@
-import { createStripPlotSpec } from "../specs/commit-strip-plot.js";
+import { createStripPlotSpec } from "../specs/strip-plot.js";
 import { applyDaisyUIThemeVega } from "../themes/daisyui.js"; // Add this import
 import { prepareStripPlotData } from "../../core/data/strip-plot.js";
 

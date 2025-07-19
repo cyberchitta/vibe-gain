@@ -286,14 +286,14 @@ vibe-gain/
 │       └── timezone.js    # Time zone handling
 ├── browser/               # Web visualization
 │   ├── charts/
-│   │   └── commit-strip-plot.js # Strip plot utilities
+│   │   └── strip-plot.js  # Strip plot utilities
 │   ├── renderers/         # Chart rendering
 │   │   ├── box-plot.js
-│   │   ├── commit-strip-plot.js
+│   │   ├── strip-plot.js
 │   │   └── histogram.js
 │   ├── specs/             # Vega specifications
 │   │   ├── box-plot.js
-│   │   ├── commit-strip-plot.js
+│   │   ├── strip-plot.js
 │   │   ├── histogram.js
 │   │   └── vega-base.js
 │   ├── themes/            # UI themes

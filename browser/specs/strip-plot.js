@@ -1,7 +1,7 @@
 import {
   generateGroupColors,
   generateShapeDefinitions,
-} from "../charts/commit-strip-plot.js";
+} from "../charts/strip-plot.js";
 
 /**
  * Create complete Vega specification for commit strip plot
