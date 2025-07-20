@@ -81,25 +81,13 @@ export function prepareStripPlotData(commits, period, options = {}) {
       },
     };
   }
-  let filteredCommits = commits;
-  if (periodStart && periodEnd) {
-    const periodStartDate = new Date(periodStart + "T00:00:00Z");
-    const periodEndDate = new Date(periodEnd + "T23:59:59Z");
-    filteredCommits = commits.filter((commit) => {
-      const commitDate = new Date(commit.timestamp);
-      return commitDate >= periodStartDate && commitDate <= periodEndDate;
-    });
-    console.log(
-      `Filtered commits: ${commits.length} -> ${filteredCommits.length} (period: ${periodStart} to ${periodEnd})`
-    );
-  }
-  const uniqueRepos = [...new Set(filteredCommits.map((c) => c.repo))];
+  const uniqueRepos = [...new Set(commits.map((c) => c.repo))];
   const repoGroupings = assignRepositoryGroups(
     uniqueRepos,
-    filteredCommits,
+    commits,
     groupCount
   );
-  const enhancedCommits = filteredCommits.map((commit) => {
+  const enhancedCommits = commits.map((commit) => {
     const timeOfDayDate = extractTimeOfDay(commit.timestamp, userConfig);
     const hourDecimal = getLocalHourDecimal(
       commit.timestamp,
