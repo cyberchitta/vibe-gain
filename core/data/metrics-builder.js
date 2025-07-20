@@ -65,6 +65,8 @@ export class MetricsBuilder {
     const session = this.buildSession();
     const global = this.buildGlobal();
     return {
+      GLOBAL_COMMITS: this.GLOBAL_COMMITS,
+      FILTERED_COMMITS: this.FILTERED_COMMITS,
       ...filterable,
       ...session,
       ...global,
