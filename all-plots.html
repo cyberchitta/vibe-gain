@@ -605,7 +605,6 @@
                 parametersData.PERIODS.forEach(p => {
                     periodConfigs[p.name] = { start: p.start, end: p.end };
                 });
-                const usePortrait = window.innerWidth < 768;
                 await renderStripPlot(container, rawPeriodsData, {
                     orientation: getComputedStyle(container)
                         .getPropertyValue('--orientation')
