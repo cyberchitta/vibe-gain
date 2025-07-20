@@ -48,8 +48,8 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
   }
   container.innerHTML = "";
   const defaultOptions = {
-    width: container.clientWidth || 800,
-    height: options.height || 400,
+    width: container.clientWidth,
+    height: container.clientHeight,
     showTooltips: false,
     showSessionLines: false,
     isDark: false,

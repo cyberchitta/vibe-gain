@@ -12,8 +12,6 @@ import { getBaseVegaSpec } from "./vega-base.js";
  */
 export function createStripPlotSpec(data, options = {}) {
   const defaultOptions = {
-    width: 800,
-    height: 400,
     groupCount: 4,
     showDocOnlyIndicators: true,
     showSessionLines: true,
@@ -249,8 +247,8 @@ export function createStripPlotSpec(data, options = {}) {
     ...baseSpec,
     description:
       "Commit activity strip plot with clustering and repository encoding",
-    width: defaultOptions.width,
-    height: defaultOptions.height,
+    width: "width",
+    height: "height",
     data: [
       {
         name: "commits",

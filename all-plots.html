@@ -30,16 +30,15 @@
 
         .chart-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 20px;
             margin: 20px 0;
         }
 
         .chart-container {
-            min-height: 300px;
+            width: 100%;
+            height: 250px;
             border: 1px solid #eee;
-            padding: 15px;
-            border-radius: 6px;
             background: #fff;
         }
 
@@ -148,6 +147,24 @@
             color: #34495e;
             margin-bottom: 15px;
         }
+
+        .histogram-container {
+            width: 100%;
+            height: 200px;
+        }
+
+        .strip-plot-container {
+            width: 100%;
+            height: 300px;
+            --orientation: landscape;
+        }
+
+        @media (max-width: 768px) {
+            .strip-plot-container {
+                height: 600px;
+                --orientation: portrait;
+            }
+        }
     </style>
 </head>
 
@@ -198,7 +215,7 @@
                 <div>
                     <h3>Pre-AI Period (Jun-Nov 2022)</h3>
                     <p class="metric-description">Bursts of activity with irregular gaps between productive days</p>
-                    <div id="strip-plot-container-pre-ai" class="chart-container">
+                    <div id="strip-plot-container-pre-ai" class="chart-container strip-plot-container">
                         <div class="loading">Loading Pre-AI strip plot...</div>
                     </div>
                 </div>
@@ -206,7 +223,7 @@
                     <h3>Recent-AI Period (Nov 2024-Apr 2025)</h3>
                     <p class="metric-description">Dense, regular commits across all working hours indicate sustained
                         productivity</p>
-                    <div id="strip-plot-container-recent-ai" class="chart-container">
+                    <div id="strip-plot-container-recent-ai" class="chart-container strip-plot-container">
                         <div class="loading">Loading Recent-AI strip plot...</div>
                     </div>
                 </div>
@@ -589,12 +606,10 @@
                     periodConfigs[p.name] = { start: p.start, end: p.end };
                 });
                 const usePortrait = window.innerWidth < 768;
-                const dimensions = usePortrait
-                    ? { width: Math.min(container.clientWidth - 40, 400), height: 600 }
-                    : { width: Math.min(container.clientWidth - 40, 500), height: 300 };
                 await renderStripPlot(container, rawPeriodsData, {
-                    ...dimensions,
-                    orientation: usePortrait ? 'portrait' : 'landscape',
+                    orientation: getComputedStyle(container)
+                        .getPropertyValue('--orientation')
+                        .trim(),
                     showTooltips: false,
                     showSessionLines: true,
                     isDark: false,
@@ -725,8 +740,6 @@
                     }
                     const options = {
                         metricId: config.metricId,
-                        width: container.clientWidth,
-                        height: 250,
                         yLabel: config.yLabel,
                         useLogScale: useLogScale,
                         showPercentiles: true,
@@ -792,8 +805,6 @@
                         xLabel: config.xLabel,
                         yLabel: config.yLabel,
                         useLogScale: false,
-                        width: container.clientWidth - 40,
-                        height: 200,
                         isDark: false,
                         showLegend: false,
                     });

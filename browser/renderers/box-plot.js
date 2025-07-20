@@ -37,8 +37,6 @@ export async function renderBoxPlot(
   container.innerHTML = "";
   const colors = getThemeColors(options.isDark);
   const defaultOptions = {
-    width: container.clientWidth || 400,
-    height: 250,
     useLogScale: false,
     showPercentiles: true,
     histogramWidth: 0.3,
@@ -64,8 +62,6 @@ export async function renderBoxPlot(
     const view = await new vega.View(runtime)
       .renderer("canvas")
       .initialize(container)
-      .width(defaultOptions.width)
-      .height(defaultOptions.height)
       .run();
     container._vegaView = view;
     return view;

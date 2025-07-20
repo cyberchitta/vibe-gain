@@ -76,7 +76,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   const baseSpec = getBaseVegaLiteSpec();
   const defaultOptions = {
     width: "container",
-    height: 400,
+    height: "container",
     useLogScale: false,
     showPercentiles: true,
     showHistogram: true,
@@ -632,8 +632,8 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   }
   return {
     ...baseSpec,
-    width: defaultOptions.width,
-    height: defaultOptions.height,
+    width: "container",
+    height: "container",
     layer: layers,
     resolve: {
       scale: { x: "shared", y: "shared" },

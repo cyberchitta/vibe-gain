@@ -2,7 +2,7 @@ export function getBaseSpec(schema = "vega-lite") {
   const baseProps = {
     background: null,
     autosize: {
-      type: "fit-x",
+      type: "fit",
       contains: "padding",
     },
     padding: { left: 5, right: 5, top: 10, bottom: 10 },

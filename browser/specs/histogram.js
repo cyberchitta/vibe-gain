@@ -66,8 +66,8 @@ export function createHistogramSpec(chartData, options = {}) {
   }
   return {
     ...baseSpec,
-    width: options.width || "container",
-    height: options.height || 180,
+    width: "container",
+    height: "container",
     data: { values: combinedData },
     encoding: {
       x: xAxisConfig,
