@@ -4,10 +4,8 @@
   "description": "Visualize GitHub commit patterns to evaluate vibe-coding productivity gains",
   "type": "module",
   "main": "./lib/index.js",
-  "browser": "./browser/index.js",
   "exports": {
-    ".": "./lib/index.js",
-    "./browser": "./browser/index.js"
+    ".": "./lib/index.js"
   },
   "repository": {
     "type": "git",

@@ -18,3 +18,17 @@ export function formatNumber(num) {
     return Math.round(num);
   }
 }
+
+/**
+ * Format metrics data for export with metadata
+ * @param {Object} metricsData - Metrics data object
+ * @param {string} periodName - Name of the period
+ * @returns {Object} - Formatted export object with metadata
+ */
+export function formatMetricsDataForExport(metricsData, periodName) {
+  return {
+    period_name: periodName,
+    generated_at: new Date().toISOString(),
+    metrics_data: metricsData,
+  };
+}

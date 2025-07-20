@@ -5,6 +5,22 @@ import { determineSessionThreshold } from "./session-thresholds.js";
 import { SessionBuilder } from "./session-builder.js";
 
 export class MetricsBuilder {
+  /**
+   * Create MetricsBuilder with commits filtered to a specific period using user's timezone
+   * @param {Array} commits - All commits
+   * @param {Object} userConfig - User configuration with timezone_offset_hours and coding_day_start_hour
+   * @param {string} periodStart - Start date (YYYY-MM-DD)
+   * @param {string} periodEnd - End date (YYYY-MM-DD)
+   * @returns {MetricsBuilder} - New builder with filtered commits
+   */
+  static forPeriod(commits, userConfig, periodStart, periodEnd) {
+    const periodCommits = commits.filter((commit) => {
+      const commitCodingDay = getLocalCodingDay(commit.timestamp, userConfig);
+      return commitCodingDay >= periodStart && commitCodingDay <= periodEnd;
+    });
+    return new MetricsBuilder(periodCommits, userConfig);
+  }
+
   constructor(
     commits,
     userConfig,
