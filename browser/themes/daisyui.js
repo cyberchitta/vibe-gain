@@ -40,7 +40,7 @@ export function getThemeColors(isDark = null) {
     labelColor: isDark ? "#E5E7EB" : "#333333",
     sessionLineColor: isDark ? "#ffffff" : "#000000",
     sessionLineOpacity: 0.8,
-    sessionLineWidth: 1,
+    sessionLineWidth: 0.5,
     fontSans: (() => {
       const fontSans =
         computedStyle.getPropertyValue("--font-sans").trim() ||
