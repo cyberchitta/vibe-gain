@@ -48,8 +48,6 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
   }
   container.innerHTML = "";
   const defaultOptions = {
-    width: container.clientWidth,
-    height: container.clientHeight,
     showTooltips: false,
     showSessionLines: false,
     isDark: false,
@@ -81,8 +79,8 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
     const view = new vega.View(runtime)
       .renderer("canvas")
       .initialize(container)
-      .width(defaultOptions.width)
-      .height(defaultOptions.height)
+      .width(container.clientWidth)
+      .height(container.clientHeight)
       .run();
     container._vegaView = view;
     container._stripPlotData = preparedData.stripPlotData;
