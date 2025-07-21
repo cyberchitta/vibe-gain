@@ -521,12 +521,10 @@
                 const prePeriod = parametersData.PERIODS.find(p => p.name === 'Pre-AI');
                 const preVizData = MetricsBuilder.forPeriod(preCommits, userConfig, prePeriod.start, prePeriod.end)
                     .withFilter(codeOnlyFilter)
-                    .withEstimatedThreshold()
                     .build();
                 const recentPeriod = parametersData.PERIODS.find(p => p.name === 'Recent-AI');
                 const recentVizData = MetricsBuilder.forPeriod(recentCommits, userConfig, recentPeriod.start, recentPeriod.end)
                     .withFilter(codeOnlyFilter)
-                    .withEstimatedThreshold()
                     .build();
                 cachedData = {
                     preCommits,

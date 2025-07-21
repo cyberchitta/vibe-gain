@@ -18,18 +18,27 @@ export class MetricsBuilder {
       const commitCodingDay = getLocalCodingDay(commit.timestamp, userConfig);
       return commitCodingDay >= periodStart && commitCodingDay <= periodEnd;
     });
-    return new MetricsBuilder(periodCommits, userConfig);
+    const thresholdAnalysis = determineSessionThreshold(commits, userConfig);
+    return new MetricsBuilder(
+      commits,
+      userConfig,
+      periodCommits,
+      thresholdAnalysis,
+      thresholdAnalysis?.threshold
+    );
   }
 
   constructor(
     commits,
     userConfig,
     filteredCommits = null,
+    thresholdAnalysis = null,
     sessionThreshold = null
   ) {
     this.GLOBAL_COMMITS = Object.freeze(commits);
     this.USER_CONFIG = Object.freeze(userConfig);
     this.FILTERED_COMMITS = Object.freeze(filteredCommits || commits);
+    this.THRESHOLD_ANALYSIS = Object.freeze(thresholdAnalysis);
     this.SESSION_THRESHOLD = sessionThreshold;
     Object.freeze(this);
   }
@@ -39,6 +48,7 @@ export class MetricsBuilder {
       this.GLOBAL_COMMITS,
       this.USER_CONFIG,
       this.GLOBAL_COMMITS.filter(filterFn),
+      this.THRESHOLD_ANALYSIS,
       this.SESSION_THRESHOLD
     );
   }
@@ -48,16 +58,9 @@ export class MetricsBuilder {
       this.GLOBAL_COMMITS,
       this.USER_CONFIG,
       this.FILTERED_COMMITS,
+      this.THRESHOLD_ANALYSIS,
       minutes
     );
-  }
-
-  withEstimatedThreshold() {
-    const thresholdAnalysis = determineSessionThreshold(
-      this.GLOBAL_COMMITS,
-      this.USER_CONFIG
-    );
-    return this.withThreshold(thresholdAnalysis.threshold);
   }
 
   build() {
@@ -74,7 +77,7 @@ export class MetricsBuilder {
         ...filterable.summary,
         ...session.summary,
         ...global.summary,
-        session_threshold_analysis: this._getThresholdAnalysis(),
+        session_threshold_analysis: this.THRESHOLD_ANALYSIS,
       },
     };
   }
@@ -161,9 +164,7 @@ export class MetricsBuilder {
 
   buildSession() {
     if (this.SESSION_THRESHOLD === null) {
-      throw new Error(
-        "Session threshold must be set. Use withThreshold() or withEstimatedThreshold()"
-      );
+      throw new Error("Session threshold must be set. Use withThreshold()");
     }
     const sessionBuilder = new SessionBuilder(
       this.GLOBAL_COMMITS,
@@ -217,10 +218,6 @@ export class MetricsBuilder {
 
   buildGlobalOnly() {
     return this.buildGlobal();
-  }
-
-  _getThresholdAnalysis() {
-    return determineSessionThreshold(this.GLOBAL_COMMITS, this.USER_CONFIG);
   }
 
   _computeCommitsMetric() {
