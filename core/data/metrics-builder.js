@@ -1,7 +1,7 @@
 import { getLocalCodingDay, getLocalHour } from "../utils/timezone.js";
 import { groupBy, uniq, calculateBoxPlotStats } from "../utils/array.js";
 import { extractBasicCommitIntervals } from "./sessions.js";
-import { determineSessionThreshold } from "./session-thresholds.js";
+import { determineSessionThreshold } from "./threshold-analysis.js";
 import { SessionBuilder } from "./session-builder.js";
 
 export class MetricsBuilder {
