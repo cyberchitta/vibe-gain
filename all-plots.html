@@ -589,8 +589,8 @@
             if (!container) return;
             try {
                 const { preCommits, recentCommits, preVizData, recentVizData, userConfig } = data;
-                const commits = period === 'Pre-AI' ? preCommits : recentCommits;
                 const vizData = period === 'Pre-AI' ? preVizData : recentVizData;
+                const commits = vizData.GLOBAL_COMMITS;
                 const color = period === 'Pre-AI' ? '#ed8936' : '#48bb78';
                 const sessions = vizData.raw_sessions || [];
                 const rawPeriodsData = [{

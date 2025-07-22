@@ -18,9 +18,9 @@ export class MetricsBuilder {
       const commitCodingDay = getLocalCodingDay(commit.timestamp, userConfig);
       return commitCodingDay >= periodStart && commitCodingDay <= periodEnd;
     });
-    const thresholdAnalysis = determineSessionThreshold(commits, userConfig);
+    const thresholdAnalysis = determineSessionThreshold(periodCommits, userConfig);
     return new MetricsBuilder(
-      commits,
+      periodCommits,
       userConfig,
       periodCommits,
       thresholdAnalysis,
