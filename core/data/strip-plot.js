@@ -45,13 +45,6 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
  * @param {Object} options - Configuration options including userConfig
  * @returns {Object} - Formatted data for visualization
  */
-/**
- * Prepare data for strip plot visualization
- * @param {Array} commits - Array of commit objects
- * @param {string} period - Period identifier (e.g., 'Pre-AI', 'Recent-AI')
- * @param {Object} options - Configuration options including userConfig
- * @returns {Object} - Formatted data for visualization
- */
 export function prepareStripPlotData(commits, period, options = {}) {
   const groupCount = options.groupCount || 4;
   const periodStart = options.periodStart;
