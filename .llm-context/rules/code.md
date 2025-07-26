@@ -1,6 +1,8 @@
 ---
-base: code-gitignores
+name: code
 description: Default rule for software projects, using lc-gitignores base rule
+compose:
+  filters: [filters]
 ---
 
 ## Persona
