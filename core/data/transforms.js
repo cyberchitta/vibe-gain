@@ -11,8 +11,6 @@ export function commitArrayFormat(commits) {
     "additions",
     "deletions",
     "filesChanged",
-    "private",
-    "isFork",
     "isDocOnly",
   ];
   const data = commits.map((commit) => [
@@ -24,8 +22,6 @@ export function commitArrayFormat(commits) {
     commit.additions,
     commit.deletions,
     commit.filesChanged,
-    commit.private,
-    commit.isFork,
     commit.isDocOnly,
   ]);
   return { schema, data };
@@ -48,6 +44,45 @@ export function arrayFormatToCommits(arrayFormat) {
     }
     return commit;
   });
+}
+
+/**
+ * Get repository metadata for a commit
+ * @param {Object} commit - Commit object
+ * @param {Object} repoMetadata - Repository metadata object
+ * @returns {Object} - Repository metadata or defaults
+ */
+export function getRepoMetadata(commit, repoMetadata) {
+  return (
+    repoMetadata[commit.repo] || {
+      private: false,
+      isFork: false,
+      parent: null,
+      created_at: null,
+      owner: null,
+      name: null,
+    }
+  );
+}
+
+/**
+ * Check if a commit is from a private repository
+ * @param {Object} commit - Commit object
+ * @param {Object} repoMetadata - Repository metadata object
+ * @returns {boolean} - True if from private repo
+ */
+export function isPrivateCommit(commit, repoMetadata) {
+  return getRepoMetadata(commit, repoMetadata).private || false;
+}
+
+/**
+ * Check if a commit is from a forked repository
+ * @param {Object} commit - Commit object
+ * @param {Object} repoMetadata - Repository metadata object
+ * @returns {boolean} - True if from fork
+ */
+export function isForkCommit(commit, repoMetadata) {
+  return getRepoMetadata(commit, repoMetadata).isFork || false;
 }
 
 /**

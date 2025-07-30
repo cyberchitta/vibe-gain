@@ -1,26 +1,23 @@
 import { getLocalCodingDay, getLocalHour } from "../utils/timezone.js";
 import { groupBy, uniq, calculateBoxPlotStats } from "../utils/array.js";
+import { isPrivateCommit, isForkCommit } from "./transforms.js";
 import { extractBasicCommitIntervals } from "./sessions.js";
 import { determineSessionThreshold } from "./threshold-analysis.js";
 import { SessionBuilder } from "./session-builder.js";
 
 export class MetricsBuilder {
-  /**
-   * Create MetricsBuilder with commits filtered to a specific period using user's timezone
-   * @param {Array} commits - All commits
-   * @param {Object} userConfig - User configuration with timezone_offset_hours and coding_day_start_hour
-   * @param {string} periodStart - Start date (YYYY-MM-DD)
-   * @param {string} periodEnd - End date (YYYY-MM-DD)
-   * @returns {MetricsBuilder} - New builder with filtered commits
-   */
-  static forPeriod(commits, userConfig, periodStart, periodEnd) {
+  static forPeriod(commits, repoMetadata, userConfig, periodStart, periodEnd) {
     const periodCommits = commits.filter((commit) => {
       const commitCodingDay = getLocalCodingDay(commit.timestamp, userConfig);
       return commitCodingDay >= periodStart && commitCodingDay <= periodEnd;
     });
-    const thresholdAnalysis = determineSessionThreshold(periodCommits, userConfig);
+    const thresholdAnalysis = determineSessionThreshold(
+      periodCommits,
+      userConfig
+    );
     return new MetricsBuilder(
       periodCommits,
+      repoMetadata,
       userConfig,
       periodCommits,
       thresholdAnalysis,
@@ -30,12 +27,14 @@ export class MetricsBuilder {
 
   constructor(
     commits,
+    repoMetadata,
     userConfig,
-    filteredCommits = null,
-    thresholdAnalysis = null,
-    sessionThreshold = null
+    filteredCommits,
+    thresholdAnalysis,
+    sessionThreshold
   ) {
     this.GLOBAL_COMMITS = Object.freeze(commits);
+    this.REPO_METADATA = Object.freeze(repoMetadata);
     this.USER_CONFIG = Object.freeze(userConfig);
     this.FILTERED_COMMITS = Object.freeze(filteredCommits || commits);
     this.THRESHOLD_ANALYSIS = Object.freeze(thresholdAnalysis);
@@ -46,6 +45,7 @@ export class MetricsBuilder {
   withFilter(filterFn) {
     return new MetricsBuilder(
       this.GLOBAL_COMMITS,
+      this.REPO_METADATA,
       this.USER_CONFIG,
       this.GLOBAL_COMMITS.filter(filterFn),
       this.THRESHOLD_ANALYSIS,
@@ -56,6 +56,7 @@ export class MetricsBuilder {
   withThreshold(minutes) {
     return new MetricsBuilder(
       this.GLOBAL_COMMITS,
+      this.REPO_METADATA,
       this.USER_CONFIG,
       this.FILTERED_COMMITS,
       this.THRESHOLD_ANALYSIS,
@@ -126,13 +127,17 @@ export class MetricsBuilder {
         ),
         private_repo_percentage:
           this.FILTERED_COMMITS.length > 0
-            ? (this.FILTERED_COMMITS.filter((c) => c.private).length /
+            ? (this.FILTERED_COMMITS.filter((c) =>
+                isPrivateCommit(c, this.REPO_METADATA)
+              ).length /
                 this.FILTERED_COMMITS.length) *
               100
             : 0,
         fork_percentage:
           this.FILTERED_COMMITS.length > 0
-            ? (this.FILTERED_COMMITS.filter((c) => c.isFork).length /
+            ? (this.FILTERED_COMMITS.filter((c) =>
+                isForkCommit(c, this.REPO_METADATA)
+              ).length /
                 this.FILTERED_COMMITS.length) *
               100
             : 0,
