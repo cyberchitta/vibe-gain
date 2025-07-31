@@ -9,13 +9,10 @@ export class NodePeriodDataLoader {
   }
 
   getPeriodPaths(periodName) {
-    const safePeriodName = periodName.replace(/\s+/g, "_");
+    const safePeriodName = periodName.toLowerCase().replace(/[^a-z0-9]/g, "_");
     return {
-      commitsPath: path.join(this.dataDir, `commits_${safePeriodName}.json`),
-      metadataPath: path.join(
-        this.dataDir,
-        `repo-metadata-${safePeriodName}.json`
-      ),
+      commitsPath: path.join(this.dataDir, `${safePeriodName}_commits.json`),
+      metadataPath: path.join(this.dataDir, `${safePeriodName}_metadata.json`),
     };
   }
 
@@ -61,10 +58,10 @@ export class BrowserPeriodDataLoader {
   }
 
   getPeriodUrls(periodName) {
-    const safePeriodName = periodName.replace(/\s+/g, "_");
+    const safePeriodName = periodName.toLowerCase().replace(/[^a-z0-9]/g, "_");
     return {
-      commitsUrl: `${this.dataPath}/commits_${safePeriodName}.json`,
-      metadataUrl: `${this.dataPath}/repo-metadata-${safePeriodName}.json`,
+      commitsUrl: `${this.dataPath}/${safePeriodName}_commits.json`,
+      metadataUrl: `${this.dataPath}/${safePeriodName}_metadata.json`,
     };
   }
 
