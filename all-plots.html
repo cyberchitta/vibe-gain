@@ -438,6 +438,7 @@
         import { renderStripPlot, cleanupStripPlot } from './browser/renderers/strip-plot.js';
         import { formatNumber } from './core/utils/format.js';
         import { MetricsBuilder } from './core/data/metrics-builder.js';
+        import { createBrowserPeriodDataManager } from "./core/data/period-data-manager.js";
         import { arrayFormatToCommits } from './core/data/transforms.js';
         import { preparePeriodsForBoxPlot } from './browser/renderers/box-plot.js';
 
@@ -501,17 +502,7 @@
                     throw new Error(`User ${username} not found in parameters`);
                 }
                 const dataPath = `./data/${username}/raw`;
-                const [preResponse, recentResponse] = await Promise.all([
-                    fetch(`${dataPath}/commits_Pre-AI.json`),
-                    fetch(`${dataPath}/commits_Recent-AI.json`)
-                ]);
-                if (!preResponse.ok || !recentResponse.ok) {
-                    throw new Error(`Failed to load commit data for ${username}`);
-                }
-                const preArrayFormat = await preResponse.json();
-                const recentArrayFormat = await recentResponse.json();
-                const preCommits = arrayFormatToCommits(preArrayFormat);
-                const recentCommits = arrayFormatToCommits(recentArrayFormat);
+                const dataManager = createBrowserPeriodDataManager(dataPath, userConfig);
                 const codeOnlyFilter = (commit) => {
                     const isWebsiteDocCommit = commit.isDocOnly &&
                         commit.repo &&
@@ -519,16 +510,14 @@
                     return !isWebsiteDocCommit;
                 };
                 const prePeriod = parametersData.PERIODS.find(p => p.name === 'Pre-AI');
-                const preVizData = MetricsBuilder.forPeriod(preCommits, userConfig, prePeriod.start, prePeriod.end)
-                    .withFilter(codeOnlyFilter)
-                    .build();
                 const recentPeriod = parametersData.PERIODS.find(p => p.name === 'Recent-AI');
-                const recentVizData = MetricsBuilder.forPeriod(recentCommits, userConfig, recentPeriod.start, recentPeriod.end)
-                    .withFilter(codeOnlyFilter)
-                    .build();
+                const preBuilder = await dataManager.createMetricsBuilder('Pre-AI', prePeriod.start, prePeriod.end, codeOnlyFilter);
+                const recentBuilder = await dataManager.createMetricsBuilder('Recent-AI', recentPeriod.start, recentPeriod.end, codeOnlyFilter);
+                const preVizData = preBuilder.build();
+                const recentVizData = recentBuilder.build();
                 cachedData = {
-                    preCommits,
-                    recentCommits,
+                    preCommits: preVizData.GLOBAL_COMMITS,
+                    recentCommits: recentVizData.GLOBAL_COMMITS,
                     preVizData: preVizData,
                     recentVizData: recentVizData,
                     userConfig: userConfig,
