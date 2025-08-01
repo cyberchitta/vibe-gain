@@ -1,3 +1,14 @@
+import { SHAPE_NAMES, SHAPE_DEFINITIONS } from "../../core/data/strip-plot.js";
+import { prepareStripPlotData } from "../../core/data/strip-plot.js";
+
+/**
+ * Generate shape definitions for repositories
+ * @returns {Array} - Array of SVG path strings for different shapes
+ */
+export function generateShapeDefinitions() {
+  return SHAPE_NAMES.map((name) => SHAPE_DEFINITIONS[name]);
+}
+
 /**
  * Format timestamp to extract time of day component
  * @param {string|Date} timestamp - Full timestamp
@@ -73,32 +84,19 @@ export function createTimeRange(commits) {
  * @param {number} groupCount - Number of groups
  * @returns {Array} - Array of color values
  */
-export function generateGroupColors(groupCount = 4) {
-  const baseColors = [
-    "#1f77b4", // blue
-    "#2ca02c", // green
-    "#d62728", // red
-    "#9467bd", // purple
-    "#ff7f0e", // orange
-    "#8c564b", // brown
-    "#e377c2", // pink
-    "#7f7f7f", // gray
+export function generateGroupColors(groupCount = 9) {
+  const universalColors = [
+    "#1E88E5", // bright blue
+    "#43A047", // bright green
+    "#FB8C00", // bright orange
+    "#E53935", // bright red
+    "#8E24AA", // bright purple
+    "#00ACC1", // bright teal
+    "#FDD835", // bright yellow
+    "#D81B60", // bright pink
+    "#6D4C41", // brown
   ];
-  return baseColors.slice(0, groupCount);
-}
-
-/**
- * Generate shape definitions for repositories
- * @returns {Array} - Array of SVG path strings for different shapes
- */
-export function generateShapeDefinitions() {
-  return [
-    "M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z", // Circle
-    "M-4,-4L4,-4L4,4L-4,4Z", // Square
-    "M0,-5L4.33,2.5L-4.33,2.5Z", // Triangle
-    "M0,-6L4.24,-1.85L2.63,4.85L-2.63,4.85L-4.24,-1.85Z", // Pentagon
-    "M-3,-3L3,-3L6,0L3,3L-3,3L-6,0Z", // Hexagon
-  ];
+  return universalColors.slice(0, groupCount);
 }
 
 /**
@@ -127,9 +125,50 @@ export function filterCommitsByTimeRange(commits, startTime, endTime) {
  * @returns {string} - Color hex code
  */
 function getColorForGroup(groupId) {
-  const colors = generateGroupColors(4);
+  const colors = generateGroupColors(9);
   const groupIndex = parseInt(groupId.replace("group", "")) || 0;
   return colors[groupIndex] || colors[0];
+}
+
+// In browser/charts/strip-plot.js, add:
+
+/**
+ * Prepare periods data with raw commits for strip plot rendering
+ * @param {Array} periodsRawData - Array of {period, commits, color} objects where commits is raw commit array
+ * @param {string} targetPeriod - Name of the period to render
+ * @param {Object} options - Options including periodConfigs, colorOffset, shapeOffset
+ * @returns {Object} - Prepared strip plot data for the target period
+ */
+export function preparePeriodsForStripPlot(
+  periodsRawData,
+  targetPeriod,
+  options = {}
+) {
+  const {
+    periodConfigs = {},
+    userConfig = {},
+    colorOffset = 0,
+    shapeOffset = 0,
+  } = options;
+  const periodData = periodsRawData.find((p) => p.period === targetPeriod);
+  if (!periodData) {
+    throw new Error(`Period "${targetPeriod}" not found in provided data`);
+  }
+  const config = periodConfigs[targetPeriod] || {};
+  const stripPlotData = prepareStripPlotData(periodData.commits, targetPeriod, {
+    sessions: periodData.sessions || [],
+    groupCount: 9,
+    periodStart: config.start,
+    periodEnd: config.end,
+    userConfig: userConfig,
+    colorOffset: colorOffset,
+    shapeOffset: shapeOffset,
+  });
+  return {
+    period: targetPeriod,
+    stripPlotData,
+    color: periodData.color,
+  };
 }
 
 /**

@@ -4,14 +4,34 @@ import {
   toLocalTime,
 } from "../utils/timezone.js";
 
+export const SHAPE_NAMES = [
+  "circle",
+  "square",
+  "triangle",
+  "diamond",
+  "cross",
+  "star",
+  "pentagon",
+];
+
+export const SHAPE_DEFINITIONS = {
+  circle: "M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z",
+  square: "M-4,-4L4,-4L4,4L-4,4Z",
+  triangle: "M0,-5L4.33,2.5L-4.33,2.5Z",
+  diamond: "M0,-5L4,0L0,5L-4,0Z",
+  cross: "M-1,-5L1,-5L1,-1L5,-1L5,1L1,1L1,5L-1,5L-1,1L-5,1L-5,-1L-1,-1Z",
+  star: "M0,-6L1.8,-1.8L6,0L1.8,1.8L0,6L-1.8,1.8L-6,0L-1.8,-1.8Z",
+  pentagon: "M0,-6L5.7,-1.9L3.5,4.9L-3.5,4.9L-5.7,-1.9Z",
+};
+
 /**
  * Assign repositories to visual groups using commit rank order
  * @param {Array} repos - Array of repository names
  * @param {Array} commits - Array of commit objects (to calculate commit counts)
- * @param {number} groupCount - Number of groups to create (default: 4)
+ * @param {number} groupCount - Number of groups to create
  * @returns {Object} - Object mapping repo names to group assignments
  */
-export function assignRepositoryGroups(repos, commits, groupCount = 4) {
+export function assignRepositoryGroups(repos, commits, groupCount) {
   if (!repos || repos.length === 0) {
     return {};
   }
@@ -23,7 +43,7 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
     (a, b) => (repoCommitCounts[b] || 0) - (repoCommitCounts[a] || 0)
   );
   const groupAssignments = {};
-  const shapeDefinitions = ["circle", "square", "triangle", "diamond", "cross"];
+  const shapeDefinitions = SHAPE_NAMES;
   uniqueRepos.forEach((repo, index) => {
     const groupId = index % groupCount;
     const shapeIndex = index % shapeDefinitions.length;
@@ -46,7 +66,7 @@ export function assignRepositoryGroups(repos, commits, groupCount = 4) {
  * @returns {Object} - Formatted data for visualization
  */
 export function prepareStripPlotData(commits, period, options = {}) {
-  const groupCount = options.groupCount || 4;
+  const groupCount = options.groupCount;
   const periodStart = options.periodStart;
   const periodEnd = options.periodEnd;
   const sessions = options.sessions;

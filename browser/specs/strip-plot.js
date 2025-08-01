@@ -1,3 +1,4 @@
+import { SHAPE_NAMES } from "../../core/data/strip-plot.js";
 import {
   generateGroupColors,
   generateShapeDefinitions,
@@ -12,7 +13,7 @@ import { getBaseVegaSpec } from "./vega-base.js";
  */
 export function createStripPlotSpec(data, options = {}) {
   const defaultOptions = {
-    groupCount: 4,
+    groupCount: 9,
     showDocOnlyIndicators: true,
     showSessionLines: true,
     sessionLineWidth: 2,
@@ -94,13 +95,16 @@ export function createStripPlotSpec(data, options = {}) {
     {
       name: "colorScale",
       type: "ordinal",
-      domain: ["group0", "group1", "group2", "group3"],
+      domain: Array.from(
+        { length: defaultOptions.groupCount },
+        (_, i) => `group${i}`
+      ),
       range: colors,
     },
     {
       name: "shapeScale",
       type: "ordinal",
-      domain: ["circle", "square", "triangle", "diamond", "cross"],
+      domain: SHAPE_NAMES,
       range: shapes,
     },
     {
@@ -125,7 +129,7 @@ export function createStripPlotSpec(data, options = {}) {
       encode: {
         enter: {
           fill: { scale: "colorScale", field: "repoGroup" },
-          stroke: { value: "#333333" },
+          stroke: { value: "transparent" },
           strokeWidth: { value: 0.5 },
           size: { value: 4 },
           opacity: { scale: "opacityScale", field: "commitSize" },
@@ -275,25 +279,11 @@ export function createStripPlotSpec(data, options = {}) {
 }
 
 /**
- * Get shape definitions for Vega symbols
- * @returns {Object} - Shape name to SVG path mapping
- */
-export function getShapeDefinitions() {
-  return {
-    circle: "M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z",
-    square: "M-4,-4L4,-4L4,4L-4,4Z",
-    triangle: "M0,-5L4.33,2.5L-4.33,2.5Z",
-    diamond: "M0,-6L4.24,-1.85L2.63,4.85L-2.63,4.85L-4.24,-1.85Z",
-    cross: "M-1,-5L1,-5L1,-1L5,-1L5,1L1,1L1,5L-1,5L-1,1L-5,1L-5,-1L-1,-1Z",
-  };
-}
-
-/**
  * Get color scale configuration
  * @param {number} groupCount - Number of color groups
  * @returns {Object} - Color scale configuration
  */
-export function getColorScale(groupCount = 4) {
+export function getColorScale(groupCount) {
   const colors = generateGroupColors(groupCount);
   return {
     name: "colorScale",

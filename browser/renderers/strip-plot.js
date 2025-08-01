@@ -1,95 +1,115 @@
 import { createStripPlotSpec } from "../specs/strip-plot.js";
-import { applyDaisyUIThemeVega } from "../themes/daisyui.js"; // Add this import
-import { prepareStripPlotData } from "../../core/data/strip-plot.js";
+import { applyDaisyUIThemeVega } from "../themes/daisyui.js";
+import { preparePeriodsForStripPlot } from "../charts/strip-plot.js";
 
-/**
- * Prepare periods data with raw commits for strip plot rendering
- * @param {Array} periodsRawData - Array of {period, commits, color} objects where commits is raw commit array
- * @param {string} targetPeriod - Name of the period to render
- * @param {Object} options - Options including periodConfigs
- * @returns {Object} - Prepared strip plot data for the target period
- */
-export function preparePeriodsForStripPlot(
-  periodsRawData,
-  targetPeriod,
-  options = {}
-) {
-  const { periodConfigs = {}, userConfig = {} } = options;
-  const periodData = periodsRawData.find((p) => p.period === targetPeriod);
-  if (!periodData) {
-    throw new Error(`Period "${targetPeriod}" not found in provided data`);
+class StripPlotRenderer {
+  static #renderers = new WeakMap();
+
+  constructor(container, options = {}) {
+    this.container = container;
+    this.options = options;
+    this.vegaView = null;
+    this.stripPlotData = null;
+    this.commitData = null;
+    this.userConfig = null;
   }
-  const config = periodConfigs[targetPeriod] || {};
-  const stripPlotData = prepareStripPlotData(periodData.commits, targetPeriod, {
-    sessions: periodData.sessions || [],
-    clusterThreshold: 30,
-    groupCount: 4,
-    periodStart: config.start,
-    periodEnd: config.end,
-    userConfig: userConfig,
-  });
-  return {
-    period: targetPeriod,
-    stripPlotData,
-    color: periodData.color,
-  };
+
+  static getRenderer(container) {
+    return this.#renderers.get(container) || null;
+  }
+
+  static getOrCreateRenderer(container, options = {}) {
+    let renderer = this.#renderers.get(container);
+    if (!renderer) {
+      renderer = new StripPlotRenderer(container, options);
+      this.#renderers.set(container, renderer);
+    }
+    return renderer;
+  }
+
+  async render(periodsRawData, options = {}) {
+    this.options = {
+      showTooltips: false,
+      showSessionLines: false,
+      isDark: false,
+      targetPeriod: null,
+      periodConfigs: {},
+      colorOffset: 0,
+      shapeOffset: 0,
+      userConfig: {
+        timezone_offset_hours: 0,
+        day_cutoff: 4,
+      },
+      ...this.options,
+      ...options,
+    };
+    if (!this.container) {
+      throw new Error("Container element is required");
+    }
+    this.container.innerHTML = "";
+    if (!this.options.targetPeriod) {
+      throw new Error("targetPeriod must be specified in options");
+    }
+    try {
+      const preparedData = preparePeriodsForStripPlot(
+        periodsRawData,
+        this.options.targetPeriod,
+        {
+          periodConfigs: this.options.periodConfigs,
+          userConfig: this.options.userConfig,
+          colorOffset: this.options.colorOffset,
+          shapeOffset: this.options.shapeOffset,
+        }
+      );
+      const spec = createStripPlotSpec(
+        preparedData.stripPlotData,
+        this.options
+      );
+      const themedSpec = applyDaisyUIThemeVega(spec, {
+        isDark: this.options.isDark,
+      });
+      const runtime = vega.parse(themedSpec);
+      this.vegaView = new vega.View(runtime)
+        .renderer("canvas")
+        .initialize(this.container)
+        .width(this.container.clientWidth)
+        .height(this.container.clientHeight)
+        .run();
+      this.stripPlotData = preparedData.stripPlotData;
+      this.commitData =
+        periodsRawData.find((p) => p.period === this.options.targetPeriod)
+          ?.commits || [];
+      this.userConfig = this.options.userConfig;
+      return this.vegaView;
+    } catch (error) {
+      console.error("Error rendering strip plot:", error);
+      this.container.innerHTML = `<div class="error-message p-4 text-error">Error: ${error.message}</div>`;
+      throw error;
+    }
+  }
+
+  cleanup() {
+    if (this.vegaView) {
+      this.vegaView.finalize();
+      this.vegaView = null;
+    }
+    this.stripPlotData = null;
+    this.commitData = null;
+    this.userConfig = null;
+    StripPlotRenderer.#renderers.delete(this.container);
+  }
 }
 
 /**
  * Render strip plot visualization
  * @param {HTMLElement} container - Container element
  * @param {Array} periodsRawData - Array of {period, data, color} objects where data is commits array
- * @param {Object} options - Rendering options including targetPeriod
+ * @param {Object} options - Rendering options including targetPeriod, colorOffset, shapeOffset
  * @returns {Promise<Object>} - Vega view instance
  */
 export async function renderStripPlot(container, periodsRawData, options = {}) {
-  if (!container) {
-    throw new Error("Container element is required");
-  }
-  container.innerHTML = "";
-  const defaultOptions = {
-    showTooltips: false,
-    showSessionLines: false,
-    isDark: false,
-    targetPeriod: null,
-    periodConfigs: {},
-    userConfig: {
-      timezone_offset_hours: 0,
-      coding_day_start_hour: 4,
-    },
-    ...options,
-  };
-  if (!defaultOptions.targetPeriod) {
-    throw new Error("targetPeriod must be specified in options");
-  }
-  try {
-    const preparedData = preparePeriodsForStripPlot(
-      periodsRawData,
-      defaultOptions.targetPeriod,
-      defaultOptions
-    );
-    const spec = createStripPlotSpec(
-      preparedData.stripPlotData,
-      defaultOptions
-    );
-    const themedSpec = applyDaisyUIThemeVega(spec, {
-      isDark: defaultOptions.isDark,
-    });
-    const runtime = vega.parse(themedSpec);
-    const view = new vega.View(runtime)
-      .renderer("canvas")
-      .initialize(container)
-      .width(container.clientWidth)
-      .height(container.clientHeight)
-      .run();
-    container._vegaView = view;
-    container._stripPlotData = preparedData.stripPlotData;
-    return view;
-  } catch (error) {
-    console.error("Error rendering strip plot:", error);
-    container.innerHTML = `<div class="error-message p-4 text-error">Error: ${error.message}</div>`;
-    throw error;
-  }
+  const renderer = StripPlotRenderer.getOrCreateRenderer(container, options);
+  return await renderer.render(periodsRawData, options);
 }
 
 /**
@@ -97,13 +117,10 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
  * @param {HTMLElement} container - Container element
  */
 export function cleanupStripPlot(container) {
-  if (!container) return;
-  if (container._vegaView) {
-    container._vegaView.finalize();
-    container._vegaView = null;
+  const renderer = StripPlotRenderer.getRenderer(container);
+  if (renderer) {
+    renderer.cleanup();
   }
-  if (container._stripPlotData) {
-    container._stripPlotData = null;
-  }
-  container.innerHTML = "";
 }
+
+export { StripPlotRenderer };
