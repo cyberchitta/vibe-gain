@@ -10,8 +10,13 @@ export class PeriodDataManager {
     return await this.dataLoader.load(periodName);
   }
 
-  async savePeriodData(periodName, commits, repoMetadata) {
-    return await this.dataLoader.save(periodName, commits, repoMetadata);
+  async savePeriodData(periodName, commits, repoMetadata, fetchMetadata) {
+    return await this.dataLoader.save(
+      periodName,
+      commits,
+      repoMetadata,
+      fetchMetadata
+    );
   }
 
   async periodExists(periodName) {
