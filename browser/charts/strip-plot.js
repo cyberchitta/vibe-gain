@@ -144,12 +144,7 @@ export function preparePeriodsForStripPlot(
   targetPeriod,
   options = {}
 ) {
-  const {
-    periodConfigs = {},
-    userConfig = {},
-    colorOffset = 0,
-    shapeOffset = 0,
-  } = options;
+  const { periodConfigs, userConfig, colorOffset, shapeOffset } = options;
   const periodData = periodsRawData.find((p) => p.period === targetPeriod);
   if (!periodData) {
     throw new Error(`Period "${targetPeriod}" not found in provided data`);

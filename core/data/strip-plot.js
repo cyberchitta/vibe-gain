@@ -31,7 +31,13 @@ export const SHAPE_DEFINITIONS = {
  * @param {number} groupCount - Number of groups to create
  * @returns {Object} - Object mapping repo names to group assignments
  */
-export function assignRepositoryGroups(repos, commits, groupCount) {
+export function assignRepositoryGroups(
+  repos,
+  commits,
+  groupCount,
+  options = {}
+) {
+  const { colorOffset, shapeOffset } = options;
   if (!repos || repos.length === 0) {
     return {};
   }
@@ -45,8 +51,8 @@ export function assignRepositoryGroups(repos, commits, groupCount) {
   const groupAssignments = {};
   const shapeDefinitions = SHAPE_NAMES;
   uniqueRepos.forEach((repo, index) => {
-    const groupId = index % groupCount;
-    const shapeIndex = index % shapeDefinitions.length;
+    const groupId = (index + colorOffset) % groupCount;
+    const shapeIndex = (index + shapeOffset) % shapeDefinitions.length;
     groupAssignments[repo] = {
       group: `group${groupId}`,
       groupIndex: groupId,
@@ -98,7 +104,8 @@ export function prepareStripPlotData(commits, period, options = {}) {
   const repoGroupings = assignRepositoryGroups(
     uniqueRepos,
     commits,
-    groupCount
+    groupCount,
+    options
   );
   const enhancedCommits = commits.map((commit) => {
     const timeOfDayDate = extractTimeOfDay(commit.timestamp, userConfig);
