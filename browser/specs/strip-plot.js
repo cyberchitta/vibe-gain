@@ -1,6 +1,6 @@
-import { SHAPE_NAMES } from "../../core/data/strip-plot.js";
+import { SHAPE_NAMES } from "../charts/strip-plot.js";
 import {
-  generateGroupColors,
+  generateMarkColors,
   generateShapeDefinitions,
 } from "../charts/strip-plot.js";
 import { getBaseVegaSpec } from "./vega-base.js";
@@ -13,7 +13,6 @@ import { getBaseVegaSpec } from "./vega-base.js";
  */
 export function createStripPlotSpec(data, options = {}) {
   const defaultOptions = {
-    groupCount: 9,
     showDocOnlyIndicators: true,
     showSessionLines: true,
     sessionLineWidth: 2,
@@ -27,7 +26,7 @@ export function createStripPlotSpec(data, options = {}) {
   };
   const baseSpec = getBaseVegaSpec();
   const sessionLineColor = defaultOptions.isDark ? "#ffffff" : "#000000";
-  const colors = generateGroupColors(defaultOptions.groupCount);
+  const colors = generateMarkColors();
   const shapes = generateShapeDefinitions();
   const isPortrait = defaultOptions.orientation === "portrait";
   const getXLabel = () => {
@@ -95,10 +94,7 @@ export function createStripPlotSpec(data, options = {}) {
     {
       name: "colorScale",
       type: "ordinal",
-      domain: Array.from(
-        { length: defaultOptions.groupCount },
-        (_, i) => `group${i}`
-      ),
+      domain: Array.from({ length: colors.length }, (_, i) => `color${i}`),
       range: colors,
     },
     {
@@ -128,7 +124,7 @@ export function createStripPlotSpec(data, options = {}) {
       from: { data: "commits" },
       encode: {
         enter: {
-          fill: { scale: "colorScale", field: "repoGroup" },
+          fill: { scale: "colorScale", field: "repoColor" },
           stroke: { value: "transparent" },
           strokeWidth: { value: 0.5 },
           size: { value: 4 },
@@ -275,20 +271,5 @@ export function createStripPlotSpec(data, options = {}) {
     scales,
     marks,
     axes,
-  };
-}
-
-/**
- * Get color scale configuration
- * @param {number} groupCount - Number of color groups
- * @returns {Object} - Color scale configuration
- */
-export function getColorScale(groupCount) {
-  const colors = generateGroupColors(groupCount);
-  return {
-    name: "colorScale",
-    type: "ordinal",
-    domain: colors.map((_, i) => `group${i}`),
-    range: colors,
   };
 }
