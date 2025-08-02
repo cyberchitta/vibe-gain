@@ -127,7 +127,7 @@ export function createStripPlotSpec(data, options = {}) {
           fill: { scale: "colorScale", field: "repoColor" },
           stroke: { value: "transparent" },
           strokeWidth: { value: 0.5 },
-          size: { value: 4 },
+          size: { value: 3 },
           opacity: { scale: "opacityScale", field: "commitSize" },
         },
         update: {
