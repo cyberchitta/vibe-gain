@@ -528,7 +528,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         strokeWidth: 1,
         strokeDash: [2, 2],
         opacity: 0.7,
-        color: defaultOptions.labelColor || "#666",
+        color: defaultOptions.labelColor,
       },
       encoding: {
         x: {
@@ -558,7 +558,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         dx: 5,
         fontSize: 9,
         fontWeight: "normal",
-        color: defaultOptions.labelColor || "#666",
+        color: defaultOptions.labelColor,
       },
       encoding: {
         x: {
@@ -602,7 +602,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
         baseline: "middle",
         fontSize: 9,
         fontWeight: "normal",
-        color: defaultOptions.labelColor || "#666",
+        color: defaultOptions.labelColor,
       },
       encoding: {
         x: {
