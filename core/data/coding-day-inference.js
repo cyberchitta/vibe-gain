@@ -41,17 +41,17 @@ function findActivityValley(histogram) {
 /**
  * Infer coding day start from commit activity patterns
  * @param {Array} commits - All commits
- * @returns {Object} - { day_cutoff, confidence, histogram }
+ * @returns {Object} - { day_boundary, confidence, histogram }
  */
 export function inferCodingDayStart(commits) {
   if (commits.length === 0) {
-    return { day_cutoff: 4, confidence: 0, histogram: new Array(24).fill(0) };
+    return { day_boundary: 4, confidence: 0, histogram: new Array(24).fill(0) };
   }
   const histogram = generateUTCHourHistogram(commits);
   const valley = findActivityValley(histogram);
-  const day_cutoff = Math.floor((valley.start_hour + valley.length / 2)) % 24;
+  const day_boundary = Math.floor((valley.start_hour + valley.length / 2)) % 24;
   return {
-    day_cutoff,
+    day_boundary,
     confidence: valley.confidence,
     histogram
   };

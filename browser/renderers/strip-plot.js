@@ -38,7 +38,7 @@ class StripPlotRenderer {
       shapeOffset: 0,
       userConfig: {
         timezone_offset_hours: 0,
-        day_cutoff: 4,
+        day_boundary: 4,
       },
       ...this.options,
       ...options,

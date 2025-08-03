@@ -72,7 +72,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
   const sessions = options.sessions;
   const userConfig = options.userConfig || {
     timezone_offset_hours: 0,
-    day_cutoff: 4,
+    day_boundary: 4,
   };
   if (!commits || commits.length === 0) {
     return {

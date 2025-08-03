@@ -13,14 +13,14 @@ export function toLocalTime(timestamp, timezoneOffsetHours) {
 /**
  * Get local coding day string with 4am cutoff
  * @param {string|Date} timestamp - UTC timestamp
- * @param {Object} userConfig - User configuration with timezone_offset_hours and day_cutoff
+ * @param {Object} userConfig - User configuration with timezone_offset_hours and day_boundary
  * @returns {string} - Local coding day in YYYY-MM-DD format
  */
 export function getLocalCodingDay(timestamp, userConfig) {
-  const { timezone_offset_hours, day_cutoff = 4 } = userConfig;
+  const { timezone_offset_hours, day_boundary = 4 } = userConfig;
   const localTime = toLocalTime(timestamp, timezone_offset_hours);
   const codingDayMs =
-    localTime.getTime() - day_cutoff * 60 * 60 * 1000;
+    localTime.getTime() - day_boundary * 60 * 60 * 1000;
   const codingDay = new Date(codingDayMs);
   return codingDay.toISOString().split("T")[0];
 }
