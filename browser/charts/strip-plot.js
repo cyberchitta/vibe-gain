@@ -298,13 +298,13 @@ export function generateMarkColors() {
   const universalColors = [
     "#1E88E5", // bright blue
     "#43A047", // bright green
-    "#FB8C00", // bright orange
     "#E53935", // bright red
     "#8E24AA", // bright purple
-    "#00ACC1", // bright teal
-    "#FDD835", // bright yellow
-    "#D81B60", // bright pink
-    "#6D4C41", // brown
+    "#FB8C00", // bright orange
+    "#FFEB3B", // bright yellow
+    "#00ACC1", // balanced cyan
+    "#8D4E2A", // reddish brown
+    "#BDBDBD", // light grey
   ];
   return universalColors;
 }

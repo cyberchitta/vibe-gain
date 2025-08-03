@@ -107,7 +107,7 @@ export function createStripPlotSpec(data, options = {}) {
       name: "opacityScale",
       type: "log",
       domain: [1, 1000],
-      range: [0.3, 1.0],
+      range: [0.5, 1.0],
       clamp: true,
     },
   ];
@@ -125,8 +125,6 @@ export function createStripPlotSpec(data, options = {}) {
       encode: {
         enter: {
           fill: { scale: "colorScale", field: "repoColor" },
-          stroke: { value: "transparent" },
-          strokeWidth: { value: 0.5 },
           size: { value: 3 },
           opacity: { scale: "opacityScale", field: "commitSize" },
         },
