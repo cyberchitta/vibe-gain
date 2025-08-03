@@ -119,8 +119,8 @@ export function createHistogramSpec(chartData, options = {}) {
   if (options.referenceLines && options.referenceLines.length > 0) {
     options.referenceLines.forEach((refLine) => {
       if (refLine.value !== undefined && refLine.value !== null) {
-        const lineEndPercent = 25;
-        const labelPercent = 27;
+        const lineEndPercent = 45;
+        const labelPercent = 47;
         const yMin = yDomain ? yDomain[0] : 0;
         const yMax = yDomain ? yDomain[1] : 100;
         const yRange = yMax - yMin;
@@ -138,7 +138,7 @@ export function createHistogramSpec(chartData, options = {}) {
           },
           mark: {
             type: "rule",
-            color: refLine.color || "#666",
+            color: options.labelColor,
             strokeWidth: refLine.strokeWidth || 2,
             strokeDash: refLine.style === "dashed" ? [5, 5] : [],
             opacity: refLine.opacity || 0.8,
@@ -178,7 +178,7 @@ export function createHistogramSpec(chartData, options = {}) {
               baseline: "bottom",
               fontSize: refLine.fontSize || 10,
               fontWeight: refLine.fontWeight || "bold",
-              color: refLine.color || "#666",
+              color: options.labelColor,
             },
             encoding: {
               x: {

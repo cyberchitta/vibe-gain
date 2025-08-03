@@ -3,7 +3,10 @@ import {
   prepareNaturalBucketData,
   hasNaturalBuckets,
 } from "../../core/data/bucketing.js";
-import { applyDaisyUIThemeVegaLite } from "../themes/daisyui.js";
+import {
+  applyDaisyUIThemeVegaLite,
+  getThemeColors,
+} from "../themes/daisyui.js";
 
 /**
  * Prepare periods data with processed metrics for histogram rendering
@@ -132,14 +135,19 @@ export async function renderHistogram(
     throw new Error("Container element is required");
   }
   container.innerHTML = "";
+  const colors = getThemeColors(options.isDark);
+  const defaultOptions = {
+    labelColor: colors.labelColor,
+    ...options,
+  };
   const periodsData = preparePeriodsForHistogram(
     periodsMetricsData,
-    options.metricId
+    defaultOptions.metricId
   );
-  const chartData = prepareHistogramData(periodsData, options);
+  const chartData = prepareHistogramData(periodsData, defaultOptions);
   let yDomain = undefined;
   if (
-    options.viewMode === "percentage" &&
+    defaultOptions.viewMode === "percentage" &&
     chartData.length > 0 &&
     chartData[0].metricId === "hour_of_day"
   ) {
@@ -154,14 +162,14 @@ export async function renderHistogram(
   const isHourOfDay =
     chartData.length > 0 && chartData[0].metricId === "hour_of_day";
   const finalOptions = {
-    xLabel: isHourOfDay ? "Hour of Day" : options.xLabel,
+    xLabel: isHourOfDay ? "Hour of Day" : defaultOptions.xLabel,
     yLabel: isHourOfDay
-      ? options.viewMode === "percentage"
+      ? defaultOptions.viewMode === "percentage"
         ? "Percentage of Commits"
         : "Total Commits"
-      : options.yLabel,
+      : defaultOptions.yLabel,
     yDomain: yDomain,
-    ...options,
+    ...defaultOptions,
   };
   const spec = createHistogramSpec(chartData, finalOptions);
   const themedSpec = applyDaisyUIThemeVegaLite(spec, finalOptions);
