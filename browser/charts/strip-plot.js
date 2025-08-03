@@ -5,23 +5,23 @@ import {
 } from "../../core/utils/timezone.js";
 
 export const SHAPE_NAMES = [
-  "circle",
-  "square",
-  "triangle",
   "diamond",
   "cross",
+  "square",
   "star",
+  "triangle",
   "pentagon",
+  "circle",
 ];
 
 export const SHAPE_DEFINITIONS = {
-  circle: "M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z",
-  square: "M-4,-4L4,-4L4,4L-4,4Z",
-  triangle: "M0,-5L4.33,2.5L-4.33,2.5Z",
   diamond: "M0,-5L4,0L0,5L-4,0Z",
   cross: "M-1,-5L1,-5L1,-1L5,-1L5,1L1,1L1,5L-1,5L-1,1L-5,1L-5,-1L-1,-1Z",
+  square: "M-4,-4L4,-4L4,4L-4,4Z",
   star: "M0,-6L1.8,-1.8L6,0L1.8,1.8L0,6L-1.8,1.8L-6,0L-1.8,-1.8Z",
+  triangle: "M0,-5L4.33,2.5L-4.33,2.5Z",
   pentagon: "M0,-6L5.7,-1.9L3.5,4.9L-3.5,4.9L-5.7,-1.9Z",
+  circle: "M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z",
 };
 
 /**
