@@ -760,7 +760,7 @@
         }
 
         async function renderHistograms(data) {
-            const { preVizData, recentVizData } = data;
+            const { preVizData, recentVizData, userConfig } = data;
             const histogramConfigs = [
                 {
                     id: 'histogram-hour-of-day',
@@ -785,7 +785,7 @@
                             color: '#48bb78'
                         }
                     ];
-                    await renderHistogram(container, periodsMetricsData, {
+                    const options = {
                         metricId: config.metricId,
                         viewMode: viewMode,
                         xLabel: config.xLabel,
@@ -793,7 +793,22 @@
                         useLogScale: false,
                         isDark: false,
                         showLegend: false,
-                    });
+                    };
+                    if (config.metricId === 'commits_by_hour_of_day' && userConfig?.day_boundary !== undefined) {
+                        options.referenceLines = [
+                            {
+                                value: userConfig.day_boundary,
+                                label: `Day Boundary (${userConfig.day_boundary}:00)`,
+                                color: "#dc2626",
+                                style: "dashed",
+                                strokeWidth: 2,
+                                opacity: 0.8,
+                                fontSize: 10,
+                                fontWeight: "bold"
+                            }
+                        ];
+                    }
+                    await renderHistogram(container, periodsMetricsData, options);
                     console.log(`Histogram for ${config.metricId} rendered successfully`);
                 } catch (error) {
                     console.error(`Error rendering histogram for ${config.metricId}:`, error);
