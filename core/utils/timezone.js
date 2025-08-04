@@ -11,6 +11,21 @@ export function toLocalTime(timestamp, timezoneOffsetHours) {
 }
 
 /**
+ * Adjust user configuration for timezone handling
+ * @param {Object} userConfig - User configuration object
+ * @param {boolean} forceUTC - Whether to force UTC timezone
+ * @returns {Object} Adjusted user configuration
+ */
+export function adjustUserConfig(userConfig, forceUTC) {
+  return {
+    ...userConfig,
+    day_boundary: forceUTC
+      ? userConfig.day_boundary_utc
+      : userConfig.day_boundary,
+  };
+}
+
+/**
  * Get local coding day string with 4am cutoff
  * @param {string|Date} timestamp - UTC timestamp
  * @param {Object} userConfig - User configuration with timezone_offset_hours and day_boundary
@@ -19,8 +34,7 @@ export function toLocalTime(timestamp, timezoneOffsetHours) {
 export function getLocalCodingDay(timestamp, userConfig) {
   const { timezone_offset_hours, day_boundary = 4 } = userConfig;
   const localTime = toLocalTime(timestamp, timezone_offset_hours);
-  const codingDayMs =
-    localTime.getTime() - day_boundary * 60 * 60 * 1000;
+  const codingDayMs = localTime.getTime() - day_boundary * 60 * 60 * 1000;
   const codingDay = new Date(codingDayMs);
   return codingDay.toISOString().split("T")[0];
 }
