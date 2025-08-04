@@ -70,10 +70,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
   const periodStart = options.periodStart;
   const periodEnd = options.periodEnd;
   const sessions = options.sessions;
-  const userConfig = options.userConfig || {
-    timezone_offset_hours: 0,
-    day_boundary: 4,
-  };
+  const userConfig = options.userConfig;
   if (!commits || commits.length === 0) {
     return {
       commits: [],
@@ -339,8 +336,6 @@ function getColorForId(colorId) {
   const colorIndex = parseInt(colorId.replace("color", "")) || 0;
   return colors[colorIndex] || colors[0];
 }
-
-// In browser/charts/strip-plot.js, add:
 
 /**
  * Prepare periods data with raw commits for strip plot rendering

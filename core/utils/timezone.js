@@ -19,6 +19,7 @@ export function toLocalTime(timestamp, timezoneOffsetHours) {
 export function adjustUserConfig(userConfig, forceUTC) {
   return {
     ...userConfig,
+    timezone_offset_hours: forceUTC ? 0 : userConfig.timezone_offset_hours,
     day_boundary: forceUTC
       ? userConfig.day_boundary_utc
       : userConfig.day_boundary,
