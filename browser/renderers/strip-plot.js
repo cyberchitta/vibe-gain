@@ -101,7 +101,7 @@ export async function renderStripPlot(container, periodsRawData, options = {}) {
   if (!options.repositoryMarks) {
     throw new Error("repositoryMarks must be provided in options");
   }
-  if (!this.options.targetPeriod) {
+  if (!options.targetPeriod) {
     throw new Error("targetPeriod must be specified in options");
   }
   const renderer = StripPlotRenderer.getOrCreateRenderer(container, options);
