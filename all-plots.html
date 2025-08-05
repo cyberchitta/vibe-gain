@@ -431,6 +431,7 @@
         </div>
     </div>
     <script type="module">
+        import {assignRepositoryMarks} from './browser/charts/strip-plot.js'
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { createHistogramSpec } from './browser/specs/histogram.js';
         import { renderHistogram } from './browser/renderers/histogram.js';
@@ -582,6 +583,11 @@
                 const commits = vizData.GLOBAL_COMMITS;
                 const color = period === 'Pre-AI' ? '#ed8936' : '#48bb78';
                 const sessions = vizData.raw_sessions || [];
+                const uniqueRepos = [...new Set(commits.map(c => c.repo))];
+                const repositoryMarks = assignRepositoryMarks(uniqueRepos, commits, {
+                    colorOffset: 0,
+                    shapeOffset: 0
+                });
                 const rawPeriodsData = [{
                     period: period,
                     commits: commits,
@@ -601,7 +607,8 @@
                     isDark: false,
                     targetPeriod: period,
                     periodConfigs: periodConfigs,
-                    userConfig: userConfig
+                    userConfig: userConfig,
+                    repositoryMarks: repositoryMarks
                 });
                 console.log(`${period} strip plot rendered successfully with ${sessions.length} sessions`);
             } catch (error) {

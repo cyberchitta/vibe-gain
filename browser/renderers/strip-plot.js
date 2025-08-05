@@ -34,8 +34,6 @@ class StripPlotRenderer {
       isDark: false,
       targetPeriod: null,
       periodConfigs: {},
-      colorOffset: 0,
-      shapeOffset: 0,
       ...this.options,
       ...options,
     };
@@ -43,9 +41,6 @@ class StripPlotRenderer {
       throw new Error("Container element is required");
     }
     this.container.innerHTML = "";
-    if (!this.options.targetPeriod) {
-      throw new Error("targetPeriod must be specified in options");
-    }
     try {
       const preparedData = preparePeriodsForStripPlot(
         periodsRawData,
@@ -53,8 +48,7 @@ class StripPlotRenderer {
         {
           periodConfigs: this.options.periodConfigs,
           userConfig: this.options.userConfig,
-          colorOffset: this.options.colorOffset,
-          shapeOffset: this.options.shapeOffset,
+          repositoryMarks: this.options.repositoryMarks,
         }
       );
       const spec = createStripPlotSpec(
@@ -100,10 +94,16 @@ class StripPlotRenderer {
  * Render strip plot visualization
  * @param {HTMLElement} container - Container element
  * @param {Array} periodsRawData - Array of {period, data, color} objects where data is commits array
- * @param {Object} options - Rendering options including targetPeriod, colorOffset, shapeOffset
+ * @param {Object} options - Rendering options including targetPeriod, repositoryMarks
  * @returns {Promise<Object>} - Vega view instance
  */
 export async function renderStripPlot(container, periodsRawData, options = {}) {
+  if (!options.repositoryMarks) {
+    throw new Error("repositoryMarks must be provided in options");
+  }
+  if (!this.options.targetPeriod) {
+    throw new Error("targetPeriod must be specified in options");
+  }
   const renderer = StripPlotRenderer.getOrCreateRenderer(container, options);
   return await renderer.render(periodsRawData, options);
 }

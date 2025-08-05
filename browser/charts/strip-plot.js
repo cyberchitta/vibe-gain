@@ -71,6 +71,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
   const periodEnd = options.periodEnd;
   const sessions = options.sessions;
   const userConfig = options.userConfig;
+  const repositoryMarks = options.repositoryMarks;
   if (!commits || commits.length === 0) {
     return {
       commits: [],
@@ -91,8 +92,6 @@ export function prepareStripPlotData(commits, period, options = {}) {
       },
     };
   }
-  const uniqueRepos = [...new Set(commits.map((c) => c.repo))];
-  const repoMarkings = assignRepositoryMarks(uniqueRepos, commits, options);
   const enhancedCommits = commits.map((commit) => {
     const timeOfDayDate = extractTimeOfDay(commit.timestamp, userConfig);
     const hourDecimal = getLocalHourDecimal(
@@ -102,8 +101,8 @@ export function prepareStripPlotData(commits, period, options = {}) {
     return {
       ...commit,
       period: period,
-      repoColor: repoMarkings[commit.repo]?.color,
-      repoShape: repoMarkings[commit.repo]?.shape,
+      repoColor: repositoryMarks[commit.repo]?.color,
+      repoShape: repositoryMarks[commit.repo]?.shape,
       dayTimestamp: new Date(
         getLocalCodingDay(commit.timestamp, userConfig) + "T00:00:00Z"
       ),
@@ -180,9 +179,10 @@ export function prepareStripPlotData(commits, period, options = {}) {
       });
     }
   });
+  const uniqueRepos = [...new Set(commits.map((c) => c.repo))];
   const repositoryMetadata = uniqueRepos.map((repo) => ({
     repo: repo,
-    ...repoMarkings[repo],
+    ...repositoryMarks[repo],
     commitCount: commits.filter((c) => c.repo === repo).length,
     period: period,
   }));
@@ -349,7 +349,7 @@ export function preparePeriodsForStripPlot(
   targetPeriod,
   options = {}
 ) {
-  const { periodConfigs, userConfig, colorOffset, shapeOffset } = options;
+  const { periodConfigs, userConfig, repositoryMarks } = options;
   const periodData = periodsRawData.find((p) => p.period === targetPeriod);
   if (!periodData) {
     throw new Error(`Period "${targetPeriod}" not found in provided data`);
@@ -360,8 +360,7 @@ export function preparePeriodsForStripPlot(
     periodStart: config.start,
     periodEnd: config.end,
     userConfig: userConfig,
-    colorOffset: colorOffset,
-    shapeOffset: shapeOffset,
+    repositoryMarks: repositoryMarks,
   });
   return {
     period: targetPeriod,
