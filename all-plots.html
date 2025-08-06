@@ -431,7 +431,7 @@
         </div>
     </div>
     <script type="module">
-        import {assignRepositoryMarks} from './browser/charts/strip-plot.js'
+        import { assignRepositoryMarks, sortReposByCommitCount, organizeRepos } from './browser/charts/strip-plot.js'
         import { createBoxPlotSpec } from './browser/specs/box-plot.js';
         import { createHistogramSpec } from './browser/specs/histogram.js';
         import { renderHistogram } from './browser/renderers/histogram.js';
@@ -579,15 +579,16 @@
             if (!container) return;
             try {
                 const { preCommits, recentCommits, preVizData, recentVizData, userConfig } = data;
+                const preRepos = [...new Set(preCommits.map(c => c.repo))];
+                const recentRepos = [...new Set(recentCommits.map(c => c.repo))];
+                const sortedPreRepos = sortReposByCommitCount(preRepos, preCommits);
+                const sortedRecentRepos = sortReposByCommitCount(recentRepos, recentCommits);
+                const interleavedRepos = organizeRepos(sortedPreRepos, sortedRecentRepos);
+                const repositoryMarks = assignRepositoryMarks(interleavedRepos);
                 const vizData = period === 'Pre-AI' ? preVizData : recentVizData;
                 const commits = vizData.GLOBAL_COMMITS;
                 const color = period === 'Pre-AI' ? '#ed8936' : '#48bb78';
                 const sessions = vizData.raw_sessions || [];
-                const uniqueRepos = [...new Set(commits.map(c => c.repo))];
-                const repositoryMarks = assignRepositoryMarks(uniqueRepos, commits, {
-                    colorOffset: 0,
-                    shapeOffset: 0
-                });
                 const rawPeriodsData = [{
                     period: period,
                     commits: commits,

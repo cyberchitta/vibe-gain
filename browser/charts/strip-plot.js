@@ -24,28 +24,38 @@ export const SHAPE_DEFINITIONS = {
   circle: "M0,-5A5,5,0,1,1,0,5A5,5,0,1,1,0,-5Z",
 };
 
+export function sortReposByCommitCount(repos, commits) {
+  const commitCounts = {};
+  commits.forEach((commit) => {
+    commitCounts[commit.repo] = (commitCounts[commit.repo] || 0) + 1;
+  });
+  return repos.sort((a, b) => (commitCounts[b] || 0) - (commitCounts[a] || 0));
+}
+
+export function organizeRepos(period1Repos, period2Repos) {
+  const period1Set = new Set(period1Repos);
+  const period2Set = new Set(period2Repos);
+  const commonRepos = period1Repos.filter(repo => period2Set.has(repo));
+  const uniquePeriod1Repos = period1Repos.filter(repo => !period2Set.has(repo));
+  const uniquePeriod2Repos = period2Repos.filter(repo => !period1Set.has(repo));
+  return [...commonRepos, ...uniquePeriod1Repos, ...uniquePeriod2Repos];
+}
+
 /**
- * Assign repositories to visual groups using commit rank order
+ * Assign repositories to visual groups
  * @param {Array} repos - Array of repository names
  * @param {Array} commits - Array of commit objects (to calculate commit counts)
  * @returns {Object} - Object mapping repo names to group assignments
  */
-export function assignRepositoryMarks(repos, commits, options = {}) {
-  const { colorOffset, shapeOffset } = options;
+export function assignRepositoryMarks(repos, options = {}) {
+  const { colorOffset = 0, shapeOffset = 0 } = options;
   if (!repos || repos.length === 0) {
     return {};
   }
   const colors = generateMarkColors();
-  const repoCommitCounts = {};
-  commits.forEach((commit) => {
-    repoCommitCounts[commit.repo] = (repoCommitCounts[commit.repo] || 0) + 1;
-  });
-  const uniqueRepos = [...new Set(repos)].sort(
-    (a, b) => (repoCommitCounts[b] || 0) - (repoCommitCounts[a] || 0)
-  );
-  const markAssignments = {};
   const shapeDefinitions = SHAPE_NAMES;
-  uniqueRepos.forEach((repo, index) => {
+  const markAssignments = {};
+  repos.forEach((repo, index) => {
     const colorIndex = (index + colorOffset) % colors.length;
     const shapeIndex = (index + shapeOffset) % shapeDefinitions.length;
     markAssignments[repo] = {
