@@ -144,7 +144,7 @@ export function createStripPlotSpec(data, options = {}) {
       encode: {
         enter: {
           fill: { value: "black" },
-          size: { value: 10 },
+          size: { value: 5 },
           shape: { value: "circle" },
           strokeWidth: { value: 0 },
         },
