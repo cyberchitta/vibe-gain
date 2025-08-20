@@ -346,7 +346,7 @@ See how vibe-gain is used in production:
 
 ## License
 
-Apache-2.0
+Apache-2.0 - see LICENSE file for details.
 
 ## Credits
 
