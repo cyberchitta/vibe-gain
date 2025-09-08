@@ -1,10 +1,10 @@
 ---
 description: additional repo specific filters.
 compose:
-  filters: [lc-filters]
+  filters: [lc/flt-base]
 gitignores:
-  full_files:
+  full-files:
     - .env.example
-  outline_files:
+  outline-files:
     - .env.example
 ---
