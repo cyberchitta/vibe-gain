@@ -1,6 +1,6 @@
 {
   "name": "vibe-gain",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "Visualize GitHub commit patterns to evaluate vibe-coding productivity gains",
   "type": "module",
   "main": "./lib/index.js",
@@ -23,7 +23,7 @@
   },
   "optionalDependencies": {
     "vega": "^6.1.2",
-    "vega-lite": "^6.2.0"
+    "vega-lite": "^6.3.0"
   },
   "license": "Apache-2.0"
 }
