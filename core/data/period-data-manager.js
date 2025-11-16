@@ -23,14 +23,15 @@ export class PeriodDataManager {
     return await this.dataLoader.exists(periodName);
   }
 
-  async createMetricsBuilder(periodName, startDate, endDate, filter = null) {
+  async createMetricsBuilder(periodName, startDate, endDate, tzConfig, filter) {
     const { commits, repoMetadata } = await this.loadPeriodData(periodName);
     let builder = MetricsBuilder.forPeriod(
       commits,
       repoMetadata,
-      this.userConfig,
+      tzConfig,
       startDate,
-      endDate
+      endDate,
+      periodName
     );
     if (filter) {
       builder = builder.withFilter(filter);

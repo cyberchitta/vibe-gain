@@ -6,39 +6,49 @@ import { determineSessionThreshold } from "./threshold-analysis.js";
 import { SessionBuilder } from "./session-builder.js";
 
 export class MetricsBuilder {
-  static forPeriod(commits, repoMetadata, userConfig, periodStart, periodEnd) {
+  static forPeriod(
+    commits,
+    repoMetadata,
+    tzConfig,
+    periodStart,
+    periodEnd,
+    periodName
+  ) {
     const periodCommits = commits.filter((commit) => {
-      const commitCodingDay = getLocalCodingDay(commit.timestamp, userConfig);
+      const commitCodingDay = getLocalCodingDay(commit.timestamp, tzConfig);
       return commitCodingDay >= periodStart && commitCodingDay <= periodEnd;
     });
     const thresholdAnalysis = determineSessionThreshold(
       periodCommits,
-      userConfig
+      tzConfig
     );
     return new MetricsBuilder(
-      periodCommits,
+      commits,
       repoMetadata,
-      userConfig,
+      tzConfig,
       periodCommits,
       thresholdAnalysis,
-      thresholdAnalysis?.threshold
+      thresholdAnalysis?.threshold,
+      periodName
     );
   }
 
   constructor(
     commits,
     repoMetadata,
-    userConfig,
+    tzConfig,
     filteredCommits,
     thresholdAnalysis,
-    sessionThreshold
+    sessionThreshold,
+    periodName = null
   ) {
     this.GLOBAL_COMMITS = Object.freeze(commits);
     this.REPO_METADATA = Object.freeze(repoMetadata);
-    this.USER_CONFIG = Object.freeze(userConfig);
+    this.TZ_CONFIG = Object.freeze(tzConfig);
     this.FILTERED_COMMITS = Object.freeze(filteredCommits || commits);
     this.THRESHOLD_ANALYSIS = Object.freeze(thresholdAnalysis);
     this.SESSION_THRESHOLD = sessionThreshold;
+    this.PERIOD_NAME = periodName;
     Object.freeze(this);
   }
 
@@ -46,10 +56,11 @@ export class MetricsBuilder {
     return new MetricsBuilder(
       this.GLOBAL_COMMITS,
       this.REPO_METADATA,
-      this.USER_CONFIG,
+      this.TZ_CONFIG,
       this.GLOBAL_COMMITS.filter(filterFn),
       this.THRESHOLD_ANALYSIS,
-      this.SESSION_THRESHOLD
+      this.SESSION_THRESHOLD,
+      this.PERIOD_NAME
     );
   }
 
@@ -57,10 +68,11 @@ export class MetricsBuilder {
     return new MetricsBuilder(
       this.GLOBAL_COMMITS,
       this.REPO_METADATA,
-      this.USER_CONFIG,
+      this.TZ_CONFIG,
       this.FILTERED_COMMITS,
       this.THRESHOLD_ANALYSIS,
-      minutes
+      minutes,
+      this.PERIOD_NAME
     );
   }
 
@@ -93,7 +105,7 @@ export class MetricsBuilder {
     const activeHoursPerDay = this._computeActiveHoursMetric();
     const byHour = this._computeCommitsByHourOfDay();
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
+      getLocalCodingDay(commit.timestamp, this.TZ_CONFIG, this.PERIOD_NAME)
     );
     const commitsStats = calculateBoxPlotStats(commits.map((d) => d.commits));
     const locStats = calculateBoxPlotStats(loc.map((d) => d.loc));
@@ -144,16 +156,15 @@ export class MetricsBuilder {
         date_range:
           this.FILTERED_COMMITS.length > 0
             ? {
-                start: new Date(
-                  Math.min(
-                    ...this.FILTERED_COMMITS.map((c) => new Date(c.timestamp))
-                  )
-                ).toISOString(),
-                end: new Date(
-                  Math.max(
-                    ...this.FILTERED_COMMITS.map((c) => new Date(c.timestamp))
-                  )
-                ).toISOString(),
+                start: this.FILTERED_COMMITS.reduce(
+                  (earliest, c) =>
+                    c.timestamp < earliest ? c.timestamp : earliest,
+                  this.FILTERED_COMMITS[0].timestamp
+                ),
+                end: this.FILTERED_COMMITS.reduce(
+                  (latest, c) => (c.timestamp > latest ? c.timestamp : latest),
+                  this.FILTERED_COMMITS[0].timestamp
+                ),
               }
             : { start: null, end: null },
         commits_stats: commitsStats,
@@ -168,14 +179,17 @@ export class MetricsBuilder {
   }
 
   buildSession() {
-    if (this.SESSION_THRESHOLD === null) {
-      throw new Error("Session threshold must be set. Use withThreshold()");
+    if (!this.SESSION_THRESHOLD) {
+      throw new Error(
+        "Session threshold not set. Use MetricsBuilder.forPeriod() or withThreshold() before building session metrics. Use withThreshold()"
+      );
     }
     const sessionBuilder = new SessionBuilder(
       this.GLOBAL_COMMITS,
       this.FILTERED_COMMITS,
-      this.USER_CONFIG,
-      this.SESSION_THRESHOLD
+      this.TZ_CONFIG,
+      this.SESSION_THRESHOLD,
+      this.PERIOD_NAME
     );
     return sessionBuilder.build();
   }
@@ -185,7 +199,7 @@ export class MetricsBuilder {
     const dailySpanMinutes = this._computeDailySpanMinutesMetric();
     const allCommitIntervals = extractBasicCommitIntervals(
       this.GLOBAL_COMMITS,
-      this.USER_CONFIG
+      this.TZ_CONFIG
     );
     const repoCommitDistribution = this._computeRepoCommitDistribution();
     const reposStats = calculateBoxPlotStats(repos.map((d) => d.repos));
@@ -227,7 +241,7 @@ export class MetricsBuilder {
 
   _computeCommitsMetric() {
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
+      getLocalCodingDay(commit.timestamp, this.TZ_CONFIG)
     );
     return Object.entries(commitsByDay).map(([date, dayCommits]) => ({
       date,
@@ -237,11 +251,23 @@ export class MetricsBuilder {
 
   _computeLocMetric() {
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
+      getLocalCodingDay(commit.timestamp, this.TZ_CONFIG)
     );
     return Object.entries(commitsByDay).map(([date, dayCommits]) => ({
       date,
       loc: dayCommits.reduce((sum, c) => sum + c.additions + c.deletions, 0),
+    }));
+  }
+
+  _computeLocPerCommitMetric() {
+    return this.FILTERED_COMMITS.map((commit) => ({
+      loc_per_commit: (commit.additions || 0) + (commit.deletions || 0),
+    }));
+  }
+
+  _computeFilesPerCommitMetric() {
+    return this.FILTERED_COMMITS.map((commit) => ({
+      files_per_commit: commit.files_changed || 0,
     }));
   }
 
@@ -250,12 +276,9 @@ export class MetricsBuilder {
     this.FILTERED_COMMITS.forEach((commit) => {
       const localCodingDay = getLocalCodingDay(
         commit.timestamp,
-        this.USER_CONFIG
+        this.TZ_CONFIG
       );
-      const localHour = getLocalHour(
-        commit.timestamp,
-        this.USER_CONFIG.timezone_offset_hours
-      );
+      const localHour = getLocalHour(commit.timestamp, this.TZ_CONFIG);
       const hourKey = `${localCodingDay}T${localHour
         .toString()
         .padStart(2, "0")}`;
@@ -267,10 +290,7 @@ export class MetricsBuilder {
   _computeCommitsByHourOfDay() {
     const hourCounts = new Array(24).fill(0);
     this.FILTERED_COMMITS.forEach((commit) => {
-      const localHour = getLocalHour(
-        commit.timestamp,
-        this.USER_CONFIG.timezone_offset_hours
-      );
+      const localHour = getLocalHour(commit.timestamp, this.TZ_CONFIG);
       hourCounts[localHour]++;
     });
     return hourCounts;
@@ -281,12 +301,9 @@ export class MetricsBuilder {
     this.FILTERED_COMMITS.forEach((commit) => {
       const localCodingDay = getLocalCodingDay(
         commit.timestamp,
-        this.USER_CONFIG
+        this.TZ_CONFIG
       );
-      const localHour = getLocalHour(
-        commit.timestamp,
-        this.USER_CONFIG.timezone_offset_hours
-      );
+      const localHour = getLocalHour(commit.timestamp, this.TZ_CONFIG);
       const hourKey = `${localCodingDay}T${localHour
         .toString()
         .padStart(2, "0")}`;
@@ -300,12 +317,12 @@ export class MetricsBuilder {
 
   _computeActiveHoursMetric() {
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
+      getLocalCodingDay(commit.timestamp, this.TZ_CONFIG)
     );
     return Object.entries(commitsByDay).map(([date, dayCommits]) => {
       const activeHours = new Set(
         dayCommits.map((commit) =>
-          getLocalHour(commit.timestamp, this.USER_CONFIG.timezone_offset_hours)
+          getLocalHour(commit.timestamp, this.TZ_CONFIG)
         )
       );
       return {
@@ -317,7 +334,7 @@ export class MetricsBuilder {
 
   _computeReposMetric() {
     const commitsByDay = groupBy(this.GLOBAL_COMMITS, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
+      getLocalCodingDay(commit.timestamp, this.TZ_CONFIG)
     );
     return Object.entries(commitsByDay).map(([date, dayCommits]) => ({
       date,
@@ -335,7 +352,7 @@ export class MetricsBuilder {
 
   _computeDailySpanMinutesMetric() {
     const commitsByDay = groupBy(this.GLOBAL_COMMITS, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.USER_CONFIG)
+      getLocalCodingDay(commit.timestamp, this.TZ_CONFIG)
     );
     return Object.entries(commitsByDay).map(([date, dayCommits]) => {
       const utcTimestamps = dayCommits
@@ -344,30 +361,15 @@ export class MetricsBuilder {
       const legacyCodingTime =
         utcTimestamps.length === 1
           ? 6
-          : (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) /
-            (1000 * 60);
+          : Math.min(
+              (utcTimestamps[utcTimestamps.length - 1] - utcTimestamps[0]) /
+                (1000 * 60),
+              8 * 60
+            );
       return {
         date,
         daily_span_minutes: legacyCodingTime,
       };
     });
-  }
-
-  _computeLocPerCommitMetric() {
-    return this.FILTERED_COMMITS.map((commit) => ({
-      sha: commit.sha,
-      repo: commit.repo,
-      timestamp: commit.timestamp,
-      loc_per_commit: (commit.additions || 0) + (commit.deletions || 0),
-    }));
-  }
-
-  _computeFilesPerCommitMetric() {
-    return this.FILTERED_COMMITS.map((commit) => ({
-      sha: commit.sha,
-      repo: commit.repo,
-      timestamp: commit.timestamp,
-      files_per_commit: commit.filesChanged || 0,
-    }));
   }
 }

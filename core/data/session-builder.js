@@ -1,17 +1,20 @@
 import { getLocalCodingDay, isSameCodingDay } from "../utils/timezone.js";
-import {
-  groupBy,
-  calculateMedian,
-  calculateBoxPlotStats,
-} from "../utils/array.js";
+import { groupBy, calculateBoxPlotStats } from "../utils/array.js";
 import { detectCodingSessions } from "./sessions.js";
 
 export class SessionBuilder {
-  constructor(globalCommits, filteredCommits, userConfig, sessionThreshold) {
+  constructor(
+    globalCommits,
+    filteredCommits,
+    tzConfig,
+    sessionThreshold,
+    periodName
+  ) {
     this.globalCommits = globalCommits;
     this.filteredCommits = filteredCommits;
-    this.userConfig = userConfig;
+    this.tzConfig = tzConfig;
     this.sessionThreshold = sessionThreshold;
+    this.periodName = periodName;
   }
 
   build() {
@@ -48,7 +51,7 @@ export class SessionBuilder {
 
   _detectAllSessions() {
     const commitsByDay = groupBy(this.globalCommits, (commit) =>
-      getLocalCodingDay(commit.timestamp, this.userConfig)
+      getLocalCodingDay(commit.timestamp, this.tzConfig)
     );
     const sessionsByDay = {};
     Object.entries(commitsByDay).forEach(([date, dayCommits]) => {
@@ -119,7 +122,7 @@ export class SessionBuilder {
               isSameCodingDay(
                 commit.timestamp,
                 session.startTime,
-                this.userConfig
+                this.tzConfig
               )
             );
           }

@@ -1,13 +1,7 @@
 import { getLocalCodingDay, isSameCodingDay } from "../utils/timezone.js";
-import { groupBy, uniq, calculateMedian } from "../utils/array.js";
+import { uniq } from "../utils/array.js";
 
-/**
- * Extract basic commit intervals (time between consecutive commits within same day)
- * @param {Array} commits - Array of commit objects
- * @param {Object} userConfig - User configuration
- * @returns {Array} - Array of interval objects
- */
-export function extractBasicCommitIntervals(commits, userConfig) {
+export function extractBasicCommitIntervals(commits, tzConfig) {
   if (!commits || commits.length < 2) {
     return [];
   }
@@ -19,7 +13,7 @@ export function extractBasicCommitIntervals(commits, userConfig) {
     const prevCommit = sortedCommits[i - 1];
     const currCommit = sortedCommits[i];
     if (
-      !isSameCodingDay(prevCommit.timestamp, currCommit.timestamp, userConfig)
+      !isSameCodingDay(prevCommit.timestamp, currCommit.timestamp, tzConfig)
     ) {
       continue;
     }
@@ -27,7 +21,7 @@ export function extractBasicCommitIntervals(commits, userConfig) {
     const currTime = new Date(currCommit.timestamp).getTime();
     const intervalMinutes = (currTime - prevTime) / (1000 * 60);
     intervals.push({
-      date: getLocalCodingDay(currCommit.timestamp, userConfig),
+      date: getLocalCodingDay(currCommit.timestamp, tzConfig),
       interval_minutes: intervalMinutes,
       from_commit: prevCommit.sha,
       to_commit: currCommit.sha,

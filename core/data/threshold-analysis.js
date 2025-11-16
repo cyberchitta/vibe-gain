@@ -1,14 +1,8 @@
 import { calculateVariance, calculateMAD } from "../utils/array.js";
 import { extractBasicCommitIntervals } from "./sessions.js";
 
-/**
- * Determine optimal session threshold using multiple analytical approaches
- * @param {Array} commits - Array of commit objects
- * @param {Object} userConfig - User configuration
- * @returns {Object} - Threshold analysis with recommended value
- */
-export function determineSessionThreshold(commits, userConfig) {
-  const intervals = extractBasicCommitIntervals(commits, userConfig);
+export function determineSessionThreshold(commits, tzConfig) {
+  const intervals = extractBasicCommitIntervals(commits, tzConfig);
   if (intervals.length === 0) {
     return { threshold: 45, method: "default", analysis: null };
   }

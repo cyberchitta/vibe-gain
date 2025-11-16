@@ -61,13 +61,27 @@ Create `data/parameters.json`:
     {
       "username": "your-github-username",
       "timezone_offset_hours": 0,
-      "coding_day_start_hour": 4
     }
   ]
 }
 ```
 
-### 4. Collect Data
+### 4. Auto-detect Day Boundaries (Optional but Recommended)
+
+The system can automatically detect the optimal "coding day" boundary for each period:
+
+```bash
+bun lib/update-day-cutoff.js
+```
+
+This analyzes your commit patterns and:
+- Detects the hour with least activity (natural day boundary)
+- Handles timezone changes between periods
+- Updates `parameters.json` with `day_boundary_utc` and `period_day_boundaries`
+
+If boundaries differ by more than the threshold (default: 2 hours), period-specific boundaries are used.
+
+### 5. Collect Data
 
 ```bash
 # Discover repositories (optional - creates repo lists you can edit)
@@ -77,7 +91,7 @@ bun lib/discover-repos.js
 bun start
 ```
 
-### 5. View Results
+### 6. View Results
 
 ```bash
 # Start local web server
@@ -231,10 +245,13 @@ See **`test-all.html`** for a full working example that demonstrates:
     {
       "username": "github-username",
       "timezone_offset_hours": 0, // Your timezone offset from UTC
-      "coding_day_start_hour": 4 // When your "coding day" starts (default: 4 AM)
+      // Auto-detected fields (populated by bun lib/update-day-cutoff.js):
+      // "day_boundary_utc": 23,  // Day boundary in UTC
+      // "period_day_boundaries": { "Pre-AI": 23, "Recent-AI": 23 }  // Per-period boundaries
     }
   ],
-  "CLUSTER_THRESHOLD_MINUTES": 30 // Optional: commit clustering threshold
+  "LOCAL_DAY_BOUNDARY": 4,
+  "DAY_BOUNDARY_THRESHOLD_HOURS": 2 // Optional: threshold for timezone change detection
 }
 ```
 

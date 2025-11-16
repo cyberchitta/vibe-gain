@@ -1,9 +1,3 @@
-/**
- * Convert UTC timestamp to local time with user's timezone offset
- * @param {string|Date} timestamp - UTC timestamp
- * @param {number} timezoneOffsetHours - User's timezone offset in hours (e.g., 5.5 for UTC+5:30)
- * @returns {Date} - Local time Date object
- */
 export function toLocalTime(timestamp, timezoneOffsetHours) {
   const utcDate = new Date(timestamp);
   const offsetMs = timezoneOffsetHours * 60 * 60 * 1000;
@@ -11,71 +5,52 @@ export function toLocalTime(timestamp, timezoneOffsetHours) {
 }
 
 /**
- * Adjust user configuration for timezone handling
- * @param {Object} userConfig - User configuration object
- * @param {boolean} forceUTC - Whether to force UTC timezone
- * @returns {Object} Adjusted user configuration
- */
-export function adjustUserConfig(userConfig, forceUTC) {
-  return {
-    ...userConfig,
-    timezone_offset_hours: forceUTC ? 0 : userConfig.timezone_offset_hours,
-    day_boundary: forceUTC
-      ? userConfig.day_boundary_utc
-      : userConfig.day_boundary,
-  };
-}
-
-/**
- * Get local coding day string with 4am cutoff
+ * Get local coding day string
  * @param {string|Date} timestamp - UTC timestamp
- * @param {Object} userConfig - User configuration with timezone_offset_hours and day_boundary
+ * @param {Object} tzConfig - Timezone config with offsetHours and boundaryHour
  * @returns {string} - Local coding day in YYYY-MM-DD format
  */
-export function getLocalCodingDay(timestamp, userConfig) {
-  const { timezone_offset_hours, day_boundary = 4 } = userConfig;
-  const localTime = toLocalTime(timestamp, timezone_offset_hours);
-  const codingDayMs = localTime.getTime() - day_boundary * 60 * 60 * 1000;
+export function getLocalCodingDay(timestamp, tzConfig) {
+  const utcDate = new Date(timestamp);
+  const codingDayMs =
+    utcDate.getTime() - tzConfig.boundaryHour * 60 * 60 * 1000;
   const codingDay = new Date(codingDayMs);
   return codingDay.toISOString().split("T")[0];
 }
 
 /**
- * Get local hour of day as decimal (including minutes) for hour-based analysis
+ * Get local hour of day as decimal
  * @param {string|Date} timestamp - UTC timestamp
- * @param {number} timezoneOffsetHours - User's timezone offset in hours
+ * @param {Object} tzConfig - Timezone config with offsetHours
  * @returns {number} - Local hour as decimal (e.g., 14.5 for 2:30 PM)
  */
-export function getLocalHourDecimal(timestamp, timezoneOffsetHours) {
+export function getLocalHourDecimal(timestamp, tzConfig) {
   const utcDate = new Date(timestamp);
   const utcHours = utcDate.getUTCHours();
   const utcMinutes = utcDate.getUTCMinutes();
-  const localHourDecimal = utcHours + utcMinutes / 60 + timezoneOffsetHours;
+  const localHourDecimal = utcHours + utcMinutes / 60 + tzConfig.offsetHours;
   return ((localHourDecimal % 24) + 24) % 24;
 }
 
 /**
- * Get local hour of day for hour-based analysis
+ * Get local hour of day (integer)
  * @param {string|Date} timestamp - UTC timestamp
- * @param {number} timezoneOffsetHours - User's timezone offset in hours
+ * @param {Object} tzConfig - Timezone config with offsetHours
  * @returns {number} - Local hour (0-23)
  */
-export function getLocalHour(timestamp, timezoneOffsetHours) {
-  const utcDate = new Date(timestamp);
-  const utcHours = utcDate.getUTCHours();
-  const localHours = (utcHours + timezoneOffsetHours) % 24;
-  return Math.floor(localHours);
+export function getLocalHour(timestamp, tzConfig) {
+  return Math.floor(getLocalHourDecimal(timestamp, tzConfig));
 }
 
 /**
  * Check if two timestamps are in the same coding day
  * @param {string|Date} timestamp1 - First UTC timestamp
  * @param {string|Date} timestamp2 - Second UTC timestamp
- * @param {Object} userConfig - User configuration
+ * @param {Object} tzConfig - Timezone config
  * @returns {boolean} - Whether timestamps are in same coding day
  */
-export function isSameCodingDay(timestamp1, timestamp2, userConfig) {
-  const day1 = getLocalCodingDay(timestamp1, userConfig);
-  const day2 = getLocalCodingDay(timestamp2, userConfig);
+export function isSameCodingDay(timestamp1, timestamp2, tzConfig) {
+  const day1 = getLocalCodingDay(timestamp1, tzConfig);
+  const day2 = getLocalCodingDay(timestamp2, tzConfig);
   return day1 === day2;
 }

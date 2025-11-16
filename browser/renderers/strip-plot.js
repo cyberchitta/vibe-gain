@@ -11,7 +11,6 @@ class StripPlotRenderer {
     this.vegaView = null;
     this.stripPlotData = null;
     this.commitData = null;
-    this.userConfig = null;
   }
 
   static getRenderer(container) {
@@ -47,7 +46,7 @@ class StripPlotRenderer {
         this.options.targetPeriod,
         {
           periodConfigs: this.options.periodConfigs,
-          userConfig: this.options.userConfig,
+          tzConfig: this.options.tzConfig,
           repositoryMarks: this.options.repositoryMarks,
         }
       );
@@ -69,7 +68,6 @@ class StripPlotRenderer {
       this.commitData =
         periodsRawData.find((p) => p.period === this.options.targetPeriod)
           ?.commits || [];
-      this.userConfig = this.options.userConfig;
       return this.vegaView;
     } catch (error) {
       console.error("Error rendering strip plot:", error);
@@ -85,7 +83,6 @@ class StripPlotRenderer {
     }
     this.stripPlotData = null;
     this.commitData = null;
-    this.userConfig = null;
     StripPlotRenderer.#renderers.delete(this.container);
   }
 }

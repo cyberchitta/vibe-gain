@@ -460,19 +460,7 @@
                 return parametersData;
             } catch (error) {
                 console.error('Error loading parameters:', error);
-                return {
-                    PERIODS: [
-                        { name: "Pre-AI", start: "2022-06-01", end: "2022-11-30" },
-                        { name: "Recent-AI", start: "2024-11-01", end: "2025-04-30" }
-                    ],
-                    GITHUB_USERNAMES: [
-                        {
-                            username: "restlessronin",
-                            timezone_offset_hours: 5.5,
-                            day_boundary: 4
-                        }
-                    ]
-                };
+                return null;
             }
         }
 
@@ -512,8 +500,22 @@
                 };
                 const prePeriod = parametersData.PERIODS.find(p => p.name === 'Pre-AI');
                 const recentPeriod = parametersData.PERIODS.find(p => p.name === 'Recent-AI');
-                const preBuilder = await dataManager.createMetricsBuilder('Pre-AI', prePeriod.start, prePeriod.end, codeOnlyFilter);
-                const recentBuilder = await dataManager.createMetricsBuilder('Recent-AI', recentPeriod.start, recentPeriod.end, codeOnlyFilter);
+                const getTzConfig = (userConfig, periodName) => {
+                    if (userConfig.use_utc_for_analysis) {
+                        return {
+                            offsetHours: 0,
+                            boundaryHour: userConfig.period_day_boundaries?.[periodName] ?? userConfig.day_boundary_utc ?? 0
+                        };
+                    }
+                    return {
+                        offsetHours: userConfig.timezone_offset_hours || 0,
+                        boundaryHour: userConfig.LOCAL_DAY_BOUNDARY || 4
+                    };
+                };
+                const preTzConfig = getTzConfig(userConfig, 'Pre-AI');
+                const recentTzConfig = getTzConfig(userConfig, 'Recent-AI');
+                const preBuilder = await dataManager.createMetricsBuilder('Pre-AI', prePeriod.start, prePeriod.end, preTzConfig, codeOnlyFilter);
+                const recentBuilder = await dataManager.createMetricsBuilder('Recent-AI', recentPeriod.start, recentPeriod.end, recentTzConfig, codeOnlyFilter);
                 const preVizData = preBuilder.build();
                 const recentVizData = recentBuilder.build();
                 cachedData = {
@@ -523,7 +525,9 @@
                     recentVizData: recentVizData,
                     userConfig: userConfig,
                     username: username,
-                    periods: parametersData.PERIODS
+                    periods: parametersData.PERIODS,
+                    preTzConfig: preTzConfig,
+                    recentTzConfig: recentTzConfig
                 };
                 return cachedData;
             } catch (error) {
@@ -608,7 +612,7 @@
                     isDark: false,
                     targetPeriod: period,
                     periodConfigs: periodConfigs,
-                    userConfig: userConfig,
+                    tzConfig: period === 'Pre-AI' ? data.preTzConfig : data.recentTzConfig,
                     repositoryMarks: repositoryMarks
                 });
                 console.log(`${period} strip plot rendered successfully with ${sessions.length} sessions`);
@@ -802,9 +806,67 @@
                         isDark: false,
                         showLegend: false,
                     };
-                    if (config.metricId === 'commits_by_hour_of_day' && userConfig?.day_boundary !== undefined) {
-                        options.referenceLines = [
-                            {
+                    if (config.metricId === 'commits_by_hour_of_day') {
+                        // Handle period-specific day boundaries
+                        const referenceLines = [];
+
+                        if (userConfig?.period_day_boundaries) {
+                            // Use period-specific boundaries
+                            const preBoundary = userConfig.period_day_boundaries['Pre-AI'];
+                            const recentBoundary = userConfig.period_day_boundaries['Recent-AI'];
+
+                            if (preBoundary !== undefined && recentBoundary !== undefined) {
+                                if (preBoundary === recentBoundary) {
+                                    // Same boundary for both periods - show single line
+                                    referenceLines.push({
+                                        value: preBoundary,
+                                        label: `Day Boundary (${preBoundary}:00)`,
+                                        color: "#dc2626",
+                                        style: "dashed",
+                                        strokeWidth: 2,
+                                        opacity: 0.8,
+                                        fontSize: 10,
+                                        fontWeight: "bold"
+                                    });
+                                } else {
+                                    // Different boundaries - show both with period colors
+                                    referenceLines.push({
+                                        value: preBoundary,
+                                        label: `Pre-AI Day Boundary (${preBoundary}:00)`,
+                                        color: "#ed8936",
+                                        style: "dashed",
+                                        strokeWidth: 2,
+                                        opacity: 0.7,
+                                        fontSize: 10,
+                                        fontWeight: "bold"
+                                    });
+                                    referenceLines.push({
+                                        value: recentBoundary,
+                                        label: `Recent-AI Day Boundary (${recentBoundary}:00)`,
+                                        color: "#48bb78",
+                                        style: "dashed",
+                                        strokeWidth: 2,
+                                        opacity: 0.7,
+                                        fontSize: 10,
+                                        fontWeight: "bold"
+                                    });
+                                }
+                            }
+                        } else if (userConfig?.day_boundary_utc !== undefined) {
+                            // Fallback to single UTC boundary
+                            referenceLines.push({
+                                value: userConfig.day_boundary_utc,
+                                label: `Day Boundary (${userConfig.day_boundary_utc}:00)`,
+                                color: "#dc2626",
+                                style: "dashed",
+                                strokeWidth: 2,
+                                opacity: 0.8,
+                                fontSize: 10,
+                                fontWeight: "bold"
+                            });
+                        } else if (userConfig?.day_boundary !== undefined) {
+                            // Legacy fallback
+                            referenceLines.push({
                                 value: userConfig.day_boundary,
                                 label: `Day Boundary (${userConfig.day_boundary}:00)`,
                                 color: "#dc2626",
@@ -813,8 +875,12 @@
                                 opacity: 0.8,
                                 fontSize: 10,
                                 fontWeight: "bold"
-                            }
-                        ];
+                            });
+                        }
+
+                        if (referenceLines.length > 0) {
+                            options.referenceLines = referenceLines;
+                        }
                     }
                     await renderHistogram(container, periodsMetricsData, options);
                     console.log(`Histogram for ${config.metricId} rendered successfully`);

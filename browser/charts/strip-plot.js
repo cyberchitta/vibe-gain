@@ -35,9 +35,13 @@ export function sortReposByCommitCount(repos, commits) {
 export function organizeRepos(period1Repos, period2Repos) {
   const period1Set = new Set(period1Repos);
   const period2Set = new Set(period2Repos);
-  const commonRepos = period1Repos.filter(repo => period2Set.has(repo));
-  const uniquePeriod1Repos = period1Repos.filter(repo => !period2Set.has(repo));
-  const uniquePeriod2Repos = period2Repos.filter(repo => !period1Set.has(repo));
+  const commonRepos = period1Repos.filter((repo) => period2Set.has(repo));
+  const uniquePeriod1Repos = period1Repos.filter(
+    (repo) => !period2Set.has(repo)
+  );
+  const uniquePeriod2Repos = period2Repos.filter(
+    (repo) => !period1Set.has(repo)
+  );
   return [...commonRepos, ...uniquePeriod1Repos, ...uniquePeriod2Repos];
 }
 
@@ -73,14 +77,14 @@ export function assignRepositoryMarks(repos, options = {}) {
  * Prepare data for strip plot visualization
  * @param {Array} commits - Array of commit objects
  * @param {string} period - Period identifier (e.g., 'Pre-AI', 'Recent-AI')
- * @param {Object} options - Configuration options including userConfig
+ * @param {Object} options - Configuration options including tzConfig
  * @returns {Object} - Formatted data for visualization
  */
 export function prepareStripPlotData(commits, period, options = {}) {
   const periodStart = options.periodStart;
   const periodEnd = options.periodEnd;
   const sessions = options.sessions;
-  const userConfig = options.userConfig;
+  const tzConfig = options.tzConfig;
   const repositoryMarks = options.repositoryMarks;
   if (!commits || commits.length === 0) {
     return {
@@ -103,18 +107,15 @@ export function prepareStripPlotData(commits, period, options = {}) {
     };
   }
   const enhancedCommits = commits.map((commit) => {
-    const timeOfDayDate = extractTimeOfDay(commit.timestamp, userConfig);
-    const hourDecimal = getLocalHourDecimal(
-      commit.timestamp,
-      userConfig.timezone_offset_hours
-    );
+    const timeOfDayDate = extractTimeOfDay(commit.timestamp, tzConfig);
+    const hourDecimal = getLocalHourDecimal(commit.timestamp, tzConfig);
     return {
       ...commit,
       period: period,
       repoColor: repositoryMarks[commit.repo]?.color,
       repoShape: repositoryMarks[commit.repo]?.shape,
       dayTimestamp: new Date(
-        getLocalCodingDay(commit.timestamp, userConfig) + "T00:00:00Z"
+        getLocalCodingDay(commit.timestamp, tzConfig) + "T00:00:00Z"
       ),
       timeOfDay: timeOfDayDate,
       hourDecimal: hourDecimal,
@@ -123,14 +124,8 @@ export function prepareStripPlotData(commits, period, options = {}) {
   });
   const sessionMarkers = [];
   sessions.forEach((session, index) => {
-    const startHour = getLocalHourDecimal(
-      session.startTime,
-      userConfig.timezone_offset_hours
-    );
-    const endHour = getLocalHourDecimal(
-      session.endTime,
-      userConfig.timezone_offset_hours
-    );
+    const startHour = getLocalHourDecimal(session.startTime, tzConfig);
+    const endHour = getLocalHourDecimal(session.endTime, tzConfig);
     if (endHour < startHour) {
       console.log(
         `Session ${index} crosses midnight: ${startHour.toFixed(
@@ -138,10 +133,10 @@ export function prepareStripPlotData(commits, period, options = {}) {
         )} -> ${endHour.toFixed(2)}`
       );
       const startDay = new Date(
-        getLocalCodingDay(session.startTime, userConfig) + "T00:00:00Z"
+        getLocalCodingDay(session.startTime, tzConfig) + "T00:00:00Z"
       );
       const endDay = new Date(
-        getLocalCodingDay(session.endTime, userConfig) + "T00:00:00Z"
+        getLocalCodingDay(session.endTime, tzConfig) + "T00:00:00Z"
       );
       sessionMarkers.push({
         sessionId: `${period}-${index}-part1`,
@@ -180,7 +175,7 @@ export function prepareStripPlotData(commits, period, options = {}) {
         startHour: startHour,
         endHour: endHour,
         dayTimestamp: new Date(
-          getLocalCodingDay(session.startTime, userConfig) + "T00:00:00Z"
+          getLocalCodingDay(session.startTime, tzConfig) + "T00:00:00Z"
         ),
         commitCount: session.commitCount,
         duration: session.duration,
@@ -359,7 +354,7 @@ export function preparePeriodsForStripPlot(
   targetPeriod,
   options = {}
 ) {
-  const { periodConfigs, userConfig, repositoryMarks } = options;
+  const { periodConfigs, tzConfig, repositoryMarks } = options;
   const periodData = periodsRawData.find((p) => p.period === targetPeriod);
   if (!periodData) {
     throw new Error(`Period "${targetPeriod}" not found in provided data`);
@@ -369,7 +364,7 @@ export function preparePeriodsForStripPlot(
     sessions: periodData.sessions || [],
     periodStart: config.start,
     periodEnd: config.end,
-    userConfig: userConfig,
+    tzConfig: tzConfig,
     repositoryMarks: repositoryMarks,
   });
   return {
@@ -413,11 +408,11 @@ export function prepareLegendData(stripPlotData, options = {}) {
 /**
  * Extract time of day component from timestamp for visualization
  * @param {string|Date} timestamp - Full timestamp
- * @param {Object} userConfig - User configuration with timezone info
+ * @param {Object} tzConfig - timezone configuration
  * @returns {Date} - Date object with time component normalized to 2000-01-01 in UTC
  */
-function extractTimeOfDay(timestamp, userConfig) {
-  const localTime = toLocalTime(timestamp, userConfig.timezone_offset_hours);
+function extractTimeOfDay(timestamp, tzConfig) {
+  const localTime = toLocalTime(timestamp, tzConfig.offsetHours);
   const localHours = localTime.getUTCHours();
   const localMinutes = localTime.getUTCMinutes();
   const localSeconds = localTime.getUTCSeconds();
