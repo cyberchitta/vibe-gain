@@ -127,11 +127,6 @@ export function prepareStripPlotData(commits, period, options = {}) {
     const startHour = getLocalHourDecimal(session.startTime, tzConfig);
     const endHour = getLocalHourDecimal(session.endTime, tzConfig);
     if (endHour < startHour) {
-      console.log(
-        `Session ${index} crosses midnight: ${startHour.toFixed(
-          2
-        )} -> ${endHour.toFixed(2)}`
-      );
       const startDay = new Date(
         getLocalCodingDay(session.startTime, tzConfig) + "T00:00:00Z"
       );
