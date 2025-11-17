@@ -178,6 +178,14 @@
                 style="padding: 8px 12px; font-size: 16px; min-width: 200px; border: 2px solid #3498db; border-radius: 4px;">
                 <option value="">Loading users...</option>
             </select>
+            <div style="margin-left: 20px; display: inline-block;">
+                <label for="time-mode-selector">Time Mode:</label>
+                <select id="time-mode-selector" onchange="onTimeModeChange()"
+                    style="padding: 8px 12px; font-size: 16px; border: 2px solid #3498db; border-radius: 4px;">
+                    <option value="local">Local Time</option>
+                    <option value="utc">UTC</option>
+                </select>
+            </div>
         </div>
         <div class="legend">
             <div class="legend-item">
@@ -448,6 +456,7 @@
         let viewMode = 'percentage';
         let cachedData = null;
         let parametersData = null;
+        let timeMode = 'local'; // 'local' or 'utc'
 
         async function loadParameters() {
             try {
@@ -456,7 +465,6 @@
                     throw new Error('Failed to load parameters.json');
                 }
                 parametersData = await response.json();
-                console.log('Loaded parameters:', parametersData);
                 return parametersData;
             } catch (error) {
                 console.error('Error loading parameters:', error);
@@ -500,20 +508,21 @@
                 };
                 const prePeriod = parametersData.PERIODS.find(p => p.name === 'Pre-AI');
                 const recentPeriod = parametersData.PERIODS.find(p => p.name === 'Recent-AI');
-                const getTzConfig = (userConfig, periodName) => {
-                    if (userConfig.use_utc_for_analysis) {
+                const getTzConfig = (userConfig, periodName, timeMode) => {
+                    if (timeMode === 'local') {
+                        return {
+                            offsetHours: userConfig.timezone_offset_hours || 0,
+                            boundaryHour: userConfig.day_boundary ?? userConfig.day_boundary_utc
+                        };
+                    } else {
                         return {
                             offsetHours: 0,
-                            boundaryHour: userConfig.period_day_boundaries?.[periodName] ?? userConfig.day_boundary_utc ?? 0
+                            boundaryHour: userConfig.period_day_boundaries?.[periodName] ?? userConfig.day_boundary_utc
                         };
                     }
-                    return {
-                        offsetHours: userConfig.timezone_offset_hours || 0,
-                        boundaryHour: userConfig.LOCAL_DAY_BOUNDARY || 4
-                    };
                 };
-                const preTzConfig = getTzConfig(userConfig, 'Pre-AI');
-                const recentTzConfig = getTzConfig(userConfig, 'Recent-AI');
+                const preTzConfig = getTzConfig(userConfig, 'Pre-AI', timeMode);
+                const recentTzConfig = getTzConfig(userConfig, 'Recent-AI', timeMode);
                 const preBuilder = await dataManager.createMetricsBuilder('Pre-AI', prePeriod.start, prePeriod.end, preTzConfig, codeOnlyFilter);
                 const recentBuilder = await dataManager.createMetricsBuilder('Recent-AI', recentPeriod.start, recentPeriod.end, recentTzConfig, codeOnlyFilter);
                 const preVizData = preBuilder.build();
@@ -810,7 +819,7 @@
                         // Handle period-specific day boundaries
                         const referenceLines = [];
 
-                        if (userConfig?.period_day_boundaries) {
+                        if (timeMode === 'utc' && userConfig?.period_day_boundaries) {
                             // Use period-specific boundaries
                             const preBoundary = userConfig.period_day_boundaries['Pre-AI'];
                             const recentBoundary = userConfig.period_day_boundaries['Recent-AI'];
@@ -852,6 +861,18 @@
                                     });
                                 }
                             }
+                        } else if (timeMode === 'local' && userConfig?.day_boundary !== undefined) {
+                            // Legacy fallback
+                            referenceLines.push({
+                                value: userConfig.day_boundary,
+                                label: `Day Boundary (${userConfig.day_boundary}:00)`,
+                                color: "#dc2626",
+                                style: "dashed",
+                                strokeWidth: 2,
+                                opacity: 0.8,
+                                fontSize: 10,
+                                fontWeight: "bold"
+                            });
                         } else if (userConfig?.day_boundary_utc !== undefined) {
                             // Fallback to single UTC boundary
                             referenceLines.push({
@@ -864,20 +885,7 @@
                                 fontSize: 10,
                                 fontWeight: "bold"
                             });
-                        } else if (userConfig?.day_boundary !== undefined) {
-                            // Legacy fallback
-                            referenceLines.push({
-                                value: userConfig.day_boundary,
-                                label: `Day Boundary (${userConfig.day_boundary}:00)`,
-                                color: "#dc2626",
-                                style: "dashed",
-                                strokeWidth: 2,
-                                opacity: 0.8,
-                                fontSize: 10,
-                                fontWeight: "bold"
-                            });
                         }
-
                         if (referenceLines.length > 0) {
                             options.referenceLines = referenceLines;
                         }
@@ -966,7 +974,13 @@
                 await window.renderAllCharts();
             }
         };
-        document.addEventListener('DOMContentLoaded', async () => {
+        window.onTimeModeChange = function () {
+            const selector = document.getElementById('time-mode-selector');
+            timeMode = selector.value;
+            cachedData = null;
+            console.log(`Time mode changed to: ${timeMode}`);
+            window.renderAllCharts();
+        }; document.addEventListener('DOMContentLoaded', async () => {
             await loadParameters();
             populateUserSelector();
             setTimeout(() => window.renderAllCharts(), 1000);
