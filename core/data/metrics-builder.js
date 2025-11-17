@@ -267,7 +267,7 @@ export class MetricsBuilder {
 
   _computeFilesPerCommitMetric() {
     return this.FILTERED_COMMITS.map((commit) => ({
-      files_per_commit: commit.files_changed || 0,
+      files_per_commit: commit.filesChanged || 0,
     }));
   }
 
