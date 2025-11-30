@@ -83,15 +83,40 @@ If boundaries differ by more than the threshold (default: 2 hours), period-speci
 
 ### 5. Collect Data
 
-```bash
-# Discover repositories (optional - creates repo lists you can edit)
-bun lib/discover-repos.js
+First, discover your repositories. This creates a list of repos for each period that you can manually review and edit if needed.
 
+```bash
+# Discover repositories (Recommended)
+bun lib/discover-repos.js
+```
+
+Then, download the commit data:
+
+```bash
 # Fetch commit data
 bun start
 ```
 
-### 6. View Results
+### 6. Clean Up Duplicates (Optional)
+
+If you work across forks and original repositories, you might have duplicate commits with different hashes. To clean these up:
+
+1. **Detect Duplicates**:
+   ```bash
+   bun lib/find-dup-repos.js
+   ```
+   This creates `data/[username]/duplicate-repo-sets-[period].txt`.
+
+2. **Define Rules**:
+   - Rename the file to `dedup-repo-sets-[period].txt`.
+   - Edit the file: ensure the repository you want to **keep** is listed first on each line.
+
+3. **Apply Cleanup**:
+   ```bash
+   bun lib/final-dedup-commits.js
+   ```
+
+### 7. View Results
 
 ```bash
 # Start local web server
