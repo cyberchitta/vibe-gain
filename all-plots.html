@@ -488,7 +488,7 @@
             }
         }
 
-        async function loadCommitData(selectedUsername = null) {
+        async function loadCommitData(selectedUsername) {
             try {
                 if (!parametersData) {
                     parametersData = await loadParameters();
@@ -938,7 +938,9 @@
         window.renderAllCharts = async function () {
             try {
                 console.log('Loading commit data...');
-                const data = cachedData || await loadCommitData();
+                const userSelect = document.getElementById('user-selector');
+                const selectedUsername = userSelect.value;
+                const data = cachedData || await loadCommitData(selectedUsername);
                 console.log('Rendering summary table...');
                 await renderSummaryTable(data);
                 console.log('Rendering strip plots...');
