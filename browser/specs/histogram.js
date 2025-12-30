@@ -138,7 +138,7 @@ export function createHistogramSpec(chartData, options = {}) {
           },
           mark: {
             type: "rule",
-            color: options.labelColor,
+            color: refLine.color || options.labelColor,
             strokeWidth: refLine.strokeWidth || 2,
             strokeDash: refLine.style === "dashed" ? [5, 5] : [],
             opacity: refLine.opacity || 0.8,
@@ -178,7 +178,7 @@ export function createHistogramSpec(chartData, options = {}) {
               baseline: "bottom",
               fontSize: refLine.fontSize || 10,
               fontWeight: refLine.fontWeight || "bold",
-              color: options.labelColor,
+              color: refLine.color || options.labelColor,
             },
             encoding: {
               x: {
