@@ -14,6 +14,48 @@ export class MetricsBuilder {
     periodEnd,
     periodName
   ) {
+    const periodStartDate = new Date(periodStart);
+    const periodEndDate = new Date(periodEnd);
+    const fetchStartDate = new Date(periodStartDate);
+    fetchStartDate.setDate(fetchStartDate.getDate() - 1);
+    const fetchEndDate = new Date(periodEndDate);
+    fetchEndDate.setDate(fetchEndDate.getDate() + 1);
+    const minAllowedTimestamp = fetchStartDate.getTime();
+    const maxAllowedTimestamp = fetchEndDate.getTime();
+    const invalidCommits = commits.filter((commit) => {
+      const commitTimestamp = new Date(commit.timestamp).getTime();
+      return (
+        commitTimestamp < minAllowedTimestamp ||
+        commitTimestamp > maxAllowedTimestamp
+      );
+    });
+    if (invalidCommits.length > 0) {
+      const sortedInvalid = invalidCommits.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      const firstInvalid = new Date(sortedInvalid[0].timestamp).toISOString();
+      const lastInvalid = new Date(
+        sortedInvalid[sortedInvalid.length - 1].timestamp
+      ).toISOString();
+      console.warn(
+        `[MetricsBuilder] Data validation warning for ${periodName}: Found ${invalidCommits.length} commits outside expected range.\n` +
+          `Expected range: ${fetchStartDate.toISOString().split("T")[0]} to ${
+            fetchEndDate.toISOString().split("T")[0]
+          } (period ±1 day)\n` +
+          `Period config: ${periodStart} to ${periodEnd}\n` +
+          `Invalid commits span: ${firstInvalid} to ${lastInvalid}\n` +
+          `First invalid: ${sortedInvalid[0].repo} at ${firstInvalid}\n` +
+          `These commits will be filtered out. This may indicate corrupted data files or GitHub API issues.`
+      );
+      commits = commits.filter((commit) => {
+        const commitTimestamp = new Date(commit.timestamp).getTime();
+        return (
+          commitTimestamp >= minAllowedTimestamp &&
+          commitTimestamp <= maxAllowedTimestamp
+        );
+      });
+    }
     const periodCommits = commits.filter((commit) => {
       const commitCodingDay = getLocalCodingDay(commit.timestamp, tzConfig);
       return commitCodingDay >= periodStart && commitCodingDay <= periodEnd;
