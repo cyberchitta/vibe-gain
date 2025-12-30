@@ -36,10 +36,9 @@ export class BrowserPeriodDataLoader {
     const arrayFormat = await commitsResponse.json();
     const commits = arrayFormatToCommits(arrayFormat);
     const metadataResponse = await fetch(metadataUrl);
-    if (!metadataResponse.ok) {
-      throw new Error(`Failed to load repo metadata for ${periodName}`);
-    }
-    const repoMetadata = await metadataResponse.json();
+    const repoMetadata = metadataResponse.ok
+      ? await metadataResponse.json()
+      : {};
     return { commits, repoMetadata };
   }
 
