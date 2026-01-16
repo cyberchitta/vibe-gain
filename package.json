@@ -1,11 +1,12 @@
 {
   "name": "vibe-gain",
-  "version": "0.0.31",
+  "version": "0.1.0",
   "description": "Visualize GitHub commit patterns to evaluate vibe-coding productivity gains",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
-    ".": "./lib/index.js"
+    "./lib/*": "./lib/*.js",
+    "./core/*": "./core/*.js"
   },
   "repository": {
     "type": "git",
