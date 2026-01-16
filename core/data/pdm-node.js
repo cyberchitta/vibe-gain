@@ -15,7 +15,7 @@ export class NodePeriodDataLoader {
       metadataPath: path.join(this.dataDir, `${safePeriodName}_metadata.json`),
       fetchInfoPath: path.join(
         this.dataDir,
-        `${safePeriodName}_fetchinfo.json`
+        `${safePeriodName}_fetchinfo.json`,
       ),
     };
   }
@@ -45,15 +45,24 @@ export class NodePeriodDataLoader {
   }
 
   async load(periodName) {
-    const { commitsPath, metadataPath, fetchInfoPath } =
-      this.getPeriodPaths(periodName);
-    const commitsContent = await fs.readFile(commitsPath, "utf8");
-    const arrayFormat = JSON.parse(commitsContent);
+    const {
+      commits: commitsPath,
+      metadata: metadataPath,
+      fetchinfo: fetchinfoPath,
+    } = this.getPeriodPaths(periodName);
+    const commitsText = await fs.readFile(commitsPath, "utf8");
+    const arrayFormat = JSON.parse(commitsText);
     const commits = arrayFormatToCommits(arrayFormat);
-    const metadataContent = await fs.readFile(metadataPath, "utf8");
-    const repoMetadata = JSON.parse(metadataContent);
-    const fetchInfoContent = await fs.readFile(fetchInfoPath, "utf8");
-    const fetchMetadata = JSON.parse(fetchInfoContent);
+    let repoMetadata = {};
+    try {
+      const metadataText = await fs.readFile(metadataPath, "utf8");
+      repoMetadata = JSON.parse(metadataText);
+    } catch (error) {}
+    let fetchMetadata = null;
+    try {
+      const fetchinfoText = await fs.readFile(fetchinfoPath, "utf8");
+      fetchMetadata = JSON.parse(fetchinfoText);
+    } catch (error) {}
     return { commits, repoMetadata, fetchMetadata };
   }
 
