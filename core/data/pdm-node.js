@@ -45,11 +45,8 @@ export class NodePeriodDataLoader {
   }
 
   async load(periodName) {
-    const {
-      commits: commitsPath,
-      metadata: metadataPath,
-      fetchinfo: fetchinfoPath,
-    } = this.getPeriodPaths(periodName);
+    const { commitsPath, metadataPath, fetchInfoPath } =
+      this.getPeriodPaths(periodName);
     const commitsText = await fs.readFile(commitsPath, "utf8");
     const arrayFormat = JSON.parse(commitsText);
     const commits = arrayFormatToCommits(arrayFormat);
@@ -60,7 +57,7 @@ export class NodePeriodDataLoader {
     } catch (error) {}
     let fetchMetadata = null;
     try {
-      const fetchinfoText = await fs.readFile(fetchinfoPath, "utf8");
+      const fetchinfoText = await fs.readFile(fetchInfoPath, "utf8");
       fetchMetadata = JSON.parse(fetchinfoText);
     } catch (error) {}
     return { commits, repoMetadata, fetchMetadata };
