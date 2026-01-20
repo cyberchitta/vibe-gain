@@ -46,6 +46,13 @@ const COMMIT_COUNT_BUCKETS = [
   { min: 50, max: Infinity, label: "50+", logCenter: 75 },
 ];
 
+const SMALL_INTEGER_BUCKETS = Array.from({ length: 24 }, (_, i) => ({
+  min: i + 1,
+  max: i + 2,
+  label: `${i + 1}`,
+  logCenter: i + 1,
+}));
+
 export const TIME_DURATION_METRICS = [
   "all_commit_intervals",
   "time",
@@ -82,6 +89,9 @@ const NATURAL_BUCKETS = {
   within_session_gaps: STANDARD_TIME_BUCKETS,
   loc_per_commit: LOC_BUCKETS,
   files_per_commit: COMMIT_COUNT_BUCKETS,
+  active_hours_per_day: SMALL_INTEGER_BUCKETS,
+  sessions_per_day: SMALL_INTEGER_BUCKETS,
+  repos: SMALL_INTEGER_BUCKETS,
 };
 
 /**
@@ -150,7 +160,8 @@ export function createNaturalBins(values, metricId) {
   values.forEach((val) => {
     const bucketIndex = bucketDef.findIndex(
       (bucket) =>
-        val >= bucket.min && (bucket.max === Infinity ? true : val < bucket.max)
+        val >= bucket.min &&
+        (bucket.max === Infinity ? true : val < bucket.max),
     );
     if (bucketIndex >= 0) {
       bins[bucketIndex].count++;
