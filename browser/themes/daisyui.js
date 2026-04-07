@@ -26,17 +26,12 @@ export function getThemeColors(isDark = null) {
       : computedStyle.getPropertyValue("--tw-prose-body").trim() || "#333333",
     primaryColor:
       computedStyle.getPropertyValue("--primary").trim() || "#3A86FF",
-    backgroundColor: isDark
-      ? computedStyle.getPropertyValue("--base-100").trim() || "#1F2937"
-      : computedStyle.getPropertyValue("--base-100").trim() || "#ffffff",
     gridColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
     axisColor: isDark ? "rgba(229,231,235,0.7)" : "rgba(51,51,51,0.7)",
     whiskerColor: isDark ? "#ffffff" : "#000000",
     medianColor: isDark ? "#ffffff" : "#000000",
     percentileStroke: isDark ? "#ffffff" : "#000000",
-    percentileFill: isDark
-      ? computedStyle.getPropertyValue("--base-100").trim() || "#1F2937"
-      : computedStyle.getPropertyValue("--base-100").trim() || "#ffffff",
+    percentileFill: "transparent",
     labelColor: isDark ? "#E5E7EB" : "#333333",
     sessionLineColor: isDark ? "#ffffff" : "#000000",
     sessionLineOpacity: 0.8,
@@ -172,7 +167,7 @@ export function applyDaisyUIThemeVega(spec, options = {}) {
   const colors = getThemeColors(options.isDark);
   const themedSpec = {
     ...spec,
-    background: colors.backgroundColor,
+    background: null,
     config: {
       ...(spec.config || {}),
       axis: {
