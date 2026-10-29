@@ -294,6 +294,10 @@ formatGroupValueLines(groups);
   below it drawn at it, required on a log axis with zeros), `yDomain`, `yAxis`,
   `showPercentiles`, `showHistogram`, `showFigures`, `showPoints`, `labelCounts`,
   `boxOpacity`, `format`, `formatShare`, `colors`.
+- **Figure labels:** p5 and p95 are labelled only when `showPercentiles` draws their crosses.
+  Figures within 4% of the axis height of each other share one label, `upper / lower`: about
+  12 px on a 300 px chart, so below that height labels can still touch. Give the chart room,
+  or pass `showFigures: false`.
 - **On a DaisyUI page:** `renderGroupBoxPlot(container, groups, { ...options, isDark })` in
   `browser/renderers/group-box-plot.js` takes colours from the page theme, as `renderBoxPlot`
   does; `cleanupGroupBoxPlot(container)` releases it.

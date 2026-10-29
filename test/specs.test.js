@@ -72,6 +72,20 @@ describe("createGroupBoxPlotSpec", () => {
     expect(labelled(false)).toEqual(["7", "5", "4", "3", "1"]);
   });
 
+  test("figures that would crowd each other share one label", async () => {
+    const g = { label: "g", color: "#000", figures: { n: 99, min: 46, p5: 48.8, q1: 100, median: 153, q3: 300, p95: 2056, max: 2058 } };
+    const spec = createGroupBoxPlotSpec([g], { log: true, yDomain: [20, 5000], format: String });
+    await render(spec);
+    const labels = spec.layer.find((l) => l.mark.type === "text" && l.encoding.text.field === "text").data.values;
+    expect(labels.map((l) => [l.y, l.text])).toEqual([
+      [2058, "2058 / 2056"],
+      [300, "300"],
+      [153, "153"],
+      [100, "100"],
+      [48.8, "48.8 / 46"],
+    ]);
+  });
+
   test("a log axis with a zero and no floor is refused", () => {
     const zero = boxGroup({ label: "z", color: "#000", values: [0, 1, 2] });
     expect(() => createGroupBoxPlotSpec([zero], { log: true })).toThrow("pass a floor");

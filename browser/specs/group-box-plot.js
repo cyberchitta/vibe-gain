@@ -31,6 +31,8 @@ const BOX_HALF = 0.0625;
 const CAP_HALF = 0.04;
 const LABEL_RULE = 0.2;
 const POINT_OFFSET = -0.22;
+/** Labels closer than this share of the axis height crowd each other: 12 px on a 300 px chart. */
+const LABEL_GAP = 0.04;
 
 /**
  * Box plots side by side, one per labelled group, drawn from figures the
@@ -47,7 +49,7 @@ export function createGroupBoxPlotSpec(groups, options = {}) {
   const layers = [
     ...(o.showHistogram ? histogramLayers(groups, o, at, enc) : []),
     ...boxLayers(groups, o, at, enc),
-    ...(o.showFigures ? figureLayers(groups, o, at, enc) : []),
+    ...(o.showFigures ? figureLayers(groups, o, at, domain, enc) : []),
     ...(o.showPoints ? pointLayers(groups, o, at, domain, enc) : []),
     ...highlightLayers(groups, o, at, domain, enc),
   ];
@@ -224,17 +226,26 @@ function boxTooltip() {
 
 /**
  * Figure labels, for the figures that have a marker: one per drawn height,
- * so of figures clamped to the floor only the lowest is labelled.
+ * so of figures clamped to the floor only the lowest is labelled. Figures
+ * that would crowd each other share one label, "upper / lower", at the
+ * upper one's height.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {(v: number) => number} at
+ * @param {[number, number]} domain
  * @param {Enc} enc
  */
-function figureLayers(groups, o, at, enc) {
+function figureLayers(groups, o, at, domain, enc) {
   const keys = o.showPercentiles ? FIGURE_KEYS : FIGURE_KEYS.filter((k) => k !== "p5" && k !== "p95");
+  const pos = axisPosition(domain, enc.log);
   const rows = groups.flatMap((g, gi) => {
     const byHeight = new Map([...keys].reverse().map((k) => [at(g.figures[k]), g.figures[k]]));
-    return [...byHeight].map(([y, v]) => ({ y, x0: gi, x1: gi + LABEL_RULE, text: o.format(v) }));
+    return crowdedRuns([...byHeight], pos).map((run) => ({
+      y: run[0][0],
+      x0: gi,
+      x1: gi + LABEL_RULE,
+      text: run.map(([, v]) => o.format(v)).join(" / "),
+    }));
   });
   const data = { values: rows };
   const color = o.colors.muted;
@@ -250,6 +261,33 @@ function figureLayers(groups, o, at, enc) {
       encoding: { x: enc.x("x1"), y: enc.y("y"), text: { field: "text" } },
     },
   ];
+}
+
+/**
+ * Where a value sits along the y axis, from 0 at the bottom to 1 at the top.
+ * @param {[number, number]} domain
+ * @param {boolean} log
+ */
+function axisPosition(domain, log) {
+  const f = log ? Math.log : (/** @type {number} */ v) => v;
+  const [lo, hi] = domain.map(f);
+  return (/** @type {number} */ v) => (f(v) - lo) / (hi - lo);
+}
+
+/**
+ * [height, figure] pairs, top down, split into runs: a pair joins the run
+ * above when it is within LABEL_GAP of that run's lowest member.
+ * @param {readonly [number, number][]} pairs
+ * @param {(v: number) => number} pos
+ * @returns {[number, number][][]}
+ */
+function crowdedRuns(pairs, pos) {
+  return pairs.reduce((runs, pair) => {
+    const last = runs.at(-1);
+    const lowest = last?.at(-1);
+    const crowded = last && lowest && Math.abs(pos(lowest[0]) - pos(pair[0])) < LABEL_GAP;
+    return crowded ? [...runs.slice(0, -1), [...last, pair]] : [...runs, [pair]];
+  }, /** @type {[number, number][][]} */ ([]));
 }
 
 /**
