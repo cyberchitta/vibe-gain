@@ -1,4 +1,4 @@
-import { formatFigure } from "./figure-format.js";
+import { formatNumber } from "../../core/utils/format.js";
 import { DEFAULT_COLORS, axisConfig } from "./chart-colors.js";
 import { swarm } from "./swarm.js";
 import { getBaseVegaLiteSpec } from "./vega-base.js";
@@ -75,7 +75,7 @@ function resolveOptions(options) {
     labelCounts: false,
     boxOpacity: 1,
     histogramWidth: 0.3,
-    format: formatFigure,
+    format: formatNumber,
     formatShare: (/** @type {number} */ share) => `${(100 * share).toFixed(1)}%`,
     ...options,
     colors: { ...DEFAULT_COLORS, ...options.colors },

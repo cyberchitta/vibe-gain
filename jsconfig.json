@@ -12,7 +12,7 @@
     "core/stats/**/*.js",
     "browser/specs/chart-data.js",
     "browser/specs/chart-colors.js",
-    "browser/specs/figure-format.js",
+    "core/utils/format.js",
     "browser/specs/swarm.js",
     "browser/specs/group-box-plot.js",
     "browser/specs/cumulative-share.js",

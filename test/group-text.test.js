@@ -19,14 +19,14 @@ test("figure table is headed by the group labels", () => {
     "| Figure | AI-marked | Unmarked |",
     "|--------|-----------|----------|",
     "| N | 8 | 10 |",
-    "| Median | 153 | 300.5 |",
+    "| Median | 153 | 301 |",
   ]);
 });
 
 test("value lines list every value, highlights noted", () => {
   expect(formatGroupValueLines(groups)).toBe(
     "- AI-marked (8): 46 (ours), 54, 68, 134, 172, 206, 333, 562; median 153\n" +
-      "- Unmarked (10): 88, 116, 134, 200, 295, 306, 312, 445, 669, 2791; median 300.5\n",
+      "- Unmarked (10): 88, 116, 134, 200, 295, 306, 312, 445, 669, 2791; median 301\n",
   );
 });
 

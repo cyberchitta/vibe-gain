@@ -1,22 +1,17 @@
 /**
- * Format numbers for display with appropriate precision
- * @param {number} num - Number to format
- * @returns {string} - Formatted number string
+ * A figure as text, the one format every chart and table uses: whole
+ * numbers as they are, then three decimals below 0.1, one below 100, none
+ * from 100 (153, 300.5 → "301", 48.83 → "48.8", 0.178 → "0.2").
+ * @param {number | null | undefined} num
+ * @returns {string}
  */
 export function formatNumber(num) {
   if (num === null || num === undefined) return "N/A";
-  if (Number.isInteger(num)) {
-    return num.toString();
-  }
-  if (num < 0.1) {
-    return num.toFixed(3);
-  } else if (num < 10) {
-    return num.toFixed(1);
-  } else if (num < 100) {
-    return Math.round(num * 10) / 10;
-  } else {
-    return Math.round(num);
-  }
+  if (Number.isInteger(num)) return String(num);
+  if (num < 0.1) return num.toFixed(3);
+  if (num < 10) return num.toFixed(1);
+  if (num < 100) return String(Math.round(num * 10) / 10);
+  return String(Math.round(num));
 }
 
 /**
