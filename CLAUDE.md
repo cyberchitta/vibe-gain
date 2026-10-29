@@ -15,8 +15,15 @@ via jsDelivr). A tag, once pushed, is served to live pages: never move one.
 ## Code style
 
 Code follows the global `code-style` and `javascript-style` skills; load them
-before writing code. This repo has no formatter, linter or type-check config
-yet. New code goes in new files, typed with JSDoc.
+before writing code. New code goes in new files, typed with JSDoc, and is
+added to `jsconfig.json`'s `include`: `bun run typecheck` checks only those
+files strictly, since the older code does not pass (a new file that imports
+old code, like `browser/renderers/group-box-plot.js`, stays out). `bun test`
+runs the tests. No formatter or linter yet.
+
+The group charts (`browser/specs/group-box-plot.js`, `cumulative-share.js`,
+`lib/export/group-text.js`) draw what they are given: aggregation stays in
+`core/stats/` or the caller. `test/boundary.test.js` enforces it.
 
 ## Working notes (gitignored)
 

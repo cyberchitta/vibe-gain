@@ -253,6 +253,55 @@ See **`test-all.html`** for a full working example that demonstrates:
 </html>
 ```
 
+### Group Box Plots
+
+For any labelled groups of values, not only vibe-gain's periods. The charts
+and their text forms draw what they are given and compute nothing
+statistical; their input shapes are in `browser/specs/chart-data.js`.
+`core/stats/` is one way to produce them (`boxGroup` from raw values), and a
+caller that computes its own figures passes them in instead. The older
+`createBoxPlotSpec` and `formatBoxPlotTable` are unchanged.
+
+```js
+import { boxGroup } from "./core/stats/box-group.js";
+import { createGroupBoxPlotSpec } from "./browser/specs/group-box-plot.js";
+import { formatGroupValueLines } from "./lib/export/group-text.js";
+
+const groups = [
+  boxGroup({
+    label: "AI-marked",
+    color: "#4e79a7",
+    values: [46, 54, 68, 134, 172, 206, 333, 562],
+    method: "linear", // interpolated quantiles; the default "lower" matches published figures
+    highlights: [{ value: 46, note: "ours" }],
+  }),
+];
+const spec = createGroupBoxPlotSpec(groups, {
+  log: true,
+  yDomain: [20, 5000],
+  showPoints: true,
+  colors: { fg: "#1f1d1a", muted: "#6b665e", bg: "#fbfaf7", grid: "#e3dfd6", highlight: "#c9a227" },
+});
+formatGroupValueLines(groups);
+// "- AI-marked (8): 46 (ours), 54, 68, 134, 172, 206, 333, 562; median 153"
+```
+
+- **Figures passed in:** a group is `{ label, color, figures, bins?, values?, highlights? }`.
+  `figures` holds `n, min, p5, q1, median, q3, p95, max`; `bins` holds
+  `lo, hi, label, count, share`. `binValues(values, buckets)` builds bins from caller buckets,
+  and `fromNaturalBuckets(getNaturalBuckets(metricId))` gives vibe-gain's own.
+- **Options** (see the JSDoc in `browser/specs/group-box-plot.js`): `log`, `floor` (values
+  below it drawn at it, required on a log axis with zeros), `yDomain`, `yAxis`,
+  `showPercentiles`, `showHistogram`, `showFigures`, `showPoints`, `labelCounts`,
+  `boxOpacity`, `format`, `formatShare`, `colors`.
+- **On a DaisyUI page:** `renderGroupBoxPlot(container, groups, { ...options, isDark })` in
+  `browser/renderers/group-box-plot.js` takes colours from the page theme, as `renderBoxPlot`
+  does; `cleanupGroupBoxPlot(container)` releases it.
+- **Cumulative shares:** `createCumulativeShareSpec(groups)` draws one stepped line per group,
+  with `shares` from `cumulativeShares(values)`.
+- **Text:** `formatGroupFigureTable(groups)` (a column per group, headed by its label) and
+  `formatGroupValueLines(groups)`.
+
 ## Configuration Reference
 
 ### Parameters File Structure
@@ -361,6 +410,8 @@ vibe-gain/
 ### Running Tests
 
 ```bash
+bun test            # unit tests, and every new spec compiled and rendered headless
+bun run typecheck   # strict JSDoc type check of the files listed in jsconfig.json
 bun run serve
 # Open http://localhost:3001/test-all.html for complete example
 ```

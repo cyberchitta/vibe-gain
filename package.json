@@ -15,7 +15,9 @@
   "scripts": {
     "start": "bun lib/download-commits.js",
     "serve": "bunx http-server . --cors -p 3001",
-    "gen-llm-report": "bun lib/export/gen-all-plots-llm.js"
+    "gen-llm-report": "bun lib/export/gen-all-plots-llm.js",
+    "test": "bun test",
+    "typecheck": "bunx -p typescript@5.9.3 tsc -p jsconfig.json"
   },
   "dependencies": {
     "@octokit/graphql": "^8.2.2",

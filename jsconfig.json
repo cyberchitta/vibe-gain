@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true
+  },
+  "include": [
+    "core/stats/**/*.js",
+    "browser/specs/chart-data.js",
+    "browser/specs/chart-colors.js",
+    "browser/specs/figure-format.js",
+    "browser/specs/swarm.js",
+    "browser/specs/group-box-plot.js",
+    "browser/specs/cumulative-share.js",
+    "lib/export/group-text.js"
+  ]
+}
