@@ -5,7 +5,7 @@ import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxFigures } from "../core/stats/box-figures.js";
 import { boxGroup } from "../core/stats/box-group.js";
 import { cumulativeShares } from "../core/stats/cumulative.js";
-import { formatNumber } from "../core/utils/format.js";
+import { formatNumber, formatPrecise } from "../core/utils/format.js";
 
 // The article's two groups (bounty-entries, measure.py 2026-10-27).
 const MARKED = [46, 54, 68, 134, 172, 206, 333, 562];
@@ -84,11 +84,26 @@ describe("formatNumber", () => {
       "153",
       "301",
       "48.8",
-      "0.2",
+      "0.18",
       "0.050",
       "46",
       "1235",
       "N/A",
+    ]);
+  });
+});
+
+describe("formatPrecise", () => {
+  test("two decimals, no padding, small figures never 0", () => {
+    expect([300.5, 12, 0.15, 1.25, 13 / 3, 0.1 + 0.2, 0.004719, 1234.567].map(formatPrecise)).toEqual([
+      "300.5",
+      "12",
+      "0.15",
+      "1.25",
+      "4.33",
+      "0.3",
+      "0.00472",
+      "1234.57",
     ]);
   });
 });
