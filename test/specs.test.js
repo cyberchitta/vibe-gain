@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import * as vega from "vega";
 import * as vegaLite from "vega-lite";
+import { createBoxPlotSpec } from "../browser/specs/box-plot.js";
 import { createCumulativeShareSpec } from "../browser/specs/cumulative-share.js";
 import { createGroupBoxPlotSpec } from "../browser/specs/group-box-plot.js";
 import { swarm } from "../browser/specs/swarm.js";
@@ -61,6 +62,16 @@ describe("createGroupBoxPlotSpec", () => {
     expect(labels.filter((l) => l.y === 0.5).map((l) => l.text)).toEqual(["0"]);
   });
 
+  test("p5 and p95 are labelled only when their crosses are drawn", () => {
+    const g = { label: "g", color: "#000", figures: { n: 9, min: 1, p5: 2, q1: 3, median: 4, q3: 5, p95: 6, max: 7 } };
+    const labelled = (showPercentiles) =>
+      createGroupBoxPlotSpec([g], { showPercentiles })
+        .layer.find((l) => l.mark.type === "text" && l.encoding.text.field === "text")
+        .data.values.map((l) => l.text);
+    expect(labelled(true)).toEqual(["7", "6", "5", "4", "3", "2", "1"]);
+    expect(labelled(false)).toEqual(["7", "5", "4", "3", "1"]);
+  });
+
   test("a log axis with a zero and no floor is refused", () => {
     const zero = boxGroup({ label: "z", color: "#000", values: [0, 1, 2] });
     expect(() => createGroupBoxPlotSpec([zero], { log: true })).toThrow("pass a floor");
@@ -76,6 +87,19 @@ describe("createGroupBoxPlotSpec", () => {
     const spec = createGroupBoxPlotSpec([g], { log: true });
     expect(marks(spec)[0]).toBe("rect");
     await render(spec);
+  });
+});
+
+describe("createBoxPlotSpec", () => {
+  test("p5 and p95 are labelled only when their crosses are drawn", () => {
+    const periods = [{ period: "p", color: "#000", values: [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233] }];
+    const labelled = (showPercentiles) =>
+      createBoxPlotSpec(periods, { showPercentiles })
+        .layer.find((l) => l.mark.type === "text" && l.encoding.text.field === "label")
+        .data.values.map((l) => l.label);
+    expect(labelled(true)).toContain("144");
+    expect(labelled(false)).not.toContain("144");
+    expect(labelled(false)).toContain("233");
   });
 });
 

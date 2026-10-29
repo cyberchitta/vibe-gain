@@ -501,13 +501,14 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   if (defaultOptions.showStats) {
     const referenceLineData = [];
     boxPlotData.forEach((box, periodIndex) => {
+      const pct = (val) => (defaultOptions.showPercentiles ? val : null);
       const values = [
         box.min,
-        box.p5,
+        pct(box.p5),
         box.q1,
         box.median,
         box.q3,
-        box.p95,
+        pct(box.p95),
         box.max,
       ].filter((val) => val !== null && val !== undefined);
       const uniqueValues = [...new Set(values)];

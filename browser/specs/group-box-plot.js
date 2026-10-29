@@ -15,7 +15,7 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  *   log axis when any value is 0 or less
  * @property {[number, number]} [yDomain] - default: the smallest to the largest value drawn
  * @property {object} [yAxis] - Vega-Lite axis properties merged over ours (tick values, labelExpr)
- * @property {boolean} [showPercentiles] - crosses at p5 and p95 (default true)
+ * @property {boolean} [showPercentiles] - crosses at p5 and p95, and their figure labels (default true)
  * @property {boolean} [showHistogram] - bars for groups that have bins (default true)
  * @property {boolean} [showFigures] - each box's figures labelled beside it (default true)
  * @property {boolean} [showPoints] - a dot per value left of each box (default false; needs values)
@@ -223,17 +223,17 @@ function boxTooltip() {
 }
 
 /**
- * Figure labels: one per drawn height, so of figures clamped to the floor
- * only the lowest is labelled.
+ * Figure labels, for the figures that have a marker: one per drawn height,
+ * so of figures clamped to the floor only the lowest is labelled.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {(v: number) => number} at
  * @param {Enc} enc
  */
 function figureLayers(groups, o, at, enc) {
+  const keys = o.showPercentiles ? FIGURE_KEYS : FIGURE_KEYS.filter((k) => k !== "p5" && k !== "p95");
   const rows = groups.flatMap((g, gi) => {
-    const f = g.figures;
-    const byHeight = new Map([f.max, f.p95, f.q3, f.median, f.q1, f.p5, f.min].map((v) => [at(v), v]));
+    const byHeight = new Map([...keys].reverse().map((k) => [at(g.figures[k]), g.figures[k]]));
     return [...byHeight].map(([y, v]) => ({ y, x0: gi, x1: gi + LABEL_RULE, text: o.format(v) }));
   });
   const data = { values: rows };
