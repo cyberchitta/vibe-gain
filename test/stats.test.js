@@ -5,6 +5,7 @@ import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxFigures } from "../core/stats/box-figures.js";
 import { boxGroup } from "../core/stats/box-group.js";
 import { cumulativeShares } from "../core/stats/cumulative.js";
+import { periodGroup } from "../core/data/period-group.js";
 import { formatNumber, formatPrecise } from "../core/utils/format.js";
 
 // The article's two groups (bounty-entries, measure.py 2026-10-27).
@@ -105,5 +106,29 @@ describe("formatPrecise", () => {
       "0.00472",
       "1234.57",
     ]);
+  });
+});
+
+// The old box plot's binning, kept exactly because published charts draw from it.
+describe("periodGroup", () => {
+  const bins = (values, metricId) => periodGroup({ period: "p", color: "#000", values }, metricId).bins;
+
+  test("natural buckets: top bucket ends at twice its start, values below the first dropped", () => {
+    expect(bins([0.5, 1, 3, 4, 120], "commits").map((b) => [b.label, b.lo, b.hi, b.count, b.share])).toEqual([
+      ["1", 1, 2, 1, 0.2],
+      ["3-4", 3, 5, 2, 0.4],
+      ["50+", 50, 100, 1, 0.2],
+    ]);
+  });
+
+  test("one bin per integer, else up to 20 equal bins", () => {
+    expect(bins([2, 2, 4]).map((b) => [b.lo, b.hi, b.count])).toEqual([[1.5, 2.5, 2], [3.5, 4.5, 1]]);
+    const wide = bins(Array.from({ length: 51 }, (_, i) => i * 1.5));
+    expect(wide).toHaveLength(8);
+    expect(wide.reduce((n, b) => n + b.count, 0)).toBe(51);
+  });
+
+  test("a period without values has no figures", () => {
+    expect(periodGroup({ period: "p", color: "#000", values: [] })).toMatchObject({ figures: null, bins: [] });
   });
 });
