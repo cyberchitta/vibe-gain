@@ -33,6 +33,8 @@ const LABEL_RULE = 0.2;
 const POINT_OFFSET = -0.22;
 /** Labels closer than this share of the axis height crowd each other: 12 px on a 300 px chart. */
 const LABEL_GAP = 0.04;
+/** The shortest bar, as a share of the axis height: 3 px on a 300 px chart. */
+const MIN_BAR = 0.01;
 
 /**
  * Box plots side by side, one per labelled group, drawn from figures the
@@ -47,7 +49,7 @@ export function createGroupBoxPlotSpec(groups, options = {}) {
   const domain = o.yDomain ?? yExtent(groups, at);
   const enc = encoders(groups, o, domain);
   const layers = [
-    ...(o.showHistogram ? histogramLayers(groups, o, at, enc) : []),
+    ...(o.showHistogram ? histogramLayers(groups, o, at, domain, enc) : []),
     ...boxLayers(groups, o, at, enc),
     ...(o.showFigures ? figureLayers(groups, o, at, domain, enc) : []),
     ...(o.showPoints ? pointLayers(groups, o, at, domain, enc) : []),
@@ -291,22 +293,27 @@ function crowdedRuns(pairs, pos) {
 }
 
 /**
- * Bars across each box, width by share, with the share labelled left.
+ * Bars across each box, width by share, with the share labelled left. Each
+ * bar spans only the part of its bucket between the group's min and max,
+ * where its values are; the tooltip still names the whole bucket.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {(v: number) => number} at
+ * @param {[number, number]} domain
  * @param {Enc} enc
  */
-function histogramLayers(groups, o, at, enc) {
+function histogramLayers(groups, o, at, domain, enc) {
   const bins = groups.flatMap((g, gi) =>
-    (g.bins ?? []).filter((b) => b.count > 0).map((b) => ({ ...b, gi, group: g.label, color: g.color, top: g.figures.max })),
+    (g.bins ?? [])
+      .filter((b) => b.count > 0)
+      .map((b) => ({ ...b, gi, group: g.label, color: g.color, lo: Math.max(b.lo, g.figures.min), hi: Math.min(b.hi, g.figures.max) })),
   );
   if (bins.length === 0) return [];
   const maxShare = Math.max(...bins.map((b) => b.share));
   const rows = bins.map((b) => {
     const w = (b.share / maxShare) * o.histogramWidth;
     const y0 = at(b.lo);
-    const y1 = at(b.hi === Infinity ? Math.max(b.top, b.lo * 2) : b.hi);
+    const y1 = barTop(y0, at(b.hi), domain, enc.log);
     return {
       group: b.group, label: b.label, count: b.count, color: b.color,
       x0: b.gi - w / 2, x1: b.gi + w / 2, lx: b.gi - o.histogramWidth / 2 - 0.02,
@@ -331,6 +338,20 @@ function histogramLayers(groups, o, at, enc) {
       encoding: { x: enc.x("lx"), y: enc.y("mid"), text: { field: "share" } },
     },
   ];
+}
+
+/**
+ * A bar's top, raised to `MIN_BAR` when trimming left it no height: a
+ * bucket whose values are all one figure (every value equal, or a "10+"
+ * bucket holding only the max of 10) must still show.
+ * @param {number} y0
+ * @param {number} y1
+ * @param {[number, number]} domain
+ * @param {boolean} log
+ */
+function barTop(y0, y1, [d0, d1], log) {
+  if (y1 > y0) return y1;
+  return log ? y0 * (d1 / d0) ** MIN_BAR : y0 + (d1 - d0) * MIN_BAR;
 }
 
 /**

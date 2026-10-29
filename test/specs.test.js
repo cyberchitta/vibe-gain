@@ -102,6 +102,29 @@ describe("createGroupBoxPlotSpec", () => {
     expect(marks(spec)[0]).toBe("rect");
     await render(spec);
   });
+
+  const bars = (spec) => spec.layer[0].data.values.map((r) => ({ group: r.group, label: r.label, y0: r.y0, y1: r.y1 }));
+  const buckets = fromNaturalBuckets(getNaturalBuckets("commits"));
+  const binned = (valueSets, log) =>
+    createGroupBoxPlotSpec(
+      valueSets.map((values, i) => boxGroup({ label: `g${i}`, color: "#000", values, buckets })),
+      { log },
+    );
+
+  test("bars span only the group's min to max", () => {
+    const rows = bars(binned([[3, 4, 7, 12, 60]], false));
+    expect(Math.min(...rows.map((r) => r.y0))).toBe(3);
+    expect(Math.max(...rows.map((r) => r.y1))).toBe(60);
+  });
+
+  test("a bucket holding one figure still shows a bar", () => {
+    for (const log of [false, true]) {
+      const rows = bars(binned([[5, 5, 5], [1, 2, 50]], log));
+      const flat = rows.filter((r) => r.group === "g0" || r.label === "50+");
+      expect(flat).toHaveLength(2);
+      flat.forEach((r) => expect(r.y1).toBeGreaterThan(r.y0));
+    }
+  });
 });
 
 describe("createBoxPlotSpec", () => {
