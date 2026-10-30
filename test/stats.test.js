@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { calculateBoxPlotStats } from "../core/utils/array.js";
 import { binValues, fromNaturalBuckets } from "../core/stats/bins.js";
 import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxFigures } from "../core/stats/box-figures.js";
@@ -13,14 +12,18 @@ const MARKED = [46, 54, 68, 134, 172, 206, 333, 562];
 const UNMARKED = [88, 116, 134, 200, 295, 306, 312, 445, 669, 2791];
 
 describe("boxFigures", () => {
+  // Frozen from the deleted calculateBoxPlotStats, which every published figure came from.
   test("lower matches the figures vibe-gain has published", () => {
-    const samples = [MARKED, UNMARKED, [5], [3, 1, 2], Array.from({ length: 37 }, (_, i) => (i * 7919) % 101)];
-    samples.forEach((values) => {
-      const old = calculateBoxPlotStats(values);
+    const cases = [
+      [MARKED, [46, 46, 54, 134, 206, 333, 562, 8]],
+      [UNMARKED, [88, 88, 134, 295, 312, 669, 2791, 10]],
+      [[5], [5, 5, 5, 5, 5, 5, 5, 1]],
+      [[3, 1, 2], [1, 1, 1, 2, 2, 2, 3, 3]],
+      [Array.from({ length: 37 }, (_, i) => (i * 7919) % 101), [0, 3, 25, 50, 75, 94, 100, 37]],
+    ];
+    cases.forEach(([values, published]) => {
       const f = boxFigures(values);
-      expect([f.min, f.p5, f.q1, f.median, f.q3, f.p95, f.max, f.n]).toEqual([
-        old.min, old.p5, old.p25, old.median, old.p75, old.p95, old.max, old.count,
-      ]);
+      expect([f.min, f.p5, f.q1, f.median, f.q3, f.p95, f.max, f.n]).toEqual(published);
     });
   });
 

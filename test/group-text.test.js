@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { boxGroup } from "../core/stats/box-group.js";
-import { formatGroupFigureTable, formatGroupValueLines } from "../lib/export/group-text.js";
-import { formatBoxPlotTable } from "../lib/export/text-formatter.js";
+import { formatGroupBinTable, formatGroupFigureTable, formatGroupValueLines } from "../lib/export/group-text.js";
+import { formatBoxPlotTable, formatHistogramTable } from "../lib/export/text-formatter.js";
 
 const groups = [
   boxGroup({
@@ -47,4 +47,49 @@ test("the period table names its columns from the periods and prints figures in 
     "| N | 4 | 2 |",
     "| Median | 2 | 0.00472 |",
   ]);
+});
+
+test("bin table: columns from the group labels, rows in first-seen order, - where a group lacks a bin", () => {
+  const bin = (label, count) => ({ lo: 0, hi: 1, label, count, share: 0 });
+  const table = formatGroupBinTable([
+    { label: "A", bins: [bin("1", 3), bin("2-4", 0)] },
+    { label: "Longer", bins: [bin("2-4", 12), bin("5+", 1)] },
+  ]);
+  expect(table).toBe(
+    "| Bin | A | Longer |\n|-----|---|--------|\n| 1 | 3 | - |\n| 2-4 | 0 | 12 |\n| 5+ | - | 1 |\n",
+  );
+});
+
+test("bin table needs bins", () => {
+  expect(() => formatGroupBinTable([{ label: "A" }])).toThrow("has no bins");
+});
+
+test("the period histogram table drops rows after the last count, keeps empty ones before it", () => {
+  const periods = [
+    { period: "Pre-AI", metrics: { commits: [{ commits: 1 }, { commits: 7 }] } },
+    { period: "Recent-AI", metrics: { commits: [{ commits: 0.5 }, { commits: 3 }] } },
+  ];
+  expect(formatHistogramTable(periods, "commits").split("\n")).toEqual([
+    "| Bin | Pre-AI | Recent-AI |",
+    "|-----|--------|-----------|",
+    "| 1 | 1 | 0 |",
+    "| 2 | 0 | 0 |",
+    "| 3-4 | 0 | 1 |",
+    "| 5-9 | 1 | 0 |",
+    "",
+  ]);
+});
+
+test("the period histogram table: an hour per row, a period with no values prints -", () => {
+  const hours = Array.from({ length: 24 }, (_, h) => (h === 1 ? 5 : 0));
+  const periods = [
+    { period: "Pre-AI", metrics: { commits_by_hour_of_day: hours, commits: [{ commits: 2 }] } },
+    { period: "Recent-AI", metrics: { commits_by_hour_of_day: hours, commits: [] } },
+  ];
+  expect(formatHistogramTable(periods, "commits_by_hour_of_day").split("\n").slice(2)).toEqual([
+    "| 0:00-1:00 | 0 | 0 |",
+    "| 1:00-2:00 | 5 | 5 |",
+    "",
+  ]);
+  expect(formatHistogramTable(periods, "commits").split("\n")[3]).toBe("| 2 | 1 | - |");
 });

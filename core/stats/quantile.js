@@ -1,7 +1,7 @@
 /**
  * How a quantile is read off sorted values.
  * - "lower": `sorted[floor(q·(n−1))]`, the nearest rank at or below. Every
- *   figure vibe-gain has published uses it (`calculateBoxPlotStats`).
+ *   figure vibe-gain has published uses it.
  * - "linear": interpolates between the two ranks around `q·(n−1)`, so the
  *   median of an even count is the mean of the middle two.
  * @typedef {"lower" | "linear"} QuantileMethod

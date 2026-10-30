@@ -305,7 +305,8 @@ formatGroupValueLines(groups);
   does; `cleanupGroupBoxPlot(container)` releases it.
 - **Cumulative shares:** `createCumulativeShareSpec(groups)` draws one stepped line per group,
   with `shares` from `cumulativeShares(values)`.
-- **Text:** `formatGroupFigureTable(groups)` (a column per group, headed by its label) and
+- **Text:** `formatGroupFigureTable(groups)` (a column per group, headed by its label),
+  `formatGroupBinTable(groups)` (each group's bin counts, `-` where a group lacks a bin) and
   `formatGroupValueLines(groups)`. They print figures in full (`formatPrecise`: `300.5`); chart
   labels round them to fit (`formatNumber`: `301`).
 

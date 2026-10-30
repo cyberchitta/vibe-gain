@@ -1,5 +1,6 @@
 import { boxFigures } from "../stats/box-figures.js";
-import { createNaturalBins, hasNaturalBuckets } from "./bucketing.js";
+import { hasNaturalBuckets } from "./bucketing.js";
+import { naturalBins } from "./period-bins.js";
 
 /**
  * One period's box figures and histogram bins, as the old box plot has
@@ -33,15 +34,6 @@ function periodBins(values, metricId) {
       ? integerBins(values)
       : equalBins(values);
   return bins.filter((b) => b.count > 0).map((b) => ({ ...b, share: b.count / values.length }));
-}
-
-function naturalBins(values, metricId) {
-  return createNaturalBins(values, metricId).map((b) => ({
-    lo: b.binStart,
-    hi: b.binEnd,
-    label: b.binLabel,
-    count: b.count,
-  }));
 }
 
 function shouldUseIntegerBinning(values, maxIntegerBins = 50) {
