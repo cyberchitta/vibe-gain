@@ -17,6 +17,7 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  * @property {object} [yAxis] - Vega-Lite axis properties merged over ours (tick values, labelExpr)
  * @property {boolean} [showPercentiles] - crosses at p5 and p95, and their figure labels (default true)
  * @property {boolean} [showHistogram] - bars for groups that have bins (default true)
+ * @property {boolean} [showShares] - each bar's share labelled beside it (default true)
  * @property {boolean} [showFigures] - each box's figures labelled beside it (default true)
  * @property {boolean} [showPoints] - a dot per value left of each box (default false; needs values)
  * @property {boolean} [labelCounts] - "label (n)" under each box (default false)
@@ -35,10 +36,13 @@ const POINT_OFFSET = -0.22;
 const LABEL_GAP = 0.04;
 /** The shortest bar, as a share of the axis height: 3 px on a 300 px chart. */
 const MIN_BAR = 0.01;
+/** Half the width of a reference line, in box spacings. */
+const REF_HALF = 0.2;
 
 /**
  * Box plots side by side, one per labelled group, drawn from figures the
- * groups carry. Optional layers: histogram, figure labels, dots, highlights.
+ * groups carry. Optional layers: histogram, reference lines, figure labels,
+ * dots, highlights.
  * @param {readonly BoxGroup[]} groups
  * @param {GroupBoxPlotOptions} [options]
  */
@@ -51,6 +55,7 @@ export function createGroupBoxPlotSpec(groups, options = {}) {
   const layers = [
     ...(o.showHistogram ? histogramLayers(groups, o, at, domain, enc) : []),
     ...boxLayers(groups, o, at, enc),
+    ...referenceLayers(groups, at, enc),
     ...(o.showFigures ? figureLayers(groups, o, at, domain, enc) : []),
     ...(o.showPoints ? pointLayers(groups, o, at, domain, enc) : []),
     ...highlightLayers(groups, o, at, domain, enc),
@@ -72,6 +77,7 @@ function resolveOptions(options) {
     log: false,
     showPercentiles: true,
     showHistogram: true,
+    showShares: true,
     showFigures: true,
     showPoints: false,
     labelCounts: false,
@@ -113,9 +119,10 @@ function clampTo(floor) {
  * @returns {[number, number]}
  */
 function yExtent(groups, at) {
+  const refs = groups.flatMap((g) => (g.references ?? []).map((r) => r.value));
   return [
-    at(Math.min(...groups.map((g) => g.figures.min))),
-    at(Math.max(...groups.map((g) => g.figures.max))),
+    at(Math.min(...groups.map((g) => g.figures.min), ...refs)),
+    at(Math.max(...groups.map((g) => g.figures.max), ...refs)),
   ];
 }
 
@@ -332,10 +339,48 @@ function histogramLayers(groups, o, at, domain, enc) {
         tooltip: [{ field: "group" }, { field: "label", title: "bucket" }, { field: "count" }, { field: "share" }],
       },
     },
+    ...(o.showShares
+      ? [
+          {
+            data,
+            mark: { type: "text", align: "right", baseline: "middle", fontSize: 9, color: o.colors.muted },
+            encoding: { x: enc.x("lx"), y: enc.y("mid"), text: { field: "share" } },
+          },
+        ]
+      : []),
+  ];
+}
+
+/**
+ * A dashed line across each group's box at each of its reference values,
+ * labelled right of it, in the group's colour.
+ * @param {readonly BoxGroup[]} groups
+ * @param {(v: number) => number} at
+ * @param {Enc} enc
+ */
+function referenceLayers(groups, at, enc) {
+  const rows = groups.flatMap((g, gi) =>
+    (g.references ?? []).map((r) => ({
+      x0: gi - REF_HALF, x1: gi + REF_HALF, lx: gi + REF_HALF + 0.05,
+      y: at(r.value), label: r.label, color: g.color, group: g.label,
+    })),
+  );
+  if (rows.length === 0) return [];
+  const data = { values: rows };
+  return [
     {
       data,
-      mark: { type: "text", align: "right", baseline: "middle", fontSize: 9, color: o.colors.muted },
-      encoding: { x: enc.x("lx"), y: enc.y("mid"), text: { field: "share" } },
+      mark: { type: "rule", strokeWidth: 2, strokeDash: [5, 5], opacity: 0.8 },
+      encoding: {
+        x: enc.x("x0"), x2: { field: "x1" }, y: enc.y("y"),
+        color: { field: "color", type: "nominal", scale: null },
+        tooltip: [{ field: "group" }, { field: "label", title: "reference" }],
+      },
+    },
+    {
+      data,
+      mark: { type: "text", align: "left", baseline: "middle", fontSize: 10, fontWeight: "bold" },
+      encoding: { x: enc.x("lx"), y: enc.y("y"), text: { field: "label" }, color: { field: "color", type: "nominal", scale: null } },
     },
   ];
 }

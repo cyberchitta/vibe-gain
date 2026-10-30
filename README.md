@@ -260,7 +260,8 @@ and their text forms draw what they are given and compute nothing
 statistical; their input shapes are in `browser/specs/chart-data.js`.
 `core/stats/` is one way to produce them (`boxGroup` from raw values), and a
 caller that computes its own figures passes them in instead. The older
-`createBoxPlotSpec` and `formatBoxPlotTable` are unchanged.
+`createBoxPlotSpec` and `formatBoxPlotTable` take vibe-gain's periods, bin
+them as they always have, and draw and print through these.
 
 ```js
 import { boxGroup } from "./core/stats/box-group.js";
@@ -286,13 +287,14 @@ formatGroupValueLines(groups);
 // "- AI-marked (8): 46 (ours), 54, 68, 134, 172, 206, 333, 562; median 153"
 ```
 
-- **Figures passed in:** a group is `{ label, color, figures, bins?, values?, highlights? }`.
+- **Figures passed in:** a group is `{ label, color, figures, bins?, values?, highlights?, references? }`.
+  A reference, `{ value, label }`, is a dashed line across the group's box (a threshold, not one of its values).
   `figures` holds `n, min, p5, q1, median, q3, p95, max`; `bins` holds
   `lo, hi, label, count, share`. `binValues(values, buckets)` builds bins from caller buckets,
   and `fromNaturalBuckets(getNaturalBuckets(metricId))` gives vibe-gain's own.
 - **Options** (see the JSDoc in `browser/specs/group-box-plot.js`): `log`, `floor` (values
   below it drawn at it, required on a log axis with zeros), `yDomain`, `yAxis`,
-  `showPercentiles`, `showHistogram`, `showFigures`, `showPoints`, `labelCounts`,
+  `showPercentiles`, `showHistogram`, `showShares`, `showFigures`, `showPoints`, `labelCounts`,
   `boxOpacity`, `format`, `formatShare`, `colors`.
 - **Figure labels:** p5 and p95 are labelled only when `showPercentiles` draws their crosses.
   Figures within 4% of the axis height of each other share one label, `upper / lower`: about
@@ -304,7 +306,8 @@ formatGroupValueLines(groups);
 - **Cumulative shares:** `createCumulativeShareSpec(groups)` draws one stepped line per group,
   with `shares` from `cumulativeShares(values)`.
 - **Text:** `formatGroupFigureTable(groups)` (a column per group, headed by its label) and
-  `formatGroupValueLines(groups)`.
+  `formatGroupValueLines(groups)`. They print figures in full (`formatPrecise`: `300.5`); chart
+  labels round them to fit (`formatNumber`: `301`).
 
 ## Configuration Reference
 

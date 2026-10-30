@@ -3,13 +3,13 @@ import { createNaturalBins, hasNaturalBuckets } from "./bucketing.js";
 
 /**
  * One period's box figures and histogram bins, as the old box plot has
- * always computed them, in the shape the charts take (`BoxGroup`, with
- * `figures` null for a period without values). The binning is kept exactly,
- * quirks included, because published charts draw from it: natural buckets
+ * always computed them, in the shape the charts take (`BoxGroup`). The
+ * binning is kept exactly, quirks included, because published charts draw
+ * from it: natural buckets
  * where the metric has them (top bucket ending at twice its start; values
  * below the first bucket dropped), else one bin per integer for at most 50
  * distinct integers, else up to 20 equal bins. New charts use `boxGroup`.
- * @param {{ period: string, values: number[], color: string }} periodData
+ * @param {{ period: string, values: number[], color: string }} periodData - values non-empty
  * @param {string} [metricId]
  */
 export function periodGroup({ period, values, color }, metricId) {
@@ -17,8 +17,8 @@ export function periodGroup({ period, values, color }, metricId) {
     label: period,
     color,
     values,
-    figures: values.length > 0 ? boxFigures(values) : null,
-    bins: values.length > 0 ? periodBins(values, metricId) : [],
+    figures: boxFigures(values),
+    bins: periodBins(values, metricId),
   };
 }
 

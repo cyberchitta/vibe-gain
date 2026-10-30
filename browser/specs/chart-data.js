@@ -37,6 +37,14 @@
  */
 
 /**
+ * A value marked across a group's box by a dashed line, not one of its
+ * values: a threshold or a target.
+ * @typedef {object} Reference
+ * @property {number} value
+ * @property {string} label - e.g. "45min"
+ */
+
+/**
  * One labelled group. `values` is needed only for dots and the value list;
  * `bins` only for the histogram.
  * @typedef {object} BoxGroup
@@ -46,6 +54,7 @@
  * @property {readonly number[]} [values]
  * @property {readonly Bin[]} [bins]
  * @property {readonly Highlight[]} [highlights]
+ * @property {readonly Reference[]} [references]
  */
 
 /**

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { boxGroup } from "../core/stats/box-group.js";
 import { formatGroupFigureTable, formatGroupValueLines } from "../lib/export/group-text.js";
+import { formatBoxPlotTable } from "../lib/export/text-formatter.js";
 
 const groups = [
   boxGroup({
@@ -33,4 +34,17 @@ test("value lines list every value, highlights noted", () => {
 test("value lines need values", () => {
   const bare = { ...groups[0], values: undefined };
   expect(() => formatGroupValueLines([bare])).toThrow("has no values");
+});
+
+test("the period table names its columns from the periods and prints figures in full", () => {
+  const periods = [
+    { period: "Pre-AI", metrics: { m: [1.25, 2, 3, 300.5] } },
+    { period: "Recent-AI", metrics: { m: [0.004719, 12] } },
+  ];
+  expect(formatBoxPlotTable(periods, "m").split("\n").slice(0, 4)).toEqual([
+    "| Figure | Pre-AI | Recent-AI |",
+    "|--------|--------|-----------|",
+    "| N | 4 | 2 |",
+    "| Median | 2 | 0.00472 |",
+  ]);
 });

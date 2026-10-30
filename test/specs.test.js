@@ -128,15 +128,36 @@ describe("createGroupBoxPlotSpec", () => {
 });
 
 describe("createBoxPlotSpec", () => {
+  const periods = [
+    { period: "Pre-AI", color: "#111", values: [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233] },
+    { period: "Recent-AI", color: "#222", values: [2, 3, 3, 4, 40, 60] },
+  ];
+  const textOf = (spec, field) =>
+    spec.layer.filter((l) => l.mark.type === "text" && l.encoding.text.field === field).flatMap((l) => l.data.values.map((r) => r[field]));
+
+  test("old options reach the group box plot", async () => {
+    const spec = createBoxPlotSpec(periods, {
+      metricId: "all_commit_intervals",
+      useLogScale: true,
+      showValues: false,
+      referenceLines: [{ period: "Recent-AI", value: 45 }, { period: "Pre-AI", value: 0 }],
+    });
+    await render(spec);
+    expect(textOf(spec, "share")).toEqual([]);
+    expect(textOf(spec, "label")).toEqual(["45min"]);
+    expect(spec.layer[0].encoding.y.axis.labelExpr).toContain("sec");
+  });
+
   test("p5 and p95 are labelled only when their crosses are drawn", () => {
-    const periods = [{ period: "p", color: "#000", values: [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233] }];
-    const labelled = (showPercentiles) =>
-      createBoxPlotSpec(periods, { showPercentiles })
-        .layer.find((l) => l.mark.type === "text" && l.encoding.text.field === "label")
-        .data.values.map((l) => l.label);
+    const labelled = (showPercentiles) => textOf(createBoxPlotSpec(periods.slice(0, 1), { showPercentiles }), "text");
     expect(labelled(true)).toContain("144");
     expect(labelled(false)).not.toContain("144");
     expect(labelled(false)).toContain("233");
+  });
+
+  test("a period without values is left out", () => {
+    const spec = createBoxPlotSpec([...periods, { period: "Empty", color: "#333", values: [] }]);
+    expect(spec.layer.find((l) => l.mark.type === "rect" && l.data.values[0]?.q1 !== undefined).data.values).toHaveLength(2);
   });
 });
 

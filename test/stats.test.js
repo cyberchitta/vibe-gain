@@ -127,8 +127,4 @@ describe("periodGroup", () => {
     expect(wide).toHaveLength(8);
     expect(wide.reduce((n, b) => n + b.count, 0)).toBe(51);
   });
-
-  test("a period without values has no figures", () => {
-    expect(periodGroup({ period: "p", color: "#000", values: [] })).toMatchObject({ figures: null, bins: [] });
-  });
 });
