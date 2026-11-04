@@ -1,5 +1,6 @@
 import { getLocalCodingDay, getLocalHour } from "../utils/timezone.js";
-import { groupBy, uniq, calculateBoxPlotStats } from "../utils/array.js";
+import { groupBy, uniq } from "../utils/array.js";
+import { boxFiguresOrNull } from "../stats/box-figures.js";
 import { isPrivateCommit, isForkCommit } from "./transforms.js";
 import { extractBasicCommitIntervals } from "./sessions.js";
 import { determineSessionThreshold } from "./threshold-analysis.js";
@@ -149,19 +150,19 @@ export class MetricsBuilder {
     const commitsByDay = groupBy(this.FILTERED_COMMITS, (commit) =>
       getLocalCodingDay(commit.timestamp, this.TZ_CONFIG, this.PERIOD_NAME)
     );
-    const commitsStats = calculateBoxPlotStats(commits.map((d) => d.commits));
-    const locStats = calculateBoxPlotStats(loc.map((d) => d.loc));
-    const locPerCommitStats = calculateBoxPlotStats(
+    const commitsStats = boxFiguresOrNull(commits.map((d) => d.commits));
+    const locStats = boxFiguresOrNull(loc.map((d) => d.loc));
+    const locPerCommitStats = boxFiguresOrNull(
       locPerCommit.map((d) => d.loc_per_commit)
     );
-    const filesPerCommitStats = calculateBoxPlotStats(
+    const filesPerCommitStats = boxFiguresOrNull(
       filesPerCommit.map((d) => d.files_per_commit)
     );
-    const activeHoursStats = calculateBoxPlotStats(
+    const activeHoursStats = boxFiguresOrNull(
       activeHoursPerDay.map((d) => d.active_hours_per_day)
     );
-    const commitsPerHourStats = calculateBoxPlotStats(commitsPerHour);
-    const locPerHourStats = calculateBoxPlotStats(locPerHour);
+    const commitsPerHourStats = boxFiguresOrNull(commitsPerHour);
+    const locPerHourStats = boxFiguresOrNull(locPerHour);
     return {
       commits,
       loc,
@@ -244,14 +245,14 @@ export class MetricsBuilder {
       this.TZ_CONFIG
     );
     const repoCommitDistribution = this._computeRepoCommitDistribution();
-    const reposStats = calculateBoxPlotStats(repos.map((d) => d.repos));
-    const dailySpanStats = calculateBoxPlotStats(
+    const reposStats = boxFiguresOrNull(repos.map((d) => d.repos));
+    const dailySpanStats = boxFiguresOrNull(
       dailySpanMinutes.map((d) => d.daily_span_minutes)
     );
-    const allCommitIntervalsStats = calculateBoxPlotStats(
+    const allCommitIntervalsStats = boxFiguresOrNull(
       allCommitIntervals.map((i) => i.interval_minutes)
     );
-    const repoCommitDistributionStats = calculateBoxPlotStats(
+    const repoCommitDistributionStats = boxFiguresOrNull(
       repoCommitDistribution
     );
     return {

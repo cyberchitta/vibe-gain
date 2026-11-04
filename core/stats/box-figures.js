@@ -26,3 +26,13 @@ export function boxFigures(values, method = "lower") {
     max: sorted[sorted.length - 1],
   };
 }
+
+/**
+ * Box figures of a list that may be empty, as the period summaries need: a
+ * period with no sessions or commits has no box.
+ * @param {readonly number[]} values
+ * @returns {BoxFigures | null}
+ */
+export function boxFiguresOrNull(values) {
+  return values.length === 0 ? null : boxFigures(values);
+}

@@ -1,5 +1,7 @@
 import { getLocalCodingDay, isSameCodingDay } from "../utils/timezone.js";
-import { groupBy, calculateBoxPlotStats } from "../utils/array.js";
+import { groupBy } from "../utils/array.js";
+import { boxFiguresOrNull } from "../stats/box-figures.js";
+import { phiQuantile } from "../stats/phi-quantile.js";
 import { detectCodingSessions } from "./sessions.js";
 
 export class SessionBuilder {
@@ -24,7 +26,8 @@ export class SessionBuilder {
     const sessionsByDay = this._detectAllSessions();
     const timingMetrics = this._buildTimingMetrics(sessionsByDay);
     const contentMetrics = this._buildContentMetrics(sessionsByDay);
-    const summary = this._buildSummary(timingMetrics, contentMetrics);
+    const phiGap = phiQuantile(timingMetrics.within_session_gaps) ?? 0;
+    const summary = this._buildSummary(timingMetrics, contentMetrics, phiGap);
     const rawSessions = [];
     Object.entries(sessionsByDay).forEach(([date, sessions]) => {
       rawSessions.push(...sessions);
@@ -32,7 +35,6 @@ export class SessionBuilder {
     const adjustedDailySessionMinutes = timingMetrics.daily_session_minutes.map(
       (dayMetric) => {
         const sessionsCount = dayMetric.sessions_count || 0;
-        const phiGap = summary.within_session_gaps_stats?.pPhi || 0;
         return {
           date: dayMetric.date,
           daily_session_minutes:
@@ -142,26 +144,25 @@ export class SessionBuilder {
     };
   }
 
-  _buildSummary(timingMetrics, contentMetrics) {
-    const sessionDurationsStats = calculateBoxPlotStats(
+  _buildSummary(timingMetrics, contentMetrics, phiWithinSessionGap) {
+    const sessionDurationsStats = boxFiguresOrNull(
       timingMetrics.session_durations
     );
-    const sessionsPerDayStats = calculateBoxPlotStats(
+    const sessionsPerDayStats = boxFiguresOrNull(
       timingMetrics.sessions_per_day.map((spd) => spd.sessions_count)
     );
-    const commitsPerSessionStats = calculateBoxPlotStats(
+    const commitsPerSessionStats = boxFiguresOrNull(
       contentMetrics.commits_per_session
     );
-    const interSessionGapsStats = calculateBoxPlotStats(
+    const interSessionGapsStats = boxFiguresOrNull(
       timingMetrics.inter_session_gaps
     );
-    const locPerSessionStats = calculateBoxPlotStats(
+    const locPerSessionStats = boxFiguresOrNull(
       contentMetrics.loc_per_session
     );
-    const withinSessionGapsStats = calculateBoxPlotStats(
+    const withinSessionGapsStats = boxFiguresOrNull(
       timingMetrics.within_session_gaps
     );
-    const phiWithinSessionGap = withinSessionGapsStats?.pPhi || 0;
     const adjustedDailySessionMinutes = timingMetrics.daily_session_minutes.map(
       (dayMetric) => {
         const sessionsCount = dayMetric.sessions_count || 0;
@@ -170,7 +171,7 @@ export class SessionBuilder {
         );
       }
     );
-    const dailySessionMinutesStats = calculateBoxPlotStats(
+    const dailySessionMinutesStats = boxFiguresOrNull(
       adjustedDailySessionMinutes
     );
     return {
