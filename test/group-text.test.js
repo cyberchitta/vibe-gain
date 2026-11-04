@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { boxGroup } from "../core/stats/box-group.js";
 import { formatGroupBinTable, formatGroupFigureTable, formatGroupValueLines } from "../lib/export/group-text.js";
-import { formatBoxPlotTable, formatHistogramTable } from "../lib/export/text-formatter.js";
+import { formatBoxPlotTable, formatHistogramTable, formatSessionDiagnostics } from "../lib/export/text-formatter.js";
 
 const groups = [
   boxGroup({
@@ -92,4 +92,16 @@ test("the period histogram table: an hour per row, a period with no values print
     "",
   ]);
   expect(formatHistogramTable(periods, "commits").split("\n")[3]).toBe("| 2 | 1 | - |");
+});
+
+test("session diagnostics name their columns from the periods", () => {
+  const period = (name, threshold) => ({
+    period: name,
+    metrics: { summary: { session_threshold_analysis: { threshold, method: "gap", confidence: "high" } } },
+  });
+  const old = formatSessionDiagnostics([period("Pre-AI", 45), period("Recent-AI", 30)]);
+  expect(old.split("\n").slice(0, 2)).toEqual(["| Metric | Pre-AI | Recent-AI |", "|--------|--------|-----------|"]);
+  const three = formatSessionDiagnostics([period("A", 1), period("Bee", 2), period("C", 3)]);
+  expect(three.split("\n")[0]).toBe("| Metric | A | Bee | C |");
+  expect(three.split("\n")[2]).toBe("| Threshold (min) | 1 | 2 | 3 |");
 });
