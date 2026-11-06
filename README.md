@@ -293,13 +293,20 @@ formatGroupValueLines(groups);
   `lo, hi, label, count, share`. `binValues(values, buckets)` builds bins from caller buckets,
   and `fromNaturalBuckets(getNaturalBuckets(metricId))` gives vibe-gain's own.
 - **Options** (see the JSDoc in `browser/specs/group-box-plot.js`): `log`, `floor` (values
-  below it drawn at it, required on a log axis with zeros), `yDomain`, `yAxis`,
+  below it drawn at it, required on a log axis with zeros), `yDomain` (narrower than the
+  values, it cuts the chart: see *Cut axis*), `yAxis`,
   `showPercentiles`, `showHistogram`, `showShares`, `showFigures`, `showPoints`, `labelCounts`,
   `boxOpacity`, `format`, `formatShare`, `colors`.
 - **Figure labels:** p5 and p95 are labelled only when `showPercentiles` draws their crosses.
   Figures within 4% of the axis height of each other share one label, `upper / lower`: about
   12 px on a 300 px chart, so below that height labels can still touch. Give the chart room,
-  or pass `showFigures: false`.
+  or pass `showFigures: false`. The y scale keeps 6 px free above the top, so a label there
+  stays inside the plot and showing labels does not resize it.
+- **Cut axis:** a `yDomain` that leaves out some values keeps every mark inside it. A whisker
+  that runs past an edge ends there in a triangle, labelled with its true figure
+  (`↑ 1735656`), whether or not `showFigures` is on. Caps, crosses, medians, dots,
+  highlights, references and bars outside the domain are not drawn. The text forms are
+  unaffected: they print every figure.
 - **On a DaisyUI page:** `renderGroupBoxPlot(container, groups, { ...options, isDark })` in
   `browser/renderers/group-box-plot.js` takes colours from the page theme, as `renderBoxPlot`
   does; `cleanupGroupBoxPlot(container)` releases it.

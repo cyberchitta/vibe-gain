@@ -13,7 +13,9 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  * @property {boolean} [log] - log y axis
  * @property {number} [floor] - values below it are drawn at it; needed on a
  *   log axis when any value is 0 or less
- * @property {[number, number]} [yDomain] - default: the smallest to the largest value drawn
+ * @property {[number, number]} [yDomain] - default: the smallest to the largest value drawn.
+ *   A narrower domain cuts the chart: marks stop at its edges, and a whisker
+ *   that runs past one ends in a triangle labelled with its true value
  * @property {object} [yAxis] - Vega-Lite axis properties merged over ours (tick values, labelExpr)
  * @property {boolean} [showPercentiles] - crosses at p5 and p95, and their figure labels (default true)
  * @property {boolean} [showHistogram] - bars for groups that have bins (default true)
@@ -38,6 +40,13 @@ const LABEL_GAP = 0.04;
 const MIN_BAR = 0.01;
 /** Half the width of a reference line, in box spacings. */
 const REF_HALF = 0.2;
+/**
+ * Pixels kept free above the domain: half a figure label's height, so a
+ * label at the top stays inside the plot. Without it the label spills out
+ * and Vega's fit shrinks the plot whenever labels are shown. The bottom
+ * needs none: the group names below the axis reach further down.
+ */
+const TOP_PAD = 6;
 
 /**
  * Box plots side by side, one per labelled group, drawn from figures the
@@ -49,16 +58,20 @@ const REF_HALF = 0.2;
 export function createGroupBoxPlotSpec(groups, options = {}) {
   const o = resolveOptions(options);
   validate(groups, o);
-  const at = clampTo(o.floor);
-  const domain = o.yDomain ?? yExtent(groups, at);
+  const floored = clampTo(o.floor);
+  const domain = o.yDomain ?? yExtent(groups, floored);
+  const at = (/** @type {number} */ v) => Math.min(Math.max(floored(v), domain[0]), domain[1]);
+  const inside = (/** @type {number} */ v) => floored(v) === at(v);
+  const drawn = groups.map((g) => clipGroup(g, at, inside));
   const enc = encoders(groups, o, domain);
   const layers = [
-    ...(o.showHistogram ? histogramLayers(groups, o, at, domain, enc) : []),
-    ...boxLayers(groups, o, at, enc),
-    ...referenceLayers(groups, at, enc),
-    ...(o.showFigures ? figureLayers(groups, o, at, domain, enc) : []),
-    ...(o.showPoints ? pointLayers(groups, o, at, domain, enc) : []),
-    ...highlightLayers(groups, o, at, domain, enc),
+    ...(o.showHistogram ? histogramLayers(drawn, o, at, domain, enc) : []),
+    ...boxLayers(drawn, o, at, inside, enc),
+    ...referenceLayers(drawn, at, enc),
+    ...(o.showFigures ? figureLayers(drawn, o, at, inside, domain, enc) : []),
+    ...cutLayers(drawn, o, inside, domain, enc),
+    ...(o.showPoints ? pointLayers(drawn, o, at, domain, enc) : []),
+    ...highlightLayers(drawn, o, at, domain, enc),
   ];
   return {
     ...getBaseVegaLiteSpec(),
@@ -127,6 +140,31 @@ function yExtent(groups, at) {
 }
 
 /**
+ * A group without the values, references, highlights and bars that fall
+ * outside the domain, so none is drawn at an edge it does not belong at.
+ * Its figures stay whole: the box and whiskers are clamped, and a cut is
+ * labelled with the true figure.
+ * @param {BoxGroup} g
+ * @param {(v: number) => number} at
+ * @param {(v: number) => boolean} inside
+ * @returns {BoxGroup}
+ */
+function clipGroup(g, at, inside) {
+  /** A bar, trimmed to the group's min and max, keeps some height or sits inside. */
+  const overlaps = (/** @type {import("./chart-data.js").Bin} */ b) => {
+    const [lo, hi] = [Math.max(b.lo, g.figures.min), Math.min(b.hi, g.figures.max)];
+    return at(lo) < at(hi) || (lo >= hi && inside(lo));
+  };
+  return {
+    ...g,
+    ...(g.values && { values: g.values.filter(inside) }),
+    ...(g.references && { references: g.references.filter((r) => inside(r.value)) }),
+    ...(g.highlights && { highlights: g.highlights.filter((h) => inside(h.value)) }),
+    ...(g.bins && { bins: g.bins.filter(overlaps) }),
+  };
+}
+
+/**
  * Channel builders sharing one x and one y scale across every layer.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
@@ -143,7 +181,7 @@ function encoders(groups, o, domain) {
     ticks: false,
     domain: false,
   };
-  const yScale = { type: o.log ? "log" : "linear", domain, nice: false, ...(!o.log && { zero: false }) };
+  const yScale = { type: o.log ? "log" : "linear", domain, nice: false, range: [{ expr: "height" }, TOP_PAD],...(!o.log && { zero: false }) };
   const yAxis = { grid: true, ...(o.log && { format: "~s" }), ...o.yAxis };
   return {
     /** @param {string} field */
@@ -157,12 +195,16 @@ function encoders(groups, o, domain) {
 /** @typedef {ReturnType<typeof encoders>} Enc */
 
 /**
+ * Boxes and whiskers, clamped to the domain. A cap, cross or median square
+ * whose figure lies outside it is left out: drawn at the edge, it would
+ * claim a figure there.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {(v: number) => number} at
+ * @param {(v: number) => boolean} inside
  * @param {Enc} enc
  */
-function boxLayers(groups, o, at, enc) {
+function boxLayers(groups, o, at, inside, enc) {
   const rows = groups.map((g, gi) => ({
     ...g.figures,
     ...figureTexts(g.figures, o),
@@ -182,6 +224,7 @@ function boxLayers(groups, o, at, enc) {
     ymax: at(g.figures.max),
   }));
   const data = { values: rows };
+  const where = (/** @type {FigureKey} */ k) => ({ values: rows.filter((r) => inside(r[k])) });
   const { fg, muted, bg } = o.colors;
   /** @type {(x: string, x2: string | null, y: string, y2: string | null) => object} */
   const span = (x, x2, y, y2) => ({
@@ -204,16 +247,22 @@ function boxLayers(groups, o, at, enc) {
     },
     { data, mark: rule, encoding: span("gi", null, "ymin", "yq1") },
     { data, mark: rule, encoding: span("gi", null, "yq3", "ymax") },
-    { data, mark: rule, encoding: span("c0", "c1", "ymin", null) },
-    { data, mark: rule, encoding: span("c0", "c1", "ymax", null) },
-    { data, mark: { type: "point", shape: "square", size: 60, filled: true, color: fg }, encoding: span("gi", null, "ymed", null) },
+    { data: where("min"), mark: rule, encoding: span("c0", "c1", "ymin", null) },
+    { data: where("max"), mark: rule, encoding: span("c0", "c1", "ymax", null) },
+    {
+      data: where("median"),
+      mark: { type: "point", shape: "square", size: 60, filled: true, color: fg },
+      encoding: span("gi", null, "ymed", null),
+    },
     ...(o.showPercentiles
-      ? ["yp5", "yp95"].map((y) => ({ data, mark: cross, encoding: span("gi", null, y, null) }))
+      ? /** @type {const} */ (["p5", "p95"]).map((k) => ({ data: where(k), mark: cross, encoding: span("gi", null, `y${k}`, null) }))
       : []),
   ];
 }
 
-/** @type {readonly ("min" | "p5" | "q1" | "median" | "q3" | "p95" | "max")[]} */
+/** @typedef {"min" | "p5" | "q1" | "median" | "q3" | "p95" | "max"} FigureKey */
+
+/** @type {readonly FigureKey[]} */
 const FIGURE_KEYS = ["min", "p5", "q1", "median", "q3", "p95", "max"];
 
 /**
@@ -237,18 +286,20 @@ function boxTooltip() {
  * Figure labels, for the figures that have a marker: one per drawn height,
  * so of figures clamped to the floor only the lowest is labelled. Figures
  * that would crowd each other share one label, "upper / lower", at the
- * upper one's height.
+ * upper one's height. Figures outside the domain are left to `cutLayers`.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {(v: number) => number} at
+ * @param {(v: number) => boolean} inside
  * @param {[number, number]} domain
  * @param {Enc} enc
  */
-function figureLayers(groups, o, at, domain, enc) {
+function figureLayers(groups, o, at, inside, domain, enc) {
   const keys = o.showPercentiles ? FIGURE_KEYS : FIGURE_KEYS.filter((k) => k !== "p5" && k !== "p95");
   const pos = axisPosition(domain, enc.log);
   const rows = groups.flatMap((g, gi) => {
-    const byHeight = new Map([...keys].reverse().map((k) => [at(g.figures[k]), g.figures[k]]));
+    const shown = [...keys].reverse().filter((k) => inside(g.figures[k]));
+    const byHeight = new Map(shown.map((k) => [at(g.figures[k]), g.figures[k]]));
     return crowdedRuns([...byHeight], pos).map((run) => ({
       y: run[0][0],
       x0: gi,
@@ -268,6 +319,43 @@ function figureLayers(groups, o, at, domain, enc) {
       data,
       mark: { type: "text", align: "left", baseline: "middle", dx: 4, fontSize: 9, color },
       encoding: { x: enc.x("x1"), y: enc.y("y"), text: { field: "text" } },
+    },
+  ];
+}
+
+/**
+ * Where a whisker runs past the domain: a triangle at the edge it is cut
+ * at, pointing on, and its true figure labelled beside it, shown whether or
+ * not the other figures are.
+ * @param {readonly BoxGroup[]} groups
+ * @param {Options} o
+ * @param {(v: number) => boolean} inside
+ * @param {[number, number]} domain
+ * @param {Enc} enc
+ */
+function cutLayers(groups, o, inside, domain, enc) {
+  const edges = /** @type {const} */ ([
+    { key: "max", y: domain[1], shape: "triangle-up", arrow: "↑" },
+    { key: "min", y: domain[0], shape: "triangle-down", arrow: "↓" },
+  ]);
+  const rows = edges.flatMap((e) =>
+    groups.flatMap((g, gi) =>
+      inside(g.figures[e.key]) ? [] : [{ gi, lx: gi + LABEL_RULE, y: e.y, shape: e.shape, cut: `${e.arrow} ${o.format(g.figures[e.key])}`, group: g.label }],
+    ),
+  );
+  if (rows.length === 0) return [];
+  const data = { values: rows };
+  const color = o.colors.muted;
+  return [
+    {
+      data,
+      mark: { type: "point", filled: true, size: 50, color },
+      encoding: { x: enc.x("gi"), y: enc.y("y"), shape: { field: "shape", type: "nominal", scale: null } },
+    },
+    {
+      data,
+      mark: { type: "text", align: "left", baseline: "middle", dx: 4, fontSize: 9, color },
+      encoding: { x: enc.x("lx"), y: enc.y("y"), text: { field: "cut" } },
     },
   ];
 }

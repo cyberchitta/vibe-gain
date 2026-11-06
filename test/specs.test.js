@@ -86,6 +86,50 @@ describe("createGroupBoxPlotSpec", () => {
     ]);
   });
 
+  test("figure labels at the edges leave the plot's height alone", async () => {
+    const plotHeight = async (showFigures, log) => {
+      const spec = { ...createGroupBoxPlotSpec(groups, { showFigures, log }), width: 400, height: 300 };
+      const view = new vega.View(vega.parse(vegaLite.compile(spec).spec), { renderer: "none" });
+      await view.runAsync();
+      const [bottom, top] = view.scale("y").range();
+      view.finalize();
+      return bottom - top;
+    };
+    for (const log of [false, true]) expect(await plotHeight(true, log)).toBe(await plotHeight(false, log));
+  });
+
+  describe("a y domain that cuts a whisker", () => {
+    const tall = {
+      ...boxGroup({ label: "tall", color: "#000", values: [10, 20, 30, 40, 50, 60, 900, 5000] }),
+      bins: [
+        { lo: 0, hi: 100, label: "<100", count: 6, share: 0.75 },
+        { lo: 100, hi: Infinity, label: "100+", count: 2, share: 0.25 },
+      ],
+    };
+    const spec = createGroupBoxPlotSpec([tall], { log: true, yDomain: [5, 100], showPoints: true, format: String });
+    const layer = (pred) => spec.layer.filter(pred).flatMap((l) => l.data.values);
+    const isText = (field) => (l) => l.mark.type === "text" && l.encoding.text.field === field;
+
+    test("labels the true max at the edge, once", async () => {
+      await render(spec);
+      expect(layer(isText("cut")).map((r) => [r.y, r.cut])).toEqual([[100, "↑ 5000"]]);
+      expect(layer(isText("text")).map((r) => r.text)).not.toContain("5000");
+    });
+
+    test("draws nothing past the edge, and no cap or cross at it", () => {
+      const heights = spec.layer.flatMap((l) => l.data.values.flatMap((r) => [r.y, r.y0, r.y1, r.value, r.ymax].filter((v) => v !== undefined)));
+      expect(Math.max(...heights)).toBe(100);
+      expect(layer((l) => l.mark.shape === "cross" && l.encoding.y.field === "yp95")).toEqual([]);
+      expect(spec.layer.filter((l) => l.mark.type === "rule" && l.encoding.x.field === "c0").map((l) => l.data.values.length)).toEqual([1, 0]);
+      expect(layer((l) => l.mark.type === "point" && l.mark.size === 70).map((r) => r.value)).toEqual([10, 20, 30, 40, 50, 60]);
+    });
+  });
+
+  test("a y domain that holds every value cuts nothing", () => {
+    const spec = createGroupBoxPlotSpec(groups, { log: true, yDomain: [20, 5000] });
+    expect(spec.layer.some((l) => l.mark.type === "text" && l.encoding.text.field === "cut")).toBe(false);
+  });
+
   test("a log axis with a zero and no floor is refused", () => {
     const zero = boxGroup({ label: "z", color: "#000", values: [0, 1, 2] });
     expect(() => createGroupBoxPlotSpec([zero], { log: true })).toThrow("pass a floor");
