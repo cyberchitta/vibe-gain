@@ -1,6 +1,7 @@
 import { formatNumber } from "../../core/utils/format.js";
 import { DEFAULT_COLORS, axisConfig } from "./chart-colors.js";
 import { defined } from "./defined.js";
+import { dim, dimmedIds } from "./emphasis.js";
 import { swarm } from "./swarm.js";
 import { getBaseVegaLiteSpec } from "./vega-base.js";
 
@@ -32,6 +33,10 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  * @property {(v: number) => string} [format] - figure labels and tooltips
  * @property {(share: number) => string} [formatShare] - histogram labels; share is a fraction (default "22.2%")
  * @property {Partial<import("./chart-colors.js").ChartColors>} [colors]
+ * @property {readonly string[]} [emphasize] - ids of the groups to draw as
+ *   usual (a group's `id`, else its label); every mark of the others is
+ *   drawn at DIM_OPACITY times its opacity (their axis labels are not: Vega
+ *   sets an axis label's opacity itself). Empty or unset: nothing is dimmed
  */
 
 const BOX_HALF = 0.0625;
@@ -60,7 +65,8 @@ export function createGroupBoxPlotSpec(groups, options = {}) {
   const at = (/** @type {number} */ v) => Math.min(Math.max(floored(v), domain[0]), domain[1]);
   const inside = (/** @type {number} */ v) => floored(v) === at(v);
   const drawn = groups.map((g) => clipGroup(g, at, inside));
-  const enc = encoders(groups, o, domain);
+  const dimmed = dimmedIds("createGroupBoxPlotSpec", groups.map((g) => g.id ?? g.label), o.emphasize);
+  const enc = encoders(groups, o, domain, dimmed);
   const layers = [
     ...(o.showHistogram ? histogramLayers(drawn, o, at, domain, enc) : []),
     ...boxLayers(drawn, o, at, inside, enc),
@@ -75,9 +81,24 @@ export function createGroupBoxPlotSpec(groups, options = {}) {
     width: o.width,
     height: o.height,
     config: axisConfig(o.colors),
-    layer: layers,
+    layer: dimmed ? layers.map(dimLayer) : layers,
   };
 }
+
+/**
+ * A layer whose rows marked `dim` are drawn at DIM_OPACITY times its
+ * opacity. The others keep the mark's own, Vega-Lite's default included,
+ * since the condition has no other value.
+ * @template {{ mark: { type: string, opacity?: number }, encoding?: object }} L
+ * @param {L} layer
+ */
+function dimLayer(layer) {
+  const usual = layer.mark.opacity ?? (layer.mark.type === "point" ? VEGA_LITE_POINT_OPACITY : 1);
+  return { ...layer, encoding: { ...layer.encoding, opacity: { condition: { test: "datum.dim", value: dim(usual) } } } };
+}
+
+/** Vega-Lite's opacity for a point mark that sets none (`test/emphasis.test.js` renders it). */
+const VEGA_LITE_POINT_OPACITY = 0.7;
 
 /** @param {GroupBoxPlotOptions} options */
 function resolveOptions(options) {
@@ -167,8 +188,10 @@ function clipGroup(g, at, inside) {
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {[number, number]} domain
+ * @param {Set<string> | null} dimmed - ids of the groups to dim
  */
-function encoders(groups, o, domain) {
+function encoders(groups, o, domain, dimmed) {
+  const dimmedAt = groups.flatMap((g, gi) => (dimmed?.has(g.id ?? g.label) ? [gi] : []));
   const labels = groups.map((g) => (o.labelCounts ? `${g.label} (${g.figures.n})` : g.label));
   const xScale = { domain: [-0.5, groups.length - 0.5] };
   const xAxis = {
@@ -187,6 +210,8 @@ function encoders(groups, o, domain) {
     /** @param {string} field */
     y: (field) => ({ field, type: "quantitative", scale: yScale, axis: yAxis, title: o.yLabel ?? null }),
     log: o.log,
+    /** A row's mark that it is to be dimmed, when its group is. */
+    dim: (/** @type {number} */ gi) => (dimmedAt.includes(gi) ? { dim: true } : {}),
   };
 }
 
@@ -220,6 +245,7 @@ function boxLayers(groups, o, at, inside, enc) {
     yq3: at(g.figures.q3),
     yp95: at(g.figures.p95),
     ymax: at(g.figures.max),
+    ...enc.dim(gi),
   }));
   const data = { values: rows };
   const where = (/** @type {FigureKey} */ k) => ({ values: rows.filter((r) => inside(r[k])) });
@@ -310,6 +336,7 @@ function figureLayers(groups, o, at, inside, domain, enc) {
       x0: gi,
       x1: gi + LABEL_RULE,
       text: run.map(([, v]) => o.format(v)).join(" / "),
+      ...enc.dim(gi),
     }));
   });
   const data = { values: rows };
@@ -344,7 +371,7 @@ function cutLayers(groups, o, inside, domain, enc) {
   ]);
   const rows = edges.flatMap((e) =>
     groups.flatMap((g, gi) =>
-      inside(g.figures[e.key]) ? [] : [{ gi, lx: gi + LABEL_RULE, y: e.y, shape: e.shape, cut: `${e.arrow} ${o.format(g.figures[e.key])}`, group: g.label }],
+      inside(g.figures[e.key]) ? [] : [{ gi, lx: gi + LABEL_RULE, y: e.y, shape: e.shape, cut: `${e.arrow} ${o.format(g.figures[e.key])}`, group: g.label, ...enc.dim(gi) }],
     ),
   );
   if (rows.length === 0) return [];
@@ -418,6 +445,7 @@ function histogramLayers(groups, o, at, domain, enc) {
       x0: b.gi - w / 2, x1: b.gi + w / 2, lx: b.gi - o.histogramWidth / 2 - 0.02,
       y0, y1, mid: enc.log ? Math.sqrt(y0 * y1) : (y0 + y1) / 2,
       share: o.formatShare(b.share),
+      ...enc.dim(b.gi),
     };
   });
   const data = { values: rows };
@@ -454,7 +482,7 @@ function referenceLayers(groups, at, enc) {
   const rows = groups.flatMap((g, gi) =>
     (g.references ?? []).map((r) => ({
       x0: gi - REF_HALF, x1: gi + REF_HALF, lx: gi + REF_HALF + 0.05,
-      y: at(r.value), label: r.label, color: g.color, group: g.label,
+      y: at(r.value), label: r.label, color: g.color, group: g.label, ...enc.dim(gi),
     })),
   );
   if (rows.length === 0) return [];
@@ -514,7 +542,7 @@ function placePoints(groups, at, domain, log) {
  * @param {Enc} enc
  */
 function pointLayers(groups, o, at, domain, enc) {
-  const rows = placePoints(groups, at, domain, o.log).map((p) => ({ ...p, text: o.format(p.value) }));
+  const rows = placePoints(groups, at, domain, o.log).map((p) => ({ ...p, text: o.format(p.value), ...enc.dim(p.gi) }));
   return [
     {
       data: { values: rows },
@@ -543,7 +571,7 @@ function highlightLayers(groups, o, at, domain, enc) {
     (g.highlights ?? []).map((h) => {
       const y = at(h.value);
       const dot = points.find((p) => p.gi === gi && p.value === y);
-      return { x: dot ? dot.x : gi, y, text: `${o.format(h.value)} (${h.note})`, group: g.label };
+      return { x: dot ? dot.x : gi, y, text: `${o.format(h.value)} (${h.note})`, group: g.label, ...enc.dim(gi) };
     }),
   );
   if (rows.length === 0) return [];

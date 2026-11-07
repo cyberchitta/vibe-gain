@@ -7,6 +7,7 @@ const DRAWING = [
   "browser/specs/chart-colors.js",
   "browser/specs/swarm.js",
   "browser/specs/defined.js",
+  "browser/specs/emphasis.js",
   "browser/specs/group-box-plot.js",
   "browser/specs/cumulative-share.js",
   "browser/specs/linked-columns.js",
@@ -14,7 +15,7 @@ const DRAWING = [
 ];
 // Formatting is not computing: core/utils/format.js is allowed, the rest of core/utils is not.
 const ALLOWED =
-  /^((\.\/|\.\.\/\.\.\/browser\/specs\/)(chart-data|chart-colors|swarm|defined|vega-base)\.js|\.\.\/\.\.\/core\/utils\/format\.js)$/;
+  /^((\.\/|\.\.\/\.\.\/browser\/specs\/)(chart-data|chart-colors|swarm|defined|emphasis|vega-base)\.js|\.\.\/\.\.\/core\/utils\/format\.js)$/;
 
 test("drawing code imports only drawing code", async () => {
   const bad = (

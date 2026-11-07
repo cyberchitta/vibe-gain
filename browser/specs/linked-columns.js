@@ -1,6 +1,7 @@
 import { formatCompact } from "../../core/utils/format.js";
 import { DEFAULT_COLORS } from "./chart-colors.js";
 import { defined } from "./defined.js";
+import { dim, dimmedIds } from "./emphasis.js";
 
 /** @typedef {import("./chart-data.js").LinkedRow} LinkedRow */
 /** @typedef {import("./chart-data.js").LinkedColumn} LinkedColumn */
@@ -14,6 +15,11 @@ import { defined } from "./defined.js";
  * @property {(v: number) => string} [format] - tick labels and tooltips (default `formatCompact`)
  * @property {Partial<ChartColors>} [colors] - `fg` headings, `muted` column
  *   rules and tick labels, `bg` the halo behind tick labels (the page's background)
+ * @property {readonly string[]} [emphasize] - ids of the subjects to draw as
+ *   usual; the others' dots, lines and names are drawn at DIM_OPACITY times
+ *   their opacity. Empty or unset: nothing is dimmed
+ * @property {string} [pinned] - the id of a subject pinned when the chart is
+ *   drawn; `setPinned` moves the pin on a live view
  */
 
 /**
@@ -48,8 +54,10 @@ const HEADING_GAP_PX = 10;
 export function createLinkedColumnsSpec(rows, columns, groups, options = {}) {
   const values = parse(rows, columns, groups);
   const colors = { ...DEFAULT_COLORS, ...defined(options.colors ?? {}) };
-  const { width = "container", height = "container", format = formatCompact } = defined(options);
-  const marks = columns.map((c, x) => columnMarks(rows, c, values[x], x, format));
+  const { width = "container", height = "container", format = formatCompact, emphasize, pinned } = defined(options);
+  const dimmed = dimmedIds("createLinkedColumnsSpec", rows.map((r) => r.id), emphasize);
+  if (pinned !== undefined && !rows.some((r) => r.id === pinned)) fail(`pinned names "${pinned}", which is not among the row ids`);
+  const marks = columns.map((c, x) => columnMarks(rows, c, values[x], x, format, dimmed));
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     width,
@@ -62,6 +70,7 @@ export function createLinkedColumnsSpec(rows, columns, groups, options = {}) {
       columns,
       groups,
       colors,
+      { dimmed: dimmed !== null, pinned },
     ),
   };
 }
@@ -144,8 +153,9 @@ function placer(column, values) {
  * @param {readonly number[]} values - the rows' values in this column
  * @param {number} x
  * @param {(v: number) => string} format
+ * @param {Set<string> | null} dimmed - ids of the subjects to dim
  */
-function columnMarks(rows, column, values, x, format) {
+function columnMarks(rows, column, values, x, format, dimmed) {
   const at = placer(column, values);
   const points = rows.map((r, i) => ({
     id: r.id,
@@ -154,6 +164,7 @@ function columnMarks(rows, column, values, x, format) {
     y: at(values[i]),
     value: format(values[i]),
     column: column.label,
+    ...(dimmed?.has(r.id) && { dim: true }),
   }));
   const zero = column.scale === "log" && values.some((v) => v <= 0) ? [{ x, y: ZERO, text: "0" }] : [];
   const ticks = [...column.ticks.map((v) => ({ x, y: at(v), text: format(v) })), ...zero];
@@ -183,14 +194,19 @@ function heading(column, x) {
 }
 
 /**
- * An encoding value: `on` for a subject hovered or pinned, `off` otherwise.
+ * An encoding value: `on` for a subject hovered or pinned, `off` otherwise,
+ * both scaled down for a dimmed subject when some are.
  * @param {number} on
  * @param {number} off
+ * @param {boolean} dimmed - whether any subject is dimmed
  */
-const lit = (on, off) => ({
-  condition: [HOVER_PARAM, PIN_PARAM].map((param) => ({ param, empty: false, value: on })),
-  value: off,
-});
+function lit(on, off, dimmed) {
+  const params = [HOVER_PARAM, PIN_PARAM];
+  const lighted = params.map((param) => ({ param, empty: false, value: on }));
+  if (!dimmed) return { condition: lighted, value: off };
+  const dimLighted = params.map((param) => ({ test: { and: [{ param, empty: false }, "datum.dim"] }, value: dim(on) }));
+  return { condition: [...dimLighted, ...lighted, { test: "datum.dim", value: dim(off) }], value: off };
+}
 
 /**
  * @param {readonly object[]} points
@@ -198,8 +214,10 @@ const lit = (on, off) => ({
  * @param {readonly LinkedColumn[]} columns
  * @param {readonly LinkedGroup[]} groups
  * @param {ChartColors} colors
+ * @param {{ dimmed: boolean, pinned: string | undefined }} select - whether
+ *   any subject is dimmed, and the subject pinned at the start
  */
-function layers(points, ticks, columns, groups, colors) {
+function layers(points, ticks, columns, groups, colors, { dimmed, pinned }) {
   const X = { field: "x", type: "quantitative", axis: null, scale: { domain: [-0.45, columns.length - 0.55] } };
   const Y = { field: "y", type: "quantitative", axis: null, scale: { domain: [ZERO - 0.04, TOP + 0.04] } };
   const color = {
@@ -224,17 +242,21 @@ function layers(points, ticks, columns, groups, colors) {
         color,
         detail: { field: "id" },
         order: { field: "x" },
-        opacity: lit(0.95, 0),
+        opacity: lit(0.95, 0, dimmed),
         strokeWidth: { value: 2.5 },
       },
     },
-    { data: { values: points }, mark: { type: "circle", size: 34, opacity: 0.85 }, encoding: { ...at, color } },
-    hitLayer(points, at),
+    {
+      data: { values: points },
+      mark: { type: "circle", size: 34, opacity: 0.85 },
+      encoding: { ...at, color, ...(dimmed && { opacity: { condition: { test: "datum.dim", value: dim(0.85) }, value: 0.85 } }) },
+    },
+    hitLayer(points, at, pinned),
     {
       data: { values: points },
       transform: [{ filter: `datum.x === ${columns.length - 1}` }],
       mark: { type: "text", align: "left", dx: 8, fontSize: 12, fontWeight: 600 },
-      encoding: { ...at, color, text: { field: "id" }, opacity: lit(1, 0) },
+      encoding: { ...at, color, text: { field: "id" }, opacity: lit(1, 0, dimmed) },
     },
     {
       data: { values: ticks },
@@ -261,18 +283,48 @@ function layers(points, ticks, columns, groups, colors) {
  * selections and the tooltip: a dot is too small a target for a finger.
  * @param {readonly object[]} points
  * @param {object} at - the x and y encodings
+ * @param {string | undefined} pinned
  */
-function hitLayer(points, at) {
+function hitLayer(points, at, pinned) {
   return {
     data: { values: points },
     mark: { type: "circle", size: 420, fillOpacity: 0.001, strokeOpacity: 0, cursor: "pointer" },
     params: [
       { name: HOVER_PARAM, select: { type: "point", on: "pointerover", clear: "pointerout", fields: ["id"] } },
-      { name: PIN_PARAM, select: { type: "point", on: "click", fields: ["id"] } },
+      { name: PIN_PARAM, select: { type: "point", on: "click", fields: ["id"] }, ...(pinned !== undefined && { value: [{ id: pinned }] }) },
     ],
     encoding: {
       ...at,
       tooltip: [{ field: "id", title: "entry" }, { field: "column" }, { field: "value" }],
     },
   };
+}
+
+/**
+ * What `setPinned` needs of a Vega view.
+ * @typedef {object} PinnableView
+ * @property {(name: string, value?: unknown) => unknown} signal
+ * @property {() => Promise<unknown>} runAsync
+ */
+
+/**
+ * Pin a subject on a live chart, as a click on one of its dots would, or
+ * clear the pin with null; for a page that drives one selection across
+ * its figures. The id is not checked: a page passing an unknown one pins
+ * nothing.
+ * @param {PinnableView} view - the Vega view drawing the chart
+ * @param {{ signals?: readonly { name: string, on?: readonly { update?: string }[] }[] }} vgSpec -
+ *   the Vega spec it was parsed from (Vega-Lite's compile output), which
+ *   names the layer that holds the pin
+ * @param {string | null} id
+ */
+export async function setPinned(view, vgSpec, id) {
+  const name = `${PIN_PARAM}_tuple`;
+  const update = vgSpec.signals?.find((s) => s.name === name)?.on?.[0]?.update ?? "";
+  const unit = update.match(/unit: "([^"]+)"/)?.[1];
+  if (unit === undefined) {
+    throw new Error(`setPinned: the spec has no top-level "${name}" signal naming its layer; pass the compiled linked-columns spec, unnested`);
+  }
+  view.signal(name, id === null ? null : { unit, fields: view.signal(`${PIN_PARAM}_tuple_fields`), values: [id] });
+  await view.runAsync();
 }

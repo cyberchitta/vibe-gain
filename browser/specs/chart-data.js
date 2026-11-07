@@ -48,6 +48,8 @@
  * One labelled group. `values` is needed only for dots and the value list;
  * `bins` only for the histogram.
  * @typedef {object} BoxGroup
+ * @property {string} [id] - what `emphasize` names it by (default: its label,
+ *   which may carry display text)
  * @property {string} label
  * @property {string} color
  * @property {BoxFigures} figures
@@ -67,6 +69,7 @@
 /**
  * One group's cumulative-share curve.
  * @typedef {object} ShareGroup
+ * @property {string} [id] - what `emphasize` names it by (default: its label)
  * @property {string} label
  * @property {string} color
  * @property {readonly SharePoint[]} shares

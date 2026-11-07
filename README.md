@@ -287,7 +287,7 @@ formatGroupValueLines(groups);
 // "- AI-marked (8): 46 (ours), 54, 68, 134, 172, 206, 333, 562; median 153"
 ```
 
-- **Figures passed in:** a group is `{ label, color, figures, bins?, values?, highlights?, references? }`.
+- **Figures passed in:** a group is `{ id?, label, color, figures, bins?, values?, highlights?, references? }`.
   A reference, `{ value, label }`, is a dashed line across the group's box (a threshold, not one of its values).
   `figures` holds `n, min, p5, q1, median, q3, p95, max`; `bins` holds
   `lo, hi, label, count, share`. `binValues(values, buckets)` builds bins from caller buckets,
@@ -297,7 +297,7 @@ formatGroupValueLines(groups);
   below it drawn at it, required on a log axis with zeros), `yDomain` (narrower than the
   values, it cuts the chart: see *Cut axis*), `yAxis`,
   `showPercentiles`, `showHistogram`, `showShares`, `showFigures`, `showPoints`, `labelCounts`,
-  `boxOpacity`, `format`, `formatShare`, `colors`.
+  `boxOpacity`, `format`, `formatShare`, `colors`, `emphasize`.
   `format: formatNumberGrouped` (`core/utils/format.js`) adds thousands separators to labels and the cut label (`↑ 1,735,656`).
 - **Figure labels:** p5 and p95 are labelled only when `showPercentiles` draws their crosses.
   Figures within 4% of the axis height of each other share one label, `upper / lower`: about
@@ -314,16 +314,25 @@ formatGroupValueLines(groups);
   does; `cleanupGroupBoxPlot(container)` releases it.
 - **Cumulative shares:** `createCumulativeShareSpec(groups)` draws one stepped line per group,
   with `shares` from `cumulativeShares(values)`.
+- **Emphasis:** `emphasize: ids` on `createGroupBoxPlotSpec`, `createCumulativeShareSpec` and
+  `createLinkedColumnsSpec` draws the series it names as usual and every mark of the rest at
+  `DIM_OPACITY` (`browser/specs/emphasis.js`, 0.2) times its opacity, so one page-level selection
+  can drive several figures. A box or share group is named by its `id`, else its label; a
+  linked-columns subject by its row `id`. An id that names nothing throws; unset or empty, the
+  spec is exactly as without it. Box plot axis labels are not dimmed (Vega owns their opacity).
+  The text forms take no selection: llms.txt is built without one.
 - **Text:** `formatGroupFigureTable(groups)` (a column per group, headed by its label),
   `formatGroupRowTable(groups, format, { first, columns })` (a row per group, for many groups:
   n, median, p95 and max by default, or the caller's figure and computed columns),
   `formatGroupBinTable(groups)` (each group's bin counts, `-` where a group lacks a bin) and
   `formatGroupValueLines(groups)`. They print figures in full (`formatPrecise`: `300.5`); chart
   labels round them to fit (`formatNumber`: `301`).
-- **Linked columns:** `createLinkedColumnsSpec(rows, columns, groups, { width, height, format, colors })`
+- **Linked columns:** `createLinkedColumnsSpec(rows, columns, groups, { width, height, format, colors, emphasize, pinned })`
   in `browser/specs/linked-columns.js` draws one row of numbers per subject, each column on its
   own scale, a dot per subject per column; hovering a dot draws that subject's line across, a
-  click or tap pins it (point selections `hov` and `pin` on `id`). A row is `{ id, group, <key>: number… }`,
+  click or tap pins it (point selections `hov` and `pin` on `id`). `pinned: id` pins a subject
+  when drawn; `setPinned(view, vgSpec, id | null)` moves or clears the pin on a live view, given
+  the compiled Vega spec it was parsed from. A row is `{ id, group, <key>: number… }`,
   a column `{ key, label, scale: "log" | "linear", ticks }`, `ticks` the values labelled beside it
   (`boxFigures` gives min, median and max), and a group `{ key, label, color }`. A log column
   draws zeros in a band below it; headings wrap onto two lines when a column is narrower than its

@@ -1,5 +1,6 @@
 import { DEFAULT_COLORS, axisConfig } from "./chart-colors.js";
 import { defined } from "./defined.js";
+import { DIM_OPACITY, dimmedIds } from "./emphasis.js";
 import { getBaseVegaLiteSpec } from "./vega-base.js";
 
 /** @typedef {import("./chart-data.js").ShareGroup} ShareGroup */
@@ -15,6 +16,9 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  * @property {[number, number]} [xDomain] - default: the smallest to the largest value
  * @property {object} [xAxis] - Vega-Lite axis properties merged over ours
  * @property {Partial<import("./chart-colors.js").ChartColors>} [colors]
+ * @property {readonly string[]} [emphasize] - ids of the groups to draw as
+ *   usual (a group's `id`, else its label); the others' curves are drawn at
+ *   DIM_OPACITY times their opacity. Empty or unset: nothing is dimmed
  */
 
 /**
@@ -28,7 +32,8 @@ export function createCumulativeShareSpec(groups, options = {}) {
   const colors = { ...DEFAULT_COLORS, ...defined(options.colors ?? {}) };
   const log = options.log ?? false;
   const at = (/** @type {number} */ v) => (options.floor === undefined ? v : Math.max(v, options.floor));
-  const rows = groups.flatMap((g) => curveRows(g, at));
+  const dimmed = dimmedIds("createCumulativeShareSpec", groups.map((g) => g.id ?? g.label), options.emphasize);
+  const rows = groups.flatMap((g) => curveRows(g, at, dimmed?.has(g.id ?? g.label) ?? false));
   const xs = rows.map((r) => r.x);
   const lowest = Math.min(...xs);
   if (log && lowest <= 0) {
@@ -59,6 +64,8 @@ export function createCumulativeShareSpec(groups, options = {}) {
       },
       order: { field: "x", type: "quantitative" },
       tooltip: [{ field: "group" }, { field: "value" }, { field: "share", format: ".1%" }],
+      // strokeOpacity, not opacity, so that it scales an opacity a caller sets on the mark.
+      ...(dimmed && { strokeOpacity: { condition: { test: "datum.dim", value: DIM_OPACITY } } }),
     },
   };
 }
@@ -67,9 +74,11 @@ export function createCumulativeShareSpec(groups, options = {}) {
  * A curve's rows, starting from share 0 at its lowest value.
  * @param {ShareGroup} g
  * @param {(v: number) => number} at
+ * @param {boolean} dimmed
  */
-function curveRows(g, at) {
+function curveRows(g, at, dimmed) {
   if (g.shares.length === 0) throw new Error(`createCumulativeShareSpec: "${g.label}" has no points`);
-  const start = { group: g.label, value: g.shares[0].value, x: at(g.shares[0].value), share: 0 };
-  return [start, ...g.shares.map((p) => ({ group: g.label, value: p.value, x: at(p.value), share: p.share }))];
+  const tag = dimmed ? { dim: true } : {};
+  const start = { group: g.label, value: g.shares[0].value, x: at(g.shares[0].value), share: 0, ...tag };
+  return [start, ...g.shares.map((p) => ({ group: g.label, value: p.value, x: at(p.value), share: p.share, ...tag }))];
 }

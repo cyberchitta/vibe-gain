@@ -7,6 +7,7 @@ import { binValues } from "./bins.js";
 /**
  * Build a group from its raw values.
  * @param {object} spec
+ * @param {string} [spec.id] - what a chart's `emphasize` names the group by
  * @param {string} spec.label
  * @param {string} spec.color
  * @param {readonly number[]} spec.values - non-empty
@@ -15,12 +16,13 @@ import { binValues } from "./bins.js";
  * @param {readonly Highlight[]} [spec.highlights] - each must be one of the values
  * @returns {BoxGroup}
  */
-export function boxGroup({ label, color, values, method = "lower", buckets, highlights = [] }) {
+export function boxGroup({ id, label, color, values, method = "lower", buckets, highlights = [] }) {
   const missing = highlights.find((h) => !values.includes(h.value));
   if (missing) {
     throw new Error(`boxGroup: highlight ${missing.value} (${missing.note}) is not among the values of "${label}"`);
   }
   return {
+    ...(id !== undefined && { id }),
     label,
     color,
     values,

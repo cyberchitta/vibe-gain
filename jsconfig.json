@@ -15,6 +15,7 @@
     "core/utils/format.js",
     "browser/specs/swarm.js",
     "browser/specs/defined.js",
+    "browser/specs/emphasis.js",
     "browser/specs/group-box-plot.js",
     "browser/specs/cumulative-share.js",
     "browser/specs/linked-columns.js",
