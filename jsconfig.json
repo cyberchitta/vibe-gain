@@ -10,6 +10,7 @@
   },
   "include": [
     "core/stats/**/*.js",
+    "core/data/vg-figure.js",
     "browser/specs/chart-data.js",
     "browser/specs/chart-colors.js",
     "core/utils/format.js",

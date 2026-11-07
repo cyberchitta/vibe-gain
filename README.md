@@ -340,6 +340,29 @@ formatGroupValueLines(groups);
   `formatLinkedColumnTable(rows, columns, groups, format, { first })`: a row per subject,
   `| Entry | Group | <column labels…> |`, values in full.
 
+### The `vg-figure/1` data format
+
+A figure's data as one JSON file, read the same way in the browser and in a build:
+`parseVgFigure(JSON.parse(text), path)` in `core/data/vg-figure.js` returns frozen
+`{ scope?, series }` or `{ scope?, rows }`, or throws naming the file, the entry and what was
+expected.
+
+```json
+{ "format": "vg-figure/1",
+  "scope": "bounty parts",
+  "series": [{ "id": "A", "group": "marked", "values": [12, 40, 3] }] }
+```
+
+- `format` is `"vg-figure/1"`; no keys other than `format`, `scope`, `series`, `rows`.
+- Exactly one of `series` (for group box plots and cumulative shares) and `rows` (for linked
+  columns), a non-empty array. Each entry has a non-empty string `id`, unique in the file, and
+  a string `group`.
+- A series has `values`, a non-empty array of finite numbers. A row has one finite number per
+  column, `{ id, group, <column>: number… }`, and every row has the same columns.
+- `scope`, optional, says what was counted and is passed through unread: a string for the
+  whole file, or an object of strings per column with `default` for the rest.
+- A change that would refuse a valid `vg-figure/1` file is `vg-figure/2`.
+
 ## Configuration Reference
 
 ### Parameters File Structure
