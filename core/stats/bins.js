@@ -37,3 +37,39 @@ export function binValues(values, buckets) {
 export function fromNaturalBuckets(natural) {
   return natural.map((b) => ({ lo: b.min, hi: b.max, label: b.label }));
 }
+
+/**
+ * Half-octave buckets for integer values of 1 or more (line counts, say):
+ * edges 1, 2, 3, 4, 6, 8, 12 … (powers of two, and 1.5× each from 2 up),
+ * each about 1.4× the last, so bars read evenly on a log axis. The last
+ * bucket, from `top`, is open. Labels name integers (`4–5`, `2`, `3072+`),
+ * so they misread non-integer data; values below 1 fit no bucket.
+ * @param {number} top - the last edge; must itself be a half-octave edge
+ * @returns {Bucket[]}
+ */
+export function halfOctaveBuckets(top) {
+  if (!Number.isInteger(top) || halfOctaveEdges(top).at(-1) !== top) {
+    throw new Error(`halfOctaveBuckets: top ${top} is not a half-octave edge; pass one of 1, 2, 3, 4, 6, 8, 12, 16 …`);
+  }
+  const edges = halfOctaveEdges(top);
+  return edges.map((lo, i) => bucketFrom(lo, edges[i + 1] ?? Infinity));
+}
+
+/**
+ * @param {number} top
+ * @returns {number[]} every half-octave edge up to `top`
+ */
+function halfOctaveEdges(top) {
+  const powers = Array.from({ length: Math.max(0, Math.floor(Math.log2(top)) + 1) }, (_, k) => 2 ** k);
+  return powers.flatMap((p) => (p === 1 ? [p] : [p, p * 1.5])).filter((e) => e <= top);
+}
+
+/**
+ * @param {number} lo
+ * @param {number} hi
+ * @returns {Bucket}
+ */
+function bucketFrom(lo, hi) {
+  const label = hi === lo + 1 ? `${lo}` : hi === Infinity ? `${lo}+` : `${lo}–${hi - 1}`;
+  return { lo, hi, label };
+}

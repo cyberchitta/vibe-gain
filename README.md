@@ -291,7 +291,8 @@ formatGroupValueLines(groups);
   A reference, `{ value, label }`, is a dashed line across the group's box (a threshold, not one of its values).
   `figures` holds `n, min, p5, q1, median, q3, p95, max`; `bins` holds
   `lo, hi, label, count, share`. `binValues(values, buckets)` builds bins from caller buckets,
-  and `fromNaturalBuckets(getNaturalBuckets(metricId))` gives vibe-gain's own.
+  `fromNaturalBuckets(getNaturalBuckets(metricId))` gives vibe-gain's own, and
+  `halfOctaveBuckets(top)` gives edges 1, 2, 3, 4, 6, 8 … up to an open `top+` (integer data).
 - **Options** (see the JSDoc in `browser/specs/group-box-plot.js`): `log`, `floor` (values
   below it drawn at it, required on a log axis with zeros), `yDomain` (narrower than the
   values, it cuts the chart: see *Cut axis*), `yAxis`,

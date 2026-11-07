@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { binValues, fromNaturalBuckets } from "../core/stats/bins.js";
+import { binValues, fromNaturalBuckets, halfOctaveBuckets } from "../core/stats/bins.js";
 import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxFigures } from "../core/stats/box-figures.js";
 import { boxGroup } from "../core/stats/box-group.js";
@@ -55,6 +55,29 @@ describe("binValues", () => {
 
   test("vibe-gain's buckets convert", () => {
     expect(fromNaturalBuckets(getNaturalBuckets("commits")).at(-1)).toEqual({ lo: 50, hi: Infinity, label: "50+" });
+  });
+});
+
+describe("halfOctaveBuckets", () => {
+  test("reproduces cyberchitta.cc's line-count buckets", () => {
+    const edges = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 3072];
+    const expected = edges.map((lo, i) => {
+      const hi = edges[i + 1] ?? Infinity;
+      const label = hi === lo + 1 ? `${lo}` : hi === Infinity ? `${lo}+` : `${lo}–${hi - 1}`;
+      return { lo, hi, label };
+    });
+    expect(halfOctaveBuckets(3072)).toEqual(expected);
+  });
+
+  test("the smallest top is one open bucket", () => {
+    expect(halfOctaveBuckets(1)).toEqual([{ lo: 1, hi: Infinity, label: "1+" }]);
+  });
+
+  test("a top that is not a half-octave edge is refused", () => {
+    expect(() => halfOctaveBuckets(5)).toThrow("half-octave edge");
+    expect(() => halfOctaveBuckets(0)).toThrow("half-octave edge");
+    expect(() => halfOctaveBuckets(1.5)).toThrow("half-octave edge");
+    expect(() => halfOctaveBuckets(Infinity)).toThrow("half-octave edge");
   });
 });
 
