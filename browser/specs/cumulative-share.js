@@ -1,4 +1,5 @@
 import { DEFAULT_COLORS, axisConfig } from "./chart-colors.js";
+import { defined } from "./defined.js";
 import { getBaseVegaLiteSpec } from "./vega-base.js";
 
 /** @typedef {import("./chart-data.js").ShareGroup} ShareGroup */
@@ -24,7 +25,7 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  * @param {CumulativeShareOptions} [options]
  */
 export function createCumulativeShareSpec(groups, options = {}) {
-  const colors = { ...DEFAULT_COLORS, ...options.colors };
+  const colors = { ...DEFAULT_COLORS, ...defined(options.colors ?? {}) };
   const log = options.log ?? false;
   const at = (/** @type {number} */ v) => (options.floor === undefined ? v : Math.max(v, options.floor));
   const rows = groups.flatMap((g) => curveRows(g, at));

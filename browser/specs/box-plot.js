@@ -31,7 +31,7 @@ export function createBoxPlotSpec(periodsData, options = {}) {
   const groups = periodsData
     .filter((p) => p.values.length > 0)
     .map((p) => ({ ...periodGroup(p, o.metricId), references: references(o.referenceLines, p.period) }));
-  return createGroupBoxPlotSpec(groups, defined({
+  return createGroupBoxPlotSpec(groups, {
     width: o.width,
     height: o.height,
     yLabel: o.yLabel,
@@ -43,8 +43,8 @@ export function createBoxPlotSpec(periodsData, options = {}) {
     showShares: o.showValues,
     showFigures: o.showStats,
     histogramWidth: o.histogramWidth,
-    colors: defined({ fg: o.medianColor, muted: o.labelColor, bg: o.percentileFill }),
-  }));
+    colors: { fg: o.medianColor, muted: o.labelColor, bg: o.percentileFill },
+  });
 }
 
 /**
@@ -56,9 +56,4 @@ function references(lines = [], period) {
   return lines
     .filter((r) => r.period === period && r.value > 0)
     .map((r) => ({ value: r.value, label: `${r.value}min` }));
-}
-
-/** Options the caller left unset are left out, so the chart's defaults apply. */
-function defined(options) {
-  return Object.fromEntries(Object.entries(options).filter(([, v]) => v !== undefined));
 }

@@ -38,6 +38,11 @@ describe("createGroupBoxPlotSpec", () => {
     expect(marks(spec).filter((m) => m === "point")).toHaveLength(3);
   });
 
+  test("options passed as undefined keep their defaults", () => {
+    const unset = { showFigures: undefined, reserveFigureSpace: undefined, format: undefined, colors: { muted: undefined } };
+    expect(createGroupBoxPlotSpec(groups, unset)).toEqual(createGroupBoxPlotSpec(groups));
+  });
+
   test("the ring sits on its dot", () => {
     const spec = createGroupBoxPlotSpec(groups, { log: true, showPoints: true });
     const ring = spec.layer.at(-1).data.values[0];
@@ -250,6 +255,11 @@ describe("createCumulativeShareSpec", () => {
     );
     const svg = await render(spec);
     expect(svg).toContain("Unmarked");
+  });
+
+  test("colors passed as undefined keep their defaults", () => {
+    const groups = [{ label: "AI-marked", color: "#4e79a7", shares: cumulativeShares(MARKED) }];
+    expect(createCumulativeShareSpec(groups, { colors: { fg: undefined, muted: undefined } })).toEqual(createCumulativeShareSpec(groups));
   });
 });
 
