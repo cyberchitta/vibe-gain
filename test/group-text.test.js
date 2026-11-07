@@ -1,6 +1,12 @@
 import { expect, test } from "bun:test";
 import { boxGroup } from "../core/stats/box-group.js";
-import { formatGroupBinTable, formatGroupFigureTable, formatGroupValueLines } from "../lib/export/group-text.js";
+import { binFrom, halfOctaveBuckets } from "../core/stats/bins.js";
+import {
+  formatGroupBinTable,
+  formatGroupFigureTable,
+  formatGroupRowTable,
+  formatGroupValueLines,
+} from "../lib/export/group-text.js";
 import { formatBoxPlotTable, formatHistogramTable, formatSessionDiagnostics } from "../lib/export/text-formatter.js";
 
 const groups = [
@@ -22,6 +28,68 @@ test("figure table is headed by the group labels", () => {
     "| N | 8 | 10 |",
     "| Median | 153 | 300.5 |",
   ]);
+});
+
+test("row table puts one group per row, n, median, p95 and max by default", () => {
+  expect(formatGroupRowTable(groups)).toBe(
+    "| Group | N | Median | P95 | Max |\n" +
+      "|-------|---|--------|-----|-----|\n" +
+      "| AI-marked | 8 | 153 | 481.85 | 562 |\n" +
+      "| Unmarked | 10 | 300.5 | 1836.1 | 2791 |\n",
+  );
+});
+
+test("row table lays out the caller's columns in order, figures and computed cells alike", () => {
+  const table = formatGroupRowTable(groups, String, {
+    first: "Series",
+    columns: [
+      { name: "Kind", value: (g, i) => `${g.label[0]}${i}` },
+      { name: "Q1", figure: "q1" },
+    ],
+  });
+  expect(table.split("\n").slice(0, 3)).toEqual([
+    "| Series | Kind | Q1 |",
+    "|--------|------|----|",
+    `| AI-marked | A0 | ${groups[0].figures.q1} |`,
+  ]);
+});
+
+// www.cyberchitta.cc's vg-figure seriesTable, as it was before it moved here:
+// it prints raw figures, separates with "---", and computes "% below" itself.
+function wwwSeriesTable(series, labels, floor, note) {
+  const row = (cells) => `| ${cells.join(" | ")} |`;
+  const head = ["Series", "Group", "n", "Median", "95th percentile", "Longest", `% ${note}`];
+  const rows = series.map((s, i) => {
+    const f = groups[i].figures;
+    const below = `${Math.round((100 * s.values.filter((v) => v < floor).length) / s.values.length)}%`;
+    return row([s.id, labels.get(s.group) ?? s.group, f.n, f.median, f.p95, f.max, below]);
+  });
+  return [row(head), row(head.map(() => "---")), ...rows];
+}
+
+test("row table reproduces www's series table, separator aside", () => {
+  const series = [
+    { id: "AI-marked", group: "ai", values: groups[0].values ?? [] },
+    { id: "Unmarked", group: "plain", values: groups[1].values ?? [] },
+  ];
+  const labels = new Map([["ai", "Agent"]]);
+  const floor = 96;
+  const lines = formatGroupRowTable(groups, String, {
+    first: "Series",
+    columns: [
+      { name: "Group", value: (_, i) => labels.get(series[i].group) ?? series[i].group },
+      { name: "n", figure: "n" },
+      { name: "Median", figure: "median" },
+      { name: "95th percentile", figure: "p95" },
+      { name: "Longest", figure: "max" },
+      {
+        name: "% under 96",
+        value: (_, i) => `${Math.round(100 * binFrom(series[i].values, halfOctaveBuckets(3072), floor).below)}%`,
+      },
+    ],
+  }).split("\n");
+  const www = wwwSeriesTable(series, labels, floor, "under 96");
+  expect([lines[0], ...lines.slice(2, -1)]).toEqual([www[0], ...www.slice(2)]);
 });
 
 test("value lines list every value, highlights noted", () => {
