@@ -21,6 +21,9 @@ import { getBaseVegaLiteSpec } from "./vega-base.js";
  * @property {boolean} [showHistogram] - bars for groups that have bins (default true)
  * @property {boolean} [showShares] - each bar's share labelled beside it (default true)
  * @property {boolean} [showFigures] - each box's figures labelled beside it (default true)
+ * @property {boolean} [reserveFigureSpace] - with `showFigures` off, keep the
+ *   room the labels would take, so switching them on and off leaves the plot's
+ *   size alone (default true). Turn off for a chart that never shows them.
  * @property {boolean} [showPoints] - a dot per value left of each box (default false; needs values)
  * @property {boolean} [labelCounts] - "label (n)" under each box (default false)
  * @property {number} [boxOpacity] - default 1
@@ -40,13 +43,6 @@ const LABEL_GAP = 0.04;
 const MIN_BAR = 0.01;
 /** Half the width of a reference line, in box spacings. */
 const REF_HALF = 0.2;
-/**
- * Pixels kept free above the domain: half a figure label's height, so a
- * label at the top stays inside the plot. Without it the label spills out
- * and Vega's fit shrinks the plot whenever labels are shown. The bottom
- * needs none: the group names below the axis reach further down.
- */
-const TOP_PAD = 6;
 
 /**
  * Box plots side by side, one per labelled group, drawn from figures the
@@ -68,7 +64,7 @@ export function createGroupBoxPlotSpec(groups, options = {}) {
     ...(o.showHistogram ? histogramLayers(drawn, o, at, domain, enc) : []),
     ...boxLayers(drawn, o, at, inside, enc),
     ...referenceLayers(drawn, at, enc),
-    ...(o.showFigures ? figureLayers(drawn, o, at, inside, domain, enc) : []),
+    ...(o.showFigures || o.reserveFigureSpace ? figureLayers(drawn, o, at, inside, domain, enc) : []),
     ...cutLayers(drawn, o, inside, domain, enc),
     ...(o.showPoints ? pointLayers(drawn, o, at, domain, enc) : []),
     ...highlightLayers(drawn, o, at, domain, enc),
@@ -92,6 +88,7 @@ function resolveOptions(options) {
     showHistogram: true,
     showShares: true,
     showFigures: true,
+    reserveFigureSpace: true,
     showPoints: false,
     labelCounts: false,
     boxOpacity: 1,
@@ -181,7 +178,7 @@ function encoders(groups, o, domain) {
     ticks: false,
     domain: false,
   };
-  const yScale = { type: o.log ? "log" : "linear", domain, nice: false, range: [{ expr: "height" }, TOP_PAD],...(!o.log && { zero: false }) };
+  const yScale = { type: o.log ? "log" : "linear", domain, nice: false, ...(!o.log && { zero: false }) };
   const yAxis = { grid: true, ...(o.log && { format: "~s" }), ...o.yAxis };
   return {
     /** @param {string} field */
@@ -287,6 +284,13 @@ function boxTooltip() {
  * so of figures clamped to the floor only the lowest is labelled. Figures
  * that would crowd each other share one label, "upper / lower", at the
  * upper one's height. Figures outside the domain are left to `cutLayers`.
+ *
+ * With `showFigures` off they are still laid out, unseen, unless
+ * `reserveFigureSpace` is off too. Labels at
+ * the edges reach past the plot (the last group's to the right, the top
+ * figure's above), and Vega's fit makes room for them only when they are
+ * there, so dropping them would resize the plot whenever labels are
+ * switched off. A fixed pad would need their width, which is not known here.
  * @param {readonly BoxGroup[]} groups
  * @param {Options} o
  * @param {(v: number) => number} at
@@ -309,17 +313,16 @@ function figureLayers(groups, o, at, inside, domain, enc) {
   });
   const data = { values: rows };
   const color = o.colors.muted;
+  const text = { type: "text", align: "left", baseline: "middle", dx: 4, fontSize: 9, color };
+  const labels = { data, encoding: { x: enc.x("x1"), y: enc.y("y"), text: { field: "text" } } };
+  if (!o.showFigures) return [{ ...labels, mark: { ...text, opacity: 0, interactive: false } }];
   return [
     {
       data,
       mark: { type: "rule", strokeDash: [2, 2], opacity: 0.7, color },
       encoding: { x: enc.x("x0"), x2: { field: "x1" }, y: enc.y("y") },
     },
-    {
-      data,
-      mark: { type: "text", align: "left", baseline: "middle", dx: 4, fontSize: 9, color },
-      encoding: { x: enc.x("x1"), y: enc.y("y"), text: { field: "text" } },
-    },
+    { ...labels, mark: text },
   ];
 }
 

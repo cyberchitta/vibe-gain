@@ -98,6 +98,40 @@ describe("createGroupBoxPlotSpec", () => {
     for (const log of [false, true]) expect(await plotHeight(true, log)).toBe(await plotHeight(false, log));
   });
 
+  describe("figure labels past the last group", () => {
+    const many = Array.from({ length: 10 }, (_, i) => boxGroup({ label: `G${i}`, color: "#000", values: UNMARKED.map((v) => v * 1000 * (i + 1)) }));
+    const plotWidth = async (showFigures, reserveFigureSpace = true) => {
+      const spec = { ...createGroupBoxPlotSpec(many, { showFigures, reserveFigureSpace, log: true }), width: 400, height: 300 };
+      const view = new vega.View(vega.parse(vegaLite.compile(spec).spec), { renderer: "none" });
+      await view.runAsync();
+      const [left, right] = view.scale("x").range();
+      view.finalize();
+      return right - left;
+    };
+
+    test("leave the plot's width alone when switched off", async () => {
+      expect(await plotWidth(true)).toBe(await plotWidth(false));
+    });
+
+    test("give their room back with reserveFigureSpace off", async () => {
+      expect(await plotWidth(false, false)).toBeGreaterThan(await plotWidth(true));
+    });
+  });
+
+  test("figure labels switched off without reserved space are not drawn at all", () => {
+    const spec = createGroupBoxPlotSpec(groups, { showFigures: false, reserveFigureSpace: false });
+    expect(spec.layer.some((l) => l.mark.type === "text" && l.encoding.text.field === "text")).toBe(false);
+  });
+
+  test("figure labels switched off are laid out but not shown", async () => {
+    const spec = createGroupBoxPlotSpec(groups, { showFigures: false });
+    await render(spec);
+    const figures = spec.layer.filter((l) => l.mark.type === "text" && l.encoding.text.field === "text");
+    expect(figures).toHaveLength(1);
+    expect(figures[0].mark).toMatchObject({ opacity: 0, interactive: false });
+    expect(spec.layer.some((l) => l.mark.type === "rule" && l.mark.strokeDash)).toBe(false);
+  });
+
   describe("a y domain that cuts a whisker", () => {
     const tall = {
       ...boxGroup({ label: "tall", color: "#000", values: [10, 20, 30, 40, 50, 60, 900, 5000] }),
