@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { binValues, fromNaturalBuckets, halfOctaveBuckets } from "../core/stats/bins.js";
+import { binFrom, binValues, fromNaturalBuckets, halfOctaveBuckets } from "../core/stats/bins.js";
 import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxFigures } from "../core/stats/box-figures.js";
 import { boxGroup } from "../core/stats/box-group.js";
@@ -55,6 +55,33 @@ describe("binValues", () => {
 
   test("vibe-gain's buckets convert", () => {
     expect(fromNaturalBuckets(getNaturalBuckets("commits")).at(-1)).toEqual({ lo: 50, hi: Infinity, label: "50+" });
+  });
+});
+
+describe("binFrom", () => {
+  const buckets = halfOctaveBuckets(8);
+
+  test("bins from the floor, shares of all values, and the share below it", () => {
+    const { bins, below } = binFrom([1, 1, 1, 1, 2, 3, 3, 9], buckets, 2);
+    expect(below).toBe(0.5);
+    expect(bins.map((b) => [b.label, b.count, b.share])).toEqual([
+      ["2", 1, 1 / 8], ["3", 2, 2 / 8], ["4–5", 0, 0], ["6–7", 0, 0], ["8+", 1, 1 / 8],
+    ]);
+  });
+
+  test("a floor at the first edge bins everything, as binValues does", () => {
+    const values = [1, 2, 5, 40];
+    expect(binFrom(values, buckets, 1)).toEqual({ bins: binValues(values, buckets), below: 0 });
+  });
+
+  test("every value below the floor leaves empty bins", () => {
+    const { bins, below } = binFrom([1, 1], buckets, 2);
+    expect(below).toBe(1);
+    expect(bins.every((b) => b.count === 0 && b.share === 0)).toBe(true);
+  });
+
+  test("a floor that is not a bucket edge is refused", () => {
+    expect(() => binFrom([1, 2], buckets, 5)).toThrow("not a bucket edge");
   });
 });
 

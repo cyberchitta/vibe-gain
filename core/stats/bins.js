@@ -16,6 +16,37 @@
  * @returns {Bin[]}
  */
 export function binValues(values, buckets) {
+  return countInto(values, buckets, values.length);
+}
+
+/**
+ * Bin only the values from `floor` up, over the buckets from `floor` up,
+ * where small values would dwarf every other bar. Shares stay shares of all
+ * the values, so the bars sum to `1 - below`.
+ * @param {readonly number[]} values - non-empty
+ * @param {readonly Bucket[]} buckets
+ * @param {number} floor - the `lo` of one of the buckets
+ * @returns {{ bins: Bin[], below: number }} `below`: the fraction of values under `floor`
+ */
+export function binFrom(values, buckets, floor) {
+  if (!buckets.some((b) => b.lo === floor)) {
+    const edges = buckets.map((b) => b.lo).join(", ");
+    throw new Error(`binFrom: floor ${floor} is not a bucket edge; pass one of ${edges}`);
+  }
+  const rest = values.filter((v) => v >= floor);
+  return {
+    bins: countInto(rest, buckets.filter((b) => b.lo >= floor), values.length),
+    below: 1 - rest.length / values.length,
+  };
+}
+
+/**
+ * @param {readonly number[]} values
+ * @param {readonly Bucket[]} buckets
+ * @param {number} total - what each share is a share of
+ * @returns {Bin[]}
+ */
+function countInto(values, buckets, total) {
   const counts = buckets.map(() => 0);
   values.forEach((v) => {
     const i = buckets.findIndex((b) => v >= b.lo && v < b.hi);
@@ -25,7 +56,7 @@ export function binValues(values, buckets) {
     }
     counts[i] += 1;
   });
-  return buckets.map((b, i) => ({ ...b, count: counts[i], share: counts[i] / values.length }));
+  return buckets.map((b, i) => ({ ...b, count: counts[i], share: counts[i] / total }));
 }
 
 /**

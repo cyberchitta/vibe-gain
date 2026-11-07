@@ -5,7 +5,7 @@ import { createBoxPlotSpec } from "../browser/specs/box-plot.js";
 import { createCumulativeShareSpec } from "../browser/specs/cumulative-share.js";
 import { createGroupBoxPlotSpec } from "../browser/specs/group-box-plot.js";
 import { swarm } from "../browser/specs/swarm.js";
-import { fromNaturalBuckets } from "../core/stats/bins.js";
+import { binFrom, fromNaturalBuckets, halfOctaveBuckets } from "../core/stats/bins.js";
 import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxGroup } from "../core/stats/box-group.js";
 import { cumulativeShares } from "../core/stats/cumulative.js";
@@ -65,6 +65,15 @@ describe("createGroupBoxPlotSpec", () => {
     await render(spec);
     const labels = spec.layer.find((l) => l.mark.type === "text" && l.encoding.text.field === "text").data.values;
     expect(labels.filter((l) => l.y === 0.5).map((l) => l.text)).toEqual(["0"]);
+  });
+
+  test("histogram from a floor draws shares that sum to less than 1", async () => {
+    const values = [1, 1, 1, 1, 2, 3, 3, 9, 40, 300];
+    const { bins } = binFrom(values, halfOctaveBuckets(256), 2);
+    const spec = createGroupBoxPlotSpec([{ ...boxGroup({ label: "C", color: "#000", values }), bins }], { log: true });
+    await render(spec);
+    const bars = spec.layer.find((l) => l.mark.type === "rect" && l.encoding.tooltip).data.values;
+    expect(bars.map((b) => b.share)).toEqual(["10.0%", "20.0%", "10.0%", "10.0%", "10.0%"]);
   });
 
   test("p5 and p95 are labelled only when their crosses are drawn", () => {
