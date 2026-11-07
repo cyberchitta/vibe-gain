@@ -17,6 +17,19 @@ export function formatNumber(num) {
 }
 
 /**
+ * `formatNumber` with en-US thousands separators, for labels beside prose
+ * that writes them (1735656 → "1,735,656", -1500 → "-1,500", 999.6 →
+ * "1,000"). Separators go on the rounded text, so they never depend on the
+ * runtime's locale. Pass it to a chart as `format`.
+ * @param {number | null | undefined} num
+ * @returns {string}
+ */
+export function formatNumberGrouped(num) {
+  const [whole, ...fraction] = formatNumber(num).split(".");
+  return [whole.replace(/\B(?=(\d{3})+$)/g, ","), ...fraction].join(".");
+}
+
+/**
  * A figure as text in full, for the text forms a reader or an LLM takes as
  * measured: up to two decimals with trailing zeros dropped, and three
  * significant figures below 0.01 so a small figure never reads as 0

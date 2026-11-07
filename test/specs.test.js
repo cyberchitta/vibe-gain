@@ -5,6 +5,7 @@ import { createBoxPlotSpec } from "../browser/specs/box-plot.js";
 import { createCumulativeShareSpec } from "../browser/specs/cumulative-share.js";
 import { createGroupBoxPlotSpec } from "../browser/specs/group-box-plot.js";
 import { swarm } from "../browser/specs/swarm.js";
+import { formatNumberGrouped } from "../core/utils/format.js";
 import { binFrom, fromNaturalBuckets, halfOctaveBuckets } from "../core/stats/bins.js";
 import { getNaturalBuckets } from "../core/data/bucketing.js";
 import { boxGroup } from "../core/stats/box-group.js";
@@ -171,6 +172,15 @@ describe("createGroupBoxPlotSpec", () => {
       expect(spec.layer.filter((l) => l.mark.type === "rule" && l.encoding.x.field === "c0").map((l) => l.data.values.length)).toEqual([1, 0]);
       expect(layer((l) => l.mark.type === "point" && l.mark.size === 70).map((r) => r.value)).toEqual([10, 20, 30, 40, 50, 60]);
     });
+  });
+
+  test("formatNumberGrouped as format groups the cut label and figure labels", async () => {
+    const big = boxGroup({ label: "big", color: "#000", values: [1000, 1200, 1500, 2000, 2500, 3000, 4000, 1735656] });
+    const spec = createGroupBoxPlotSpec([big], { log: true, yDomain: [500, 5000], format: formatNumberGrouped });
+    await render(spec);
+    const rows = spec.layer.filter((l) => l.mark.type === "text").flatMap((l) => l.data.values);
+    expect(rows.map((r) => r.cut).filter(Boolean)).toEqual(["↑ 1,735,656"]);
+    expect(rows.map((r) => r.text).filter(Boolean)).toContain("1,000");
   });
 
   test("a y domain that holds every value cuts nothing", () => {

@@ -5,7 +5,7 @@ import { boxFigures } from "../core/stats/box-figures.js";
 import { boxGroup } from "../core/stats/box-group.js";
 import { cumulativeShares } from "../core/stats/cumulative.js";
 import { periodGroup } from "../core/data/period-group.js";
-import { formatNumber, formatPrecise } from "../core/utils/format.js";
+import { formatNumber, formatNumberGrouped, formatPrecise } from "../core/utils/format.js";
 
 // The article's two groups (bounty-entries, measure.py 2026-10-27).
 const MARKED = [46, 54, 68, 134, 172, 206, 333, 562];
@@ -142,6 +142,22 @@ describe("formatNumber", () => {
       "0.050",
       "46",
       "1235",
+      "N/A",
+    ]);
+  });
+});
+
+describe("formatNumberGrouped", () => {
+  test("formatNumber's rounding, with en-US separators on the rounded figure", () => {
+    expect([1735656, 1000, 999.6, 999, -1500, 1234.56, 48.83, 0.178, undefined].map(formatNumberGrouped)).toEqual([
+      "1,735,656",
+      "1,000",
+      "1,000",
+      "999",
+      "-1,500",
+      "1,235",
+      "48.8",
+      "0.18",
       "N/A",
     ]);
   });

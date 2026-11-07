@@ -298,6 +298,7 @@ formatGroupValueLines(groups);
   values, it cuts the chart: see *Cut axis*), `yAxis`,
   `showPercentiles`, `showHistogram`, `showShares`, `showFigures`, `showPoints`, `labelCounts`,
   `boxOpacity`, `format`, `formatShare`, `colors`.
+  `format: formatNumberGrouped` (`core/utils/format.js`) adds thousands separators to labels and the cut label (`↑ 1,735,656`).
 - **Figure labels:** p5 and p95 are labelled only when `showPercentiles` draws their crosses.
   Figures within 4% of the axis height of each other share one label, `upper / lower`: about
   12 px on a 300 px chart, so below that height labels can still touch. Give the chart room,
