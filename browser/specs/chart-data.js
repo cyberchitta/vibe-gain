@@ -72,4 +72,31 @@
  * @property {readonly SharePoint[]} shares
  */
 
+/**
+ * One subject of a linked-columns chart: an id, its group's key and a
+ * number for each column's key.
+ * @typedef {{ readonly id: string, readonly group: string, readonly [key: string]: unknown }} LinkedRow
+ */
+
+/**
+ * A column of a linked-columns chart, on its own scale. On a log scale,
+ * zeros are drawn in a band below the column. `ticks` are the values
+ * labelled beside it (its minimum, median and maximum, say), chosen by the
+ * caller.
+ * @typedef {object} LinkedColumn
+ * @property {string} key - the rows' field
+ * @property {string} label
+ * @property {"log" | "linear"} scale
+ * @property {readonly number[]} ticks
+ */
+
+/**
+ * A group of linked-columns rows: their colour, and the label text forms
+ * print for it.
+ * @typedef {object} LinkedGroup
+ * @property {string} key - what rows name in `group`
+ * @property {string} label
+ * @property {string} color
+ */
+
 export {};

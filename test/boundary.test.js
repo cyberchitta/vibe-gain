@@ -9,6 +9,7 @@ const DRAWING = [
   "browser/specs/defined.js",
   "browser/specs/group-box-plot.js",
   "browser/specs/cumulative-share.js",
+  "browser/specs/linked-columns.js",
   "lib/export/group-text.js",
 ];
 // Formatting is not computing: core/utils/format.js is allowed, the rest of core/utils is not.

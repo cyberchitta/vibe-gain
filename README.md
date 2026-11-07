@@ -320,6 +320,16 @@ formatGroupValueLines(groups);
   `formatGroupBinTable(groups)` (each group's bin counts, `-` where a group lacks a bin) and
   `formatGroupValueLines(groups)`. They print figures in full (`formatPrecise`: `300.5`); chart
   labels round them to fit (`formatNumber`: `301`).
+- **Linked columns:** `createLinkedColumnsSpec(rows, columns, groups, { width, height, format, colors })`
+  in `browser/specs/linked-columns.js` draws one row of numbers per subject, each column on its
+  own scale, a dot per subject per column; hovering a dot draws that subject's line across, a
+  click or tap pins it (point selections `hov` and `pin` on `id`). A row is `{ id, group, <key>: number… }`,
+  a column `{ key, label, scale: "log" | "linear", ticks }`, `ticks` the values labelled beside it
+  (`boxFigures` gives min, median and max), and a group `{ key, label, color }`. A log column
+  draws zeros in a band below it; headings wrap onto two lines when a column is narrower than its
+  heading. Labels use `formatCompact` (`4.2k`, `0.43`). The text form is
+  `formatLinkedColumnTable(rows, columns, groups, format, { first })`: a row per subject,
+  `| Entry | Group | <column labels…> |`, values in full.
 
 ## Configuration Reference
 

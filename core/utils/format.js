@@ -30,6 +30,21 @@ export function formatNumberGrouped(num) {
 }
 
 /**
+ * A figure in at most four characters or so, for labels in a narrow column:
+ * thousands with one decimal and "k", two decimals below 10 with trailing
+ * zeros dropped, whole numbers between (0 → "0", 12968 → "13.0k", 0.426 →
+ * "0.43", 48.8 → "49").
+ * @param {number} v
+ * @returns {string}
+ */
+export function formatCompact(v) {
+  if (v === 0) return "0";
+  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
+  if (v < 10) return `${+v.toFixed(2)}`;
+  return `${Math.round(v)}`;
+}
+
+/**
  * A figure as text in full, for the text forms a reader or an LLM takes as
  * measured: up to two decimals with trailing zeros dropped, and three
  * significant figures below 0.01 so a small figure never reads as 0
