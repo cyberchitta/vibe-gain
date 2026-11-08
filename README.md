@@ -318,9 +318,10 @@ formatGroupValueLines(groups);
   `createLinkedColumnsSpec` draws the series it names as usual and every mark of the rest at
   `DIM_OPACITY` (`browser/specs/emphasis.js`, 0.2) times its opacity, so one page-level selection
   can drive several figures. A box or share group is named by its `id`, else its label; a
-  linked-columns subject by its row `id`. An id that names nothing throws; unset or empty, the
-  spec is exactly as without it. Box plot axis labels are not dimmed (Vega owns their opacity).
-  The text forms take no selection: llms.txt is built without one.
+  linked-columns subject by its row `id`; there an emphasized subject also draws its line and
+  name, as if pinned, so the series stand out on every chart. An id that names nothing throws;
+  unset or empty, the spec is exactly as without it. Box plot axis labels are not dimmed (Vega
+  owns their opacity). The text forms take no selection: llms.txt is built without one.
 - **Text:** `formatGroupFigureTable(groups)` (a column per group, headed by its label),
   `formatGroupRowTable(groups, format, { first, columns })` (a row per group, for many groups:
   n, median, p95 and max by default, or the caller's figure and computed columns),

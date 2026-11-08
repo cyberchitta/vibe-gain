@@ -148,6 +148,16 @@ describe("createLinkedColumnsSpec emphasize and pin", () => {
     view.finalize();
   });
 
+  test("the emphasized subjects' lines and names are drawn with nothing hovered or pinned", async () => {
+    const { view, compiled } = await viewOf(createLinkedColumnsSpec(rows, columns, linkedGroups, { emphasize: ["B", "C"] }));
+    expect(opacities(view, "line")).toEqual({ A: 0, B: 0.95, C: 0.95 });
+    expect(opacities(view, "text")).toMatchObject({ A: 0, B: 1, C: 1 });
+    await setPinned(view, compiled, "A");
+    expect(close(opacities(view, "line").A, 0.95 * DIM_OPACITY)).toBe(true);
+    expect(opacities(view, "line").B).toBe(0.95);
+    view.finalize();
+  });
+
   test("a subject pinned at build time is lit; setPinned moves and clears the pin", async () => {
     const { view, compiled } = await viewOf(createLinkedColumnsSpec(rows, columns, linkedGroups, { pinned: "C" }));
     const shown = () => Object.entries(opacities(view, "line")).filter(([, o]) => o > 0).map(([id]) => id);

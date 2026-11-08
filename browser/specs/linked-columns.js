@@ -15,9 +15,10 @@ import { dim, dimmedIds } from "./emphasis.js";
  * @property {(v: number) => string} [format] - tick labels and tooltips (default `formatCompact`)
  * @property {Partial<ChartColors>} [colors] - `fg` headings, `muted` column
  *   rules and tick labels, `bg` the halo behind tick labels (the page's background)
- * @property {readonly string[]} [emphasize] - ids of the subjects to draw as
- *   usual; the others' dots, lines and names are drawn at DIM_OPACITY times
- *   their opacity. Empty or unset: nothing is dimmed
+ * @property {readonly string[]} [emphasize] - ids of the subjects to draw
+ *   with their lines and names, as if pinned; the others' dots, lines and
+ *   names are drawn at DIM_OPACITY times their opacity. Empty or unset:
+ *   nothing is dimmed
  * @property {string} [pinned] - the id of a subject pinned when the chart is
  *   drawn; `setPinned` moves the pin on a live view
  */
@@ -194,18 +195,18 @@ function heading(column, x) {
 }
 
 /**
- * An encoding value: `on` for a subject hovered or pinned, `off` otherwise,
- * both scaled down for a dimmed subject when some are.
+ * An encoding value: `on` for a subject hovered or pinned, `off` otherwise.
+ * When some subjects are dimmed, the emphasized ones are always `on`, and a
+ * dimmed one gets its value scaled down.
  * @param {number} on
  * @param {number} off
  * @param {boolean} dimmed - whether any subject is dimmed
  */
 function lit(on, off, dimmed) {
   const params = [HOVER_PARAM, PIN_PARAM];
-  const lighted = params.map((param) => ({ param, empty: false, value: on }));
-  if (!dimmed) return { condition: lighted, value: off };
+  if (!dimmed) return { condition: params.map((param) => ({ param, empty: false, value: on })), value: off };
   const dimLighted = params.map((param) => ({ test: { and: [{ param, empty: false }, "datum.dim"] }, value: dim(on) }));
-  return { condition: [...dimLighted, ...lighted, { test: "datum.dim", value: dim(off) }], value: off };
+  return { condition: [...dimLighted, { test: "datum.dim", value: dim(off) }], value: on };
 }
 
 /**
