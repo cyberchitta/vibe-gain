@@ -9,6 +9,18 @@ import { dim, dimmedIds } from "./emphasis.js";
 /** @typedef {import("./chart-colors.js").ChartColors} ChartColors */
 
 /**
+ * A subject's dot in one column, as drawn.
+ * @typedef {object} Point
+ * @property {string} id
+ * @property {string} group
+ * @property {number} x - the column's index
+ * @property {number} y - its place in the column, 0 at the bottom and 1 at the top
+ * @property {string} value - the value, formatted
+ * @property {string} column - the column's label
+ * @property {boolean} [dim] - set on a dimmed subject
+ */
+
+/**
  * @typedef {object} LinkedColumnsOptions
  * @property {number | "container"} [width]
  * @property {number | "container"} [height]
@@ -34,6 +46,14 @@ export const PIN_PARAM = "pin";
 /** Where a log column draws its zeros, which the log scale cannot place: a band below it. */
 const ZERO = -0.1;
 const TOP = 1.14;
+/** The y scale's domain runs a margin beyond the zero band and the headings. */
+const Y_MARGIN = 0.04;
+const Y_SPAN = TOP + Y_MARGIN - (ZERO - Y_MARGIN);
+
+/** An end name's height in px (12px semibold): ends closer than this share a label. */
+const NAME_PX = 12;
+/** Each end name's rank, zero-padded, so that sorting the keys as strings puts the names top first. */
+const KEY_DIGITS = 4;
 
 /**
  * Headings are 11px semibold. Vega cannot measure text in an expression, so
@@ -155,6 +175,7 @@ function placer(column, values) {
  * @param {number} x
  * @param {(v: number) => string} format
  * @param {Set<string> | null} dimmed - ids of the subjects to dim
+ * @returns {{ points: Point[], ticks: object[] }}
  */
 function columnMarks(rows, column, values, x, format, dimmed) {
   const at = placer(column, values);
@@ -210,7 +231,7 @@ function lit(on, off, dimmed) {
 }
 
 /**
- * @param {readonly object[]} points
+ * @param {readonly Point[]} points
  * @param {readonly object[]} ticks
  * @param {readonly LinkedColumn[]} columns
  * @param {readonly LinkedGroup[]} groups
@@ -220,7 +241,7 @@ function lit(on, off, dimmed) {
  */
 function layers(points, ticks, columns, groups, colors, { dimmed, pinned }) {
   const X = { field: "x", type: "quantitative", axis: null, scale: { domain: [-0.45, columns.length - 0.55] } };
-  const Y = { field: "y", type: "quantitative", axis: null, scale: { domain: [ZERO - 0.04, TOP + 0.04] } };
+  const Y = { field: "y", type: "quantitative", axis: null, scale: { domain: [ZERO - Y_MARGIN, TOP + Y_MARGIN] } };
   const color = {
     field: "group",
     type: "nominal",
@@ -253,12 +274,7 @@ function layers(points, ticks, columns, groups, colors, { dimmed, pinned }) {
       encoding: { ...at, color, ...(dimmed && { opacity: { condition: { test: "datum.dim", value: dim(0.85) }, value: 0.85 } }) },
     },
     hitLayer(points, at, pinned),
-    {
-      data: { values: points },
-      transform: [{ filter: `datum.x === ${columns.length - 1}` }],
-      mark: { type: "text", align: "left", dx: 8, fontSize: 12, fontWeight: 600 },
-      encoding: { ...at, color, text: { field: "id" }, opacity: lit(1, 0, dimmed) },
-    },
+    endNames(points, columns.length - 1, at, color, colors, dimmed),
     {
       data: { values: ticks },
       mark: { type: "text", align: "right", dx: -6, fontSize: 10, color: colors.bg, stroke: colors.bg, strokeWidth: 4 },
@@ -277,6 +293,58 @@ function layers(points, ticks, columns, groups, colors, { dimmed, pinned }) {
       encoding: tickText,
     },
   ];
+}
+
+/**
+ * The names of the lit subjects (emphasized, hovered or pinned) beside the
+ * last column. Names whose points sit closer than a name's height, at the
+ * height drawn, are joined into one label, top first, so that near-equal
+ * ends do not overprint; the label takes the subjects' colour, or `fg` where
+ * their groups differ, and is dimmed only when every subject in it is.
+ * Closeness chains: A near B and B near C make one label.
+ * @param {readonly Point[]} points
+ * @param {number} last - the last column's x
+ * @param {object} at - the x and y encodings
+ * @param {object} color - the group colour encoding
+ * @param {ChartColors} colors
+ * @param {boolean} dimmed - whether any subject is dimmed
+ */
+function endNames(points, last, at, color, colors, dimmed) {
+  const ends = points
+    .filter((p) => p.x === last)
+    .sort((a, b) => b.y - a.y || a.id.localeCompare(b.id))
+    .map((p, i) => ({ ...p, key: `${String(i).padStart(KEY_DIGITS, "0")}:${p.id}` }));
+  const isLit = [HOVER_PARAM, PIN_PARAM].map((param) => ({ param, empty: false }));
+  const pxPerY = `height / ${Y_SPAN}`;
+  return {
+    data: { values: ends },
+    transform: [
+      { filter: { or: [...isLit, ...(dimmed ? ["!datum.dim"] : [])] } },
+      { calculate: "datum.dim ? 0 : 1", as: "bright" },
+      { window: [{ op: "lag", field: "y", as: "below" }], sort: [{ field: "y" }] },
+      { calculate: `datum.below === null || (datum.y - datum.below) * ${pxPerY} >= ${NAME_PX} ? 1 : 0`, as: "starts" },
+      { window: [{ op: "sum", field: "starts", as: "label" }], sort: [{ field: "y" }] },
+      {
+        aggregate: [
+          { op: "mean", field: "y", as: "y" },
+          { op: "max", field: "bright", as: "bright" },
+          { op: "distinct", field: "group", as: "groups" },
+          { op: "values", field: "key", as: "members" },
+        ],
+        groupby: ["label"],
+      },
+      { calculate: `replace(join(sort(pluck(datum.members, "key")), " "), /(^| )[0-9]{${KEY_DIGITS}}:/g, "$1")`, as: "text" },
+      { calculate: "pluck(datum.members, 'group')[0]", as: "group" },
+      { calculate: `${last}`, as: "x" },
+    ],
+    mark: { type: "text", align: "left", dx: 8, fontSize: 12, fontWeight: 600 },
+    encoding: {
+      ...at,
+      color: { condition: { test: "datum.groups > 1", value: colors.fg }, ...color },
+      text: { field: "text" },
+      opacity: { condition: { test: "datum.bright", value: 1 }, value: dim(1) },
+    },
+  };
 }
 
 /**

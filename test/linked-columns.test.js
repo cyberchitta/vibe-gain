@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import * as vega from "vega";
 import * as vegaLite from "vega-lite";
-import { createLinkedColumnsSpec, HOVER_PARAM, PIN_PARAM } from "../browser/specs/linked-columns.js";
+import { createLinkedColumnsSpec, HOVER_PARAM, PIN_PARAM, setPinned } from "../browser/specs/linked-columns.js";
+import { DIM_OPACITY } from "../browser/specs/emphasis.js";
 import { formatLinkedColumnTable } from "../lib/export/group-text.js";
 import { formatCompact } from "../core/utils/format.js";
 
@@ -54,7 +55,7 @@ describe("createLinkedColumnsSpec", () => {
     ]);
     const lit = [HOVER_PARAM, PIN_PARAM];
     expect(layerOf(spec, "line").encoding.opacity.condition.map((c) => c.param)).toEqual(lit);
-    expect(layerOf(spec, "text", (l) => l.encoding.text.field === "id").encoding.opacity.condition.map((c) => c.param)).toEqual(lit);
+    expect(layerOf(spec, "text", (l) => l.encoding.text.field === "text" && l.transform).transform[0].filter.or.map((p) => p.param)).toEqual(lit);
     const view = await viewOf(spec);
     expect(view.data(`${PIN_PARAM}_store`)).toEqual([]);
     expect(view.data(`${HOVER_PARAM}_store`)).toEqual([]);
@@ -71,7 +72,7 @@ describe("createLinkedColumnsSpec", () => {
       const walk = (n) =>
         n.marktype === marktype ? out.push(...n.items) : (n.items ?? []).forEach(walk);
       walk(view.scenegraph().root);
-      return [...new Set(out.filter((i) => i.opacity > 0).map((i) => i.datum.id))];
+      return [...new Set(out.filter((i) => i.opacity > 0).map((i) => i.datum.id ?? i.text))];
     };
     // The selection tuples a click or pointerover would set; set here because a headless view has no events.
     const select = async (param, id) => {
@@ -90,6 +91,55 @@ describe("createLinkedColumnsSpec", () => {
     await select(HOVER_PARAM, null);
     expect(shown("line")).toEqual([]);
     view.finalize();
+  });
+
+  describe("end names", () => {
+    // D ends level with B, in the other group; C ends well apart from both.
+    const level = [...rows, { id: "D", group: "unmarked", logic: 100, deps: 3, ratio: 1.5 }];
+    const pinView = async (spec, id) => {
+      const compiled = vegaLite.compile({ ...spec, width: 400, height: 300 }).spec;
+      const view = new vega.View(vega.parse(compiled), { renderer: "none" });
+      await view.runAsync();
+      if (id) await setPinned(view, compiled, id);
+      return view;
+    };
+    /** The end names drawn, top first, with their colour and opacity. */
+    const ends = (view) => {
+      const out = [];
+      const walk = (n) => (n.marktype === "text" ? out.push(...n.items) : (n.items ?? []).forEach(walk));
+      walk(view.scenegraph().root);
+      return out
+        .filter((i) => i.fontSize === 12 && i.opacity > 0)
+        .sort((a, b) => a.y - b.y)
+        .map((i) => ({ text: i.text, fill: i.fill, opacity: i.opacity }));
+    };
+
+    test("names that would overlap are drawn as one label, in value order, coloured neutral when groups differ", async () => {
+      const view = await pinView(createLinkedColumnsSpec(level, columns, groups, { emphasize: ["B", "C", "D"] }));
+      expect(ends(view)).toEqual([
+        { text: "B D", fill: "#333333", opacity: 1 },
+        { text: "C", fill: "#2f6fb0", opacity: 1 },
+      ]);
+      view.finalize();
+    });
+
+    test("names well apart are drawn one each, as before", async () => {
+      const view = await pinView(createLinkedColumnsSpec(level, columns, groups, { emphasize: ["B", "C"] }));
+      expect(ends(view).map((e) => e.text)).toEqual(["B", "C"]);
+      view.finalize();
+    });
+
+    test("a pinned name merges with an emphasized one it would overlap; dimmed alone, lit when merged", async () => {
+      const alone = await pinView(createLinkedColumnsSpec(level, columns, groups, { emphasize: ["C"] }), "D");
+      expect(ends(alone)).toEqual([
+        { text: "D", fill: "#8a8a8a", opacity: DIM_OPACITY },
+        { text: "C", fill: "#2f6fb0", opacity: 1 },
+      ]);
+      alone.finalize();
+      const merged = await pinView(createLinkedColumnsSpec(level, columns, groups, { emphasize: ["B"] }), "D");
+      expect(ends(merged)).toEqual([{ text: "B D", fill: "#333333", opacity: 1 }]);
+      merged.finalize();
+    });
   });
 
   test("a log column draws its zeros in a band below, labelled 0", () => {

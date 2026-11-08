@@ -131,9 +131,13 @@ describe("createCumulativeShareSpec emphasize", () => {
 });
 
 describe("createLinkedColumnsSpec emphasize and pin", () => {
-  /** Each subject's opacity in a mark type, for the items drawn. */
+  /** Each subject's opacity in a mark type, for the items drawn: a line by its subject, an end name by its text. */
   const opacities = (view, marktype) =>
-    Object.fromEntries(items(view.scenegraph().root).filter((i) => i.marktype === marktype).map(({ item }) => [item.datum.id, item.opacity]));
+    Object.fromEntries(
+      items(view.scenegraph().root)
+        .filter((i) => i.marktype === marktype && i.item.opacity !== undefined)
+        .map(({ item }) => [item.datum.id ?? item.text, item.opacity]),
+    );
 
   test("the other subjects' dots, lines and names are dimmed", async () => {
     const { view, compiled } = await viewOf(createLinkedColumnsSpec(rows, columns, linkedGroups, { emphasize: ["B"] }));
@@ -151,7 +155,7 @@ describe("createLinkedColumnsSpec emphasize and pin", () => {
   test("the emphasized subjects' lines and names are drawn with nothing hovered or pinned", async () => {
     const { view, compiled } = await viewOf(createLinkedColumnsSpec(rows, columns, linkedGroups, { emphasize: ["B", "C"] }));
     expect(opacities(view, "line")).toEqual({ A: 0, B: 0.95, C: 0.95 });
-    expect(opacities(view, "text")).toMatchObject({ A: 0, B: 1, C: 1 });
+    expect(opacities(view, "text")).toEqual({ B: 1, C: 1 });
     await setPinned(view, compiled, "A");
     expect(close(opacities(view, "line").A, 0.95 * DIM_OPACITY)).toBe(true);
     expect(opacities(view, "line").B).toBe(0.95);
